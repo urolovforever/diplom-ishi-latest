@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${DB_USER:-confession_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-confession_pass}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-confession_user} -d ${DB_NAME:-confession_db}"]
       interval: 5s
@@ -19,7 +19,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -60,7 +60,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "5174:5173"
     environment:
       - VITE_API_URL=http://localhost/api
     command: npm run dev -- --host 0.0.0.0
