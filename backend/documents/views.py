@@ -69,7 +69,9 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Document.objects.select_related('uploaded_by__role').prefetch_related('versions').all()
+        qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
+            'versions', 'encrypted_keys__user',
+        ).all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.SECURITY_AUDITOR]:
             return filter_by_security_level(qs, user)
         if user.role and user.role.name == Role.CONFESSION_LEADER:
@@ -85,9 +87,13 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
         return DocumentListSerializer
 
     def perform_create(self, serializer):
+        is_e2e = self.request.data.get('is_e2e_encrypted', 'false')
+        is_e2e = is_e2e in (True, 'true', 'True', '1')
+
         instance = serializer.save(uploaded_by=self.request.user)
-        # Encrypt file if encryption is enabled
-        if instance.is_encrypted and instance.file:
+
+        # Only do server-side encryption if NOT E2E encrypted
+        if not is_e2e and instance.is_encrypted and instance.file:
             try:
                 instance.file.seek(0)
                 content = instance.file.read()
@@ -117,7 +123,9 @@ class DocumentDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Document.objects.select_related('uploaded_by__role').prefetch_related('versions').all()
+        qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
+            'versions', 'encrypted_keys__user',
+        ).all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.SECURITY_AUDITOR]:
             return filter_by_security_level(qs, user)
         if user.role and user.role.name == Role.CONFESSION_LEADER:

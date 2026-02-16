@@ -1,20 +1,56 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchConfession, transitionConfession, clearCurrent } from '../store/confessionsSlice';
 import { useAuth } from '../hooks/useAuth';
+import { useCrypto } from '../hooks/useCrypto';
 import { formatDateTime } from '../utils/helpers';
+import KeySetup from '../components/auth/KeySetup';
 
 function ConfessionDetailPage() {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { current: confession, loading, error } = useSelector((state) => state.confessions);
   const { user, isSuperAdmin, isQomitaRahbar, isConfessionLeader } = useAuth();
+  const { isE2EReady, decryptConfession } = useCrypto();
+
+  const [decryptedContent, setDecryptedContent] = useState(null);
+  const [decryptError, setDecryptError] = useState(null);
+  const [decrypting, setDecrypting] = useState(false);
+  const [showKeySetup, setShowKeySetup] = useState(false);
 
   useEffect(() => {
     dispatch(fetchConfession(id));
-    return () => dispatch(clearCurrent());
+    return () => {
+      dispatch(clearCurrent());
+      setDecryptedContent(null);
+    };
   }, [dispatch, id]);
+
+  // Auto-decrypt if E2E is ready and confession is encrypted
+  useEffect(() => {
+    if (confession?.is_e2e_encrypted && isE2EReady && !decryptedContent && !decrypting) {
+      handleDecrypt();
+    }
+  }, [confession, isE2EReady]);
+
+  const handleDecrypt = async () => {
+    if (!confession?.is_e2e_encrypted || !isE2EReady) return;
+    setDecrypting(true);
+    setDecryptError(null);
+
+    try {
+      const plaintext = await decryptConfession(
+        confession.content,
+        confession.encrypted_keys
+      );
+      setDecryptedContent(plaintext);
+    } catch (err) {
+      setDecryptError(err.message || 'Failed to decrypt confession');
+    } finally {
+      setDecrypting(false);
+    }
+  };
 
   const handleTransition = async (action) => {
     const result = await dispatch(transitionConfession({ id, action }));
@@ -27,8 +63,25 @@ function ConfessionDetailPage() {
   if (error) return <p className="text-red-500">{error}</p>;
   if (!confession) return <p className="text-gray-500">Confession not found.</p>;
 
+  if (showKeySetup) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Unlock E2E Encryption</h1>
+        <KeySetup onComplete={() => setShowKeySetup(false)} />
+        <button
+          onClick={() => setShowKeySetup(false)}
+          className="mt-4 text-gray-600 hover:text-gray-800 text-sm"
+        >
+          Back to confession
+        </button>
+      </div>
+    );
+  }
+
   const isAuthor = user?.id === confession.author?.id;
   const isLeaderPlus = isSuperAdmin || isQomitaRahbar || isConfessionLeader;
+  const isEncrypted = confession.is_e2e_encrypted;
+  const displayContent = isEncrypted ? (decryptedContent || null) : confession.content;
 
   return (
     <div>
@@ -58,11 +111,55 @@ function ConfessionDetailPage() {
           )}
           {confession.is_anonymous && <span className="text-yellow-600">(Anonymous)</span>}
           <span>{formatDateTime(confession.created_at)}</span>
+          {isEncrypted && (
+            <span className="text-green-600 font-medium">E2E Encrypted</span>
+          )}
         </div>
 
-        <div className="prose max-w-none">
-          <p className="whitespace-pre-wrap">{confession.content}</p>
-        </div>
+        {isEncrypted && !displayContent && (
+          <div className="p-4 bg-gray-50 rounded text-center">
+            {decrypting ? (
+              <p className="text-gray-500">Decrypting...</p>
+            ) : decryptError ? (
+              <div>
+                <p className="text-red-500 mb-2">{decryptError}</p>
+                {!isE2EReady && (
+                  <button
+                    onClick={() => setShowKeySetup(true)}
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    Unlock E2E keys
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div>
+                <p className="text-gray-500 mb-2">This confession is end-to-end encrypted.</p>
+                {isE2EReady ? (
+                  <button
+                    onClick={handleDecrypt}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+                  >
+                    Decrypt
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowKeySetup(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+                  >
+                    Unlock E2E Keys to Decrypt
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {displayContent && (
+          <div className="prose max-w-none">
+            <p className="whitespace-pre-wrap">{displayContent}</p>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2">

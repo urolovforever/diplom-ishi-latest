@@ -19,6 +19,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     ProfileUpdateSerializer,
+    PublicKeySerializer,
     UserSerializer,
     Verify2FASerializer,
 )
@@ -295,3 +296,103 @@ class ProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(UserSerializer(request.user).data)
+
+
+class PublicKeyView(APIView):
+    """Store the current user's public key for E2E encryption."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PublicKeySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.public_key = serializer.validated_data['public_key']
+        update_fields = ['public_key']
+
+        if 'encrypted_private_key' in serializer.validated_data:
+            user.encrypted_private_key = serializer.validated_data['encrypted_private_key']
+            update_fields.append('encrypted_private_key')
+
+        user.save(update_fields=update_fields)
+        return Response({'detail': 'Public key saved successfully.'}, status=status.HTTP_200_OK)
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'public_key': user.public_key,
+            'encrypted_private_key': user.encrypted_private_key,
+            'has_public_key': bool(user.public_key),
+        })
+
+
+class UserPublicKeyView(APIView):
+    """Get any user's public key by UUID (for encrypting data for them)."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            user = CustomUser.objects.get(pk=pk, is_active=True)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.public_key:
+            return Response(
+                {'detail': 'User has not set up E2E encryption yet.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response({
+            'user_id': str(user.id),
+            'public_key': user.public_key,
+        })
+
+
+class E2ERecipientsView(APIView):
+    """Get public keys of all users who should receive encrypted keys for a confession."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        organization_id = request.query_params.get('organization')
+        from confessions.models import Organization
+
+        recipients = []
+        # Always include super_admins and qomita_rahbars
+        admins = CustomUser.objects.filter(
+            role__name__in=['super_admin', 'qomita_rahbar'],
+            is_active=True,
+            public_key__isnull=False,
+        ).exclude(public_key='')
+
+        for admin in admins:
+            recipients.append({
+                'user_id': str(admin.id),
+                'email': admin.email,
+                'role': admin.role.name,
+                'public_key': admin.public_key,
+            })
+
+        # Include confession leader of the organization
+        if organization_id:
+            try:
+                org = Organization.objects.select_related('leader').get(pk=organization_id)
+                if org.leader and org.leader.public_key and str(org.leader.id) not in [r['user_id'] for r in recipients]:
+                    recipients.append({
+                        'user_id': str(org.leader.id),
+                        'email': org.leader.email,
+                        'role': 'confession_leader',
+                        'public_key': org.leader.public_key,
+                    })
+            except Organization.DoesNotExist:
+                pass
+
+        # Include current user (author)
+        if request.user.public_key and str(request.user.id) not in [r['user_id'] for r in recipients]:
+            recipients.append({
+                'user_id': str(request.user.id),
+                'email': request.user.email,
+                'role': request.user.role.name if request.user.role else 'member',
+                'public_key': request.user.public_key,
+            })
+
+        return Response(recipients)
