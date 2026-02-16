@@ -9,7 +9,8 @@ MAX_PASSWORD_HISTORY = 5
 PASSWORD_EXPIRY_DAYS = 90
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 30
-MAX_ACTIVE_SESSIONS = 3
+MAX_ACTIVE_SESSIONS = 2
+SESSION_INACTIVITY_MINUTES = 30
 
 
 class SecurityManager:
@@ -82,3 +83,12 @@ class SecurityManager:
             UserSession.objects.filter(
                 id__in=[s.id for s in to_deactivate]
             ).update(is_active=False)
+
+    @staticmethod
+    def check_session_inactivity(user):
+        """Deactivate sessions inactive for more than SESSION_INACTIVITY_MINUTES."""
+        cutoff = timezone.now() - timedelta(minutes=SESSION_INACTIVITY_MINUTES)
+        expired = UserSession.objects.filter(
+            user=user, is_active=True, last_activity__lt=cutoff,
+        ).update(is_active=False)
+        return expired

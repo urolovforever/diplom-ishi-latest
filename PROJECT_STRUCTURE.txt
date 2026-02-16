@@ -1,0 +1,350 @@
+# ============================================
+# LOYIHA STRUKTURASI
+# Diniy Konfessiyalar Xavfsiz Ma'lumotlar Almashish Platformasi
+# Django + React + PostgreSQL + AI (Isolation Forest)
+# ============================================
+
+secure-confession-platform/
+│
+├── docker-compose.yml              # Barcha xizmatlarni ishga tushirish (Django, React, PostgreSQL, Redis)
+├── .env                            # Muhit o'zgaruvchilari (SECRET_KEY, DB credentials, API keys)
+├── .env.example                    # .env namunasi (gitga yuklanadi)
+├── .gitignore                      # Git ga yuklanmaydigan fayllar ro'yxati
+├── README.md                       # Loyiha haqida umumiy ma'lumot va o'rnatish yo'riqnomasi
+│
+│
+# ================================================================
+# BACKEND (Django + Django REST Framework)
+# ================================================================
+├── backend/
+│   ├── manage.py                   # Django boshqaruv fayli
+│   ├── requirements.txt            # Python kutubxonalar ro'yxati
+│   ├── Dockerfile                  # Backend uchun Docker image
+│   │
+│   │
+│   # --- Asosiy sozlamalar ---
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── settings/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py             # Umumiy sozlamalar (INSTALLED_APPS, MIDDLEWARE, DB, va h.k.)
+│   │   │   ├── development.py      # Lokal ishlab chiqish sozlamalari (DEBUG=True)
+│   │   │   └── production.py       # Production sozlamalari (DEBUG=False, HTTPS)
+│   │   ├── urls.py                 # Asosiy URL yo'naltirgich (barcha app URL larni birlashtiradi)
+│   │   ├── wsgi.py                 # WSGI server (Gunicorn uchun)
+│   │   └── asgi.py                 # ASGI server (agar WebSocket kerak bo'lsa)
+│   │
+│   │
+│   # --- 1-APP: Foydalanuvchilar va autentifikatsiya ---
+│   ├── accounts/
+│   │   ├── __init__.py
+│   │   ├── models.py               # User, Role, Permission modellari
+│   │   │                           #   - User: email, password_hash, role, confession, is_2fa_enabled
+│   │   │                           #   - Role: name, description, permissions
+│   │   │                           #   - UserSession: ip_address, device, login_time
+│   │   ├── serializers.py          # DRF serializerlar (UserSerializer, LoginSerializer, RegisterSerializer)
+│   │   ├── views.py                # API viewlar (LoginView, LogoutView, UserListView, UserDetailView)
+│   │   ├── urls.py                 # /api/auth/login/, /api/auth/verify-2fa/, /api/users/
+│   │   ├── permissions.py          # Custom ruxsatlar (IsSuperAdmin, IsQomitaRahbar, IsConfessionLeader)
+│   │   ├── authentication.py       # JWT + 2FA autentifikatsiya logikasi
+│   │   ├── validators.py           # Parol kuchliligi, email tekshirish
+│   │   ├── signals.py              # User yaratilganda email yuborish, log yozish
+│   │   ├── admin.py                # Django admin paneli sozlamalari
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py      # User, Role model testlari
+│   │   │   ├── test_views.py       # Login, register, 2FA API testlari
+│   │   │   └── test_permissions.py # Ruxsatlar tizimi testlari
+│   │   └── migrations/             # Ma'lumotlar bazasi migratsiyalari
+│   │
+│   │
+│   # --- 2-APP: Konfessiyalar ---
+│   ├── confessions/
+│   │   ├── __init__.py
+│   │   ├── models.py               # Confession, Organization modellari
+│   │   │                           #   - Confession: name, type, registration_number, leader
+│   │   │                           #   - Organization: name, confession, address, member_count
+│   │   ├── serializers.py          # ConfessionSerializer, OrganizationSerializer
+│   │   ├── views.py                # ConfessionListView, ConfessionDetailView
+│   │   ├── urls.py                 # /api/confessions/, /api/organizations/
+│   │   ├── filters.py              # Konfessiya turi, hudud bo'yicha filtrlash
+│   │   ├── admin.py
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   └── test_views.py
+│   │   └── migrations/
+│   │
+│   │
+│   # --- 3-APP: Hujjatlar boshqaruvi ---
+│   ├── documents/
+│   │   ├── __init__.py
+│   │   ├── models.py               # Document, DocumentVersion modellari
+│   │   │                           #   - Document: title, category, security_level, file, confession
+│   │   │                           #   - DocumentVersion: document, version_number, file, changed_by
+│   │   ├── serializers.py          # DocumentSerializer, DocumentUploadSerializer
+│   │   ├── views.py                # DocumentListView, DocumentUploadView, DocumentDownloadView
+│   │   ├── urls.py                 # /api/documents/, /api/documents/{id}/download/
+│   │   ├── permissions.py          # Hujjatga kim kira olishini tekshirish (rolga va konfessiyaga qarab)
+│   │   ├── utils.py                # Fayl validatsiya (tur, hajm), virus skanerlash
+│   │   ├── admin.py
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_views.py
+│   │   │   └── test_permissions.py
+│   │   └── migrations/
+│   │
+│   │
+│   # --- 4-APP: Bildirishnomalar ---
+│   ├── notifications/
+│   │   ├── __init__.py
+│   │   ├── models.py               # Notification, AlertConfig modellari
+│   │   │                           #   - Notification: user, type, message, is_read, created_at
+│   │   │                           #   - AlertConfig: user, email_enabled, telegram_enabled, threshold
+│   │   ├── serializers.py          # NotificationSerializer
+│   │   ├── views.py                # NotificationListView, MarkAsReadView
+│   │   ├── urls.py                 # /api/notifications/
+│   │   ├── services.py             # Email yuborish, Telegram bot xabar yuborish logikasi
+│   │   ├── tasks.py                # Celery background tasklar (email, telegram)
+│   │   ├── admin.py
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   └── test_services.py
+│   │   └── migrations/
+│   │
+│   │
+│   # --- 5-APP: AI Xavfsizlik (ASOSIY MODUL) ---
+│   ├── ai_security/
+│   │   ├── __init__.py
+│   │   ├── models.py               # ActivityLog, AnomalyReport, AIModelConfig modellari
+│   │   │                           #   - ActivityLog: user, action, hour, docs_accessed, download_mb,
+│   │   │                           #                  own_section, failed_logins, session_duration_min,
+│   │   │                           #                  anomaly_score, is_anomaly, anomaly_reasons
+│   │   │                           #   - AnomalyReport: activity_log, severity, action_taken, resolved_by
+│   │   │                           #   - AIModelConfig: model_path, contamination, last_trained, accuracy
+│   │   ├── serializers.py          # AnomalySerializer, ActivityLogSerializer, DashboardSerializer
+│   │   ├── views.py                # AnomalyListView, UserScoreView, AIDashboardView
+│   │   ├── urls.py                 # /api/ai/anomalies/, /api/ai/user-score/{id}/, /api/ai/dashboard/
+│   │   ├── middleware.py           # ActivityLogMiddleware — har bir HTTP so'rovni logga yozadi
+│   │   │                           #   Django middleware sifatida ishlaydi, har bir request da:
+│   │   │                           #   1. Foydalanuvchi, vaqt, IP, harakat turini yig'adi
+│   │   │                           #   2. ActivityLog ga yozadi
+│   │   │                           #   3. AI modelga yuboradi (asinxron — Celery orqali)
+│   │   ├── engine.py               # AI Anomaliya Aniqlash Engine
+│   │   │                           #   - load_model(): saqlangan modelni yuklash
+│   │   │                           #   - predict(features): anomaliya skorini hisoblash
+│   │   │                           #   - explain(features, score): sabablarni tushuntirish
+│   │   │                           #   - get_user_profile(user_id): foydalanuvchi normal profili
+│   │   ├── training.py             # Model o'rgatish va qayta o'rgatish
+│   │   │                           #   - train_model(): yangi model o'rgatish
+│   │   │                           #   - retrain_model(): mavjud modelni yangi ma'lumotlar bilan yangilash
+│   │   │                           #   - evaluate_model(): Precision, Recall, F1 hisoblash
+│   │   ├── features.py             # Feature Engineering
+│   │   │                           #   - extract_features(activity_log): xom logdan 9 ta feature ajratish
+│   │   │                           #   - scale_features(features): StandardScaler bilan normalizatsiya
+│   │   │                           #   - get_feature_importance(model): qaysi feature muhimroq
+│   │   ├── honeypot.py             # Honeypot (tuzoq) fayllar logikasi
+│   │   │                           #   - check_honeypot_access(document): tuzoq faylga kirilganmi
+│   │   │                           #   - create_honeypot(name, category): yangi tuzoq fayl yaratish
+│   │   ├── response.py             # Anomaliya javob berish tizimi
+│   │   │                           #   - handle_anomaly(score, user, activity): skorga qarab harakat
+│   │   │                           #   - block_session(user): sessiyani to'xtatish
+│   │   │                           #   - send_alert(admin, anomaly): ogohlantirish yuborish
+│   │   ├── tasks.py                # Celery background tasklar
+│   │   │                           #   - analyze_activity.delay(): asinxron anomaliya tahlili
+│   │   │                           #   - retrain_model_weekly.delay(): haftalik qayta o'rgatish
+│   │   │                           #   - generate_security_report.delay(): kunlik xavfsizlik hisoboti
+│   │   ├── admin.py
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_engine.py      # AI model testlari
+│   │   │   ├── test_middleware.py   # Middleware testlari
+│   │   │   ├── test_features.py    # Feature engineering testlari
+│   │   │   ├── test_honeypot.py    # Honeypot testlari
+│   │   │   └── test_response.py    # Javob tizimi testlari
+│   │   └── migrations/
+│   │
+│   │
+│   # --- 6-APP: Audit loglar ---
+│   ├── audit/
+│   │   ├── __init__.py
+│   │   ├── models.py               # AuditLog modeli (append-only)
+│   │   │                           #   - AuditLog: user, action, target, details, ip, timestamp
+│   │   ├── serializers.py          # AuditLogSerializer
+│   │   ├── views.py                # AuditLogListView (faqat o'qish, filtrlash)
+│   │   ├── urls.py                 # /api/audit/logs/
+│   │   ├── mixins.py               # AuditMixin — boshqa app larga qo'shib, har bir CRUD ni loglash
+│   │   ├── admin.py
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   └── test_views.py
+│   │   └── migrations/
+│   │
+│   │
+│   # --- AI model fayllari ---
+│   ├── ml_models/
+│   │   ├── isolation_forest_v1.pkl  # O'rgatilgan model (pickle formatda)
+│   │   ├── scaler_v1.pkl            # StandardScaler (normalizatsiya uchun)
+│   │   └── training_history.json    # Model o'rgatish tarixi (accuracy, sana va h.k.)
+│   │
+│   │
+│   # --- Media va statik fayllar ---
+│   ├── media/
+│   │   ├── documents/               # Yuklangan hujjatlar (konfessiya bo'yicha papkalar)
+│   │   │   ├── islom/
+│   │   │   ├── xristianlik/
+│   │   │   ├── yahudiylik/
+│   │   │   └── boshqa/
+│   │   └── honeypots/               # Tuzoq fayllar
+│   │
+│   └── static/                      # Django statik fayllar (admin panel uchun)
+│
+│
+# ================================================================
+# FRONTEND (React + Tailwind CSS)
+# ================================================================
+├── frontend/
+│   ├── package.json                 # Node.js kutubxonalar va skriptlar
+│   ├── Dockerfile                   # Frontend uchun Docker image
+│   ├── tailwind.config.js           # Tailwind CSS sozlamalari
+│   ├── vite.config.js               # Vite bundler sozlamalari
+│   │
+│   ├── public/
+│   │   ├── index.html               # Asosiy HTML fayl
+│   │   └── favicon.ico
+│   │
+│   └── src/
+│       ├── main.jsx                 # React ilovaning kirish nuqtasi
+│       ├── App.jsx                  # Asosiy komponent (Router, Layout)
+│       │
+│       │
+│       # --- Sahifalar (Pages) ---
+│       ├── pages/
+│       │   ├── LoginPage.jsx        # Email + Parol + 2FA kirish
+│       │   ├── DashboardPage.jsx    # Umumiy statistika, grafik panel
+│       │   ├── ConfessionsPage.jsx  # Konfessiyalar ro'yxati
+│       │   ├── ConfessionDetailPage.jsx  # Bitta konfessiya tafsiloti
+│       │   ├── DocumentsPage.jsx    # Hujjatlar ro'yxati, yuklash, yuklab olish
+│       │   ├── UsersPage.jsx        # Foydalanuvchilar boshqaruvi (admin)
+│       │   ├── UserDetailPage.jsx   # Foydalanuvchi profili
+│       │   ├── AIDashboardPage.jsx  # AI anomaliya natijalari, grafik, jadvallar
+│       │   ├── ReportsPage.jsx      # Hisobotlar yaratish va ko'rish
+│       │   ├── NotificationsPage.jsx # Bildirishnomalar ro'yxati
+│       │   ├── AuditLogPage.jsx     # Audit loglar (admin)
+│       │   ├── SettingsPage.jsx     # Profil, parol, 2FA sozlamalari
+│       │   └── NotFoundPage.jsx     # 404 sahifa
+│       │
+│       │
+│       # --- Komponentlar ---
+│       ├── components/
+│       │   ├── layout/
+│       │   │   ├── Sidebar.jsx      # Chap panel (navigatsiya)
+│       │   │   ├── Header.jsx       # Yuqori panel (user info, bildirishnomalar)
+│       │   │   ├── Footer.jsx       # Pastki panel
+│       │   │   └── MainLayout.jsx   # Umumiy layout (Sidebar + Header + Content)
+│       │   │
+│       │   ├── auth/
+│       │   │   ├── LoginForm.jsx    # Login forma
+│       │   │   ├── TwoFactorForm.jsx # 2FA kod kiritish
+│       │   │   └── ProtectedRoute.jsx # Autentifikatsiyadan o'tmagan userni yo'naltirish
+│       │   │
+│       │   ├── documents/
+│       │   │   ├── DocumentList.jsx  # Hujjatlar jadvali
+│       │   │   ├── DocumentUpload.jsx # Hujjat yuklash formasi
+│       │   │   ├── DocumentCard.jsx  # Bitta hujjat kartochkasi
+│       │   │   └── DocumentFilter.jsx # Filtr (toifa, daraja, konfessiya)
+│       │   │
+│       │   ├── ai/
+│       │   │   ├── AnomalyChart.jsx  # Anomaliya skori grafigi (Recharts)
+│       │   │   ├── AnomalyTable.jsx  # Oxirgi anomaliyalar jadvali
+│       │   │   ├── UserRiskCard.jsx  # Foydalanuvchi xavf balli kartochkasi
+│       │   │   ├── ThreatMap.jsx     # Ichki/Tashqi tahdidlar diagrammasi
+│       │   │   └── ExplainPanel.jsx  # AI tushuntirish paneli (nega anomaliya)
+│       │   │
+│       │   ├── dashboard/
+│       │   │   ├── StatCard.jsx      # Statistika kartochkasi (son + trend)
+│       │   │   ├── ActivityChart.jsx  # Faollik grafigi
+│       │   │   └── RecentAlerts.jsx  # Oxirgi ogohlantirshlar
+│       │   │
+│       │   └── common/
+│       │       ├── Button.jsx        # Umumiy tugma komponenti
+│       │       ├── Modal.jsx         # Modal oyna
+│       │       ├── Table.jsx         # Umumiy jadval
+│       │       ├── Loader.jsx        # Yuklanish animatsiyasi
+│       │       ├── Badge.jsx         # Status badge (Xavfsiz, Ogohlantirish, Xavfli)
+│       │       └── Pagination.jsx    # Sahifalash
+│       │
+│       │
+│       # --- API bilan aloqa ---
+│       ├── api/
+│       │   ├── axiosConfig.js       # Axios instance (baseURL, interceptors, JWT token)
+│       │   ├── authAPI.js           # Login, logout, refresh, verify-2fa
+│       │   ├── usersAPI.js          # Foydalanuvchilar CRUD
+│       │   ├── confessionsAPI.js    # Konfessiyalar CRUD
+│       │   ├── documentsAPI.js      # Hujjatlar CRUD, yuklash, yuklab olish
+│       │   ├── aiAPI.js             # AI anomaliyalar, dashboard, user-score
+│       │   ├── notificationsAPI.js  # Bildirishnomalar
+│       │   └── auditAPI.js          # Audit loglar
+│       │
+│       │
+│       # --- State boshqaruvi (Redux Toolkit) ---
+│       ├── store/
+│       │   ├── store.js             # Redux store konfiguratsiyasi
+│       │   ├── authSlice.js         # Auth state (user, token, isAuthenticated)
+│       │   ├── documentsSlice.js    # Hujjatlar state
+│       │   ├── confessionsSlice.js  # Konfessiyalar state
+│       │   ├── aiSlice.js           # AI anomaliyalar state
+│       │   └── notificationsSlice.js # Bildirishnomalar state
+│       │
+│       │
+│       # --- Yordamchi funksiyalar ---
+│       ├── utils/
+│       │   ├── constants.js         # Rollar, toifalar, darajalar konstantalari
+│       │   ├── helpers.js           # Sana formatlash, fayl hajmi formatlash
+│       │   ├── roleCheck.js         # Rolga qarab ruxsatni tekshirish
+│       │   └── validators.js        # Forma validatsiyasi (email, parol)
+│       │
+│       │
+│       # --- Hooks ---
+│       ├── hooks/
+│       │   ├── useAuth.js           # Autentifikatsiya holati hook
+│       │   ├── usePermission.js     # Ruxsatni tekshirish hook
+│       │   └── useNotification.js   # Bildirishnomalar hook
+│       │
+│       │
+│       # --- Stillar ---
+│       └── styles/
+│           └── globals.css          # Global CSS (Tailwind direktivlari)
+│
+│
+# ================================================================
+# AI MODEL FAYLLAR
+# ================================================================
+├── ai_module/
+│   ├── step1_dataset_generator.py   # Test dataset yaratish (2994 ta yozuv)
+│   ├── step2_ai_model.py            # Isolation Forest model o'rgatish va sinash
+│   ├── step3_django_integration.py  # Modelni Django ga integratsiya qilish yo'riqnomasi
+│   ├── dataset_activity_logs.csv    # Yaratilgan test dataset
+│   ├── dataset_with_predictions.csv # AI bashoratlari bilan dataset
+│   └── model_results.png            # Model natijalari grafiklari
+│
+│
+# ================================================================
+# DOCKER VA DEPLOY
+# ================================================================
+├── docker/
+│   ├── nginx/
+│   │   └── nginx.conf               # Nginx reverse proxy sozlamalari
+│   └── postgres/
+│       └── init.sql                  # PostgreSQL boshlang'ich sozlamalari
+│
+│
+# ================================================================
+# HUJJATLAR
+# ================================================================
+└── docs/
+    ├── texnik_topshiriq_TZ.docx     # Texnik topshiriq (shu hujjat)
+    ├── API_DOCUMENTATION.md          # API hujjatlari (endpointlar, so'rov/javob)
+    ├── INSTALL.md                    # O'rnatish yo'riqnomasi
+    └── USER_GUIDE.md                 # Foydalanuvchi qo'llanmasi
