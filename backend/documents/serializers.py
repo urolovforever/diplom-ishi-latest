@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
 from .models import Document, DocumentVersion, DocumentAccessLog, HoneypotFile
+from .utils import validate_document_file
 
 
 class DocumentVersionSerializer(serializers.ModelSerializer):
@@ -37,6 +38,10 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
         model = Document
         fields = ['id', 'title', 'description', 'file', 'confession', 'is_encrypted', 'security_level', 'category']
         read_only_fields = ['id']
+
+    def validate_file(self, value):
+        validate_document_file(value)
+        return value
 
 
 class DocumentAccessLogSerializer(serializers.ModelSerializer):

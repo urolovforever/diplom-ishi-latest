@@ -29,8 +29,8 @@ class DocumentTestBase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
         return user
 
-    def _make_file(self, name='test.txt', content=b'test content'):
-        return SimpleUploadedFile(name, content, content_type='text/plain')
+    def _make_file(self, name='test.pdf', content=b'%PDF-1.4 test content'):
+        return SimpleUploadedFile(name, content, content_type='application/pdf')
 
 
 class DocumentUploadTest(DocumentTestBase):
@@ -180,7 +180,7 @@ class DocumentVersionTest(DocumentTestBase):
             created_by=user, change_summary='v1',
         )
         response = self.client.post(f'/api/documents/{doc.id}/versions/', {
-            'file': self._make_file('v2.txt'),
+            'file': self._make_file('v2.pdf'),
             'change_summary': 'Updated version',
         }, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

@@ -98,6 +98,15 @@ def scan_recent_activity():
                 )
                 logger.warning('Anomaly detected for %s (score: %.4f)', user.email, score)
 
+                # Trigger anomaly response (session blocking for critical, alerts for all)
+                try:
+                    from .response import AnomalyResponseHandler
+                    # Convert IF score to 0-1 scale (lower IF score = higher anomaly)
+                    normalized_score = max(0.0, min(1.0, -score))
+                    AnomalyResponseHandler.handle_anomaly(normalized_score, user, features)
+                except Exception as e:
+                    logger.error('Failed to handle anomaly response: %s', e)
+
     logger.info('Scan complete. Anomalies found: %d', anomalies_found)
 
 

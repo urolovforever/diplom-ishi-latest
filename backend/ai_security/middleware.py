@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from .models import ActivityLog
 
 
@@ -12,6 +14,17 @@ class ActivityLogMiddleware:
 
         if request.path.startswith('/api/') and not request.path.startswith('/api/admin/'):
             user = request.user if request.user.is_authenticated else None
+
+            # Update session last_activity for inactivity tracking
+            if user:
+                try:
+                    from accounts.models import UserSession
+                    UserSession.objects.filter(
+                        user=user, is_active=True,
+                    ).update(last_activity=timezone.now())
+                except Exception:
+                    pass
+
             ActivityLog.objects.create(
                 user=user,
                 action=f'{request.method} {request.path}',

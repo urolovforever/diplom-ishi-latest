@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import confessionsReducer from './confessionsSlice';
 import documentsReducer from './documentsSlice';
 import notificationsReducer from './notificationsSlice';
+import aiReducer from './aiSlice';
 import uiReducer from './uiSlice';
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     confessions: confessionsReducer,
     documents: documentsReducer,
     notifications: notificationsReducer,
+    ai: aiReducer,
     ui: uiReducer,
   },
 });
