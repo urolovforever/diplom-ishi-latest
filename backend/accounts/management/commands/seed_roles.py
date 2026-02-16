@@ -12,6 +12,9 @@ class Command(BaseCommand):
             (Role.QOMITA_RAHBAR, 'Committee leader with elevated permissions'),
             (Role.CONFESSION_LEADER, 'Manages confessions and related processes'),
             (Role.MEMBER, 'Basic member access'),
+            (Role.SECURITY_AUDITOR, 'Security monitoring and audit access'),
+            (Role.PSYCHOLOGIST, 'Read-only access to confessions for psychological support'),
+            (Role.IT_ADMIN, 'IT infrastructure and AI system administration'),
         ]
 
         created_count = 0

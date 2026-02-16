@@ -7,6 +7,10 @@ urlpatterns = [
     path('activity-logs/', views.ActivityLogListView.as_view(), name='activity-log-list'),
     path('anomaly-reports/', views.AnomalyReportListCreateView.as_view(), name='anomaly-report-list'),
     path('anomaly-reports/<uuid:pk>/', views.AnomalyReportDetailView.as_view(), name='anomaly-report-detail'),
+    path('anomaly-reports/<uuid:pk>/review/', views.ReviewAnomalyView.as_view(), name='anomaly-report-review'),
     path('ai-configs/', views.AIModelConfigListCreateView.as_view(), name='ai-config-list'),
     path('ai-configs/<uuid:pk>/', views.AIModelConfigDetailView.as_view(), name='ai-config-detail'),
+    path('dashboard/', views.AnomalyDashboardView.as_view(), name='anomaly-dashboard'),
+    path('model-status/', views.AIModelStatusView.as_view(), name='model-status'),
+    path('scan/', views.ManualScanView.as_view(), name='manual-scan'),
 ]

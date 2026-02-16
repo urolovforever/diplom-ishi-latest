@@ -18,12 +18,15 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
 class AnomalyReportSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    reviewed_by = UserSerializer(read_only=True)
 
     class Meta:
         model = AnomalyReport
         fields = [
             'id', 'title', 'description', 'severity', 'user',
-            'is_resolved', 'detected_at', 'resolved_at',
+            'anomaly_score', 'features', 'is_false_positive',
+            'is_resolved', 'reviewed_by', 'reviewed_at',
+            'detected_at', 'resolved_at',
         ]
         read_only_fields = ['id', 'detected_at']
 
@@ -31,12 +34,29 @@ class AnomalyReportSerializer(serializers.ModelSerializer):
 class AnomalyReportWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnomalyReport
-        fields = ['id', 'title', 'description', 'severity', 'user', 'is_resolved', 'resolved_at']
+        fields = [
+            'id', 'title', 'description', 'severity', 'user',
+            'anomaly_score', 'features', 'is_false_positive',
+            'is_resolved', 'resolved_at',
+        ]
         read_only_fields = ['id']
 
 
 class AIModelConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIModelConfig
-        fields = ['id', 'name', 'model_type', 'parameters', 'is_active', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'model_type', 'parameters', 'is_active',
+            'model_file_path', 'last_trained_at', 'training_samples_count',
+            'threshold', 'created_at', 'updated_at',
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class DashboardStatsSerializer(serializers.Serializer):
+    total_anomalies = serializers.IntegerField()
+    unreviewed_count = serializers.IntegerField()
+    resolved_count = serializers.IntegerField()
+    critical_count = serializers.IntegerField()
+    recent_anomalies = AnomalyReportSerializer(many=True)
+    model_status = serializers.DictField(allow_null=True)

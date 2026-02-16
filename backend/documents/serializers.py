@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
-from .models import Document, DocumentVersion
+from .models import Document, DocumentVersion, DocumentAccessLog, HoneypotFile
 
 
 class DocumentVersionSerializer(serializers.ModelSerializer):
@@ -20,7 +20,8 @@ class DocumentListSerializer(serializers.ModelSerializer):
         model = Document
         fields = [
             'id', 'title', 'description', 'file', 'uploaded_by',
-            'confession', 'is_encrypted', 'latest_version', 'created_at', 'updated_at',
+            'confession', 'is_encrypted', 'security_level', 'category',
+            'latest_version', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'uploaded_by', 'created_at', 'updated_at']
 
@@ -34,5 +35,28 @@ class DocumentListSerializer(serializers.ModelSerializer):
 class DocumentWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ['id', 'title', 'description', 'file', 'confession', 'is_encrypted']
+        fields = ['id', 'title', 'description', 'file', 'confession', 'is_encrypted', 'security_level', 'category']
         read_only_fields = ['id']
+
+
+class DocumentAccessLogSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = DocumentAccessLog
+        fields = ['id', 'document', 'user', 'action', 'ip_address', 'created_at']
+        read_only_fields = fields
+
+
+class HoneypotFileSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+    last_accessed_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = HoneypotFile
+        fields = [
+            'id', 'title', 'description', 'file_path', 'created_by',
+            'is_active', 'access_count', 'last_accessed_at', 'last_accessed_by',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'access_count', 'last_accessed_at', 'last_accessed_by', 'created_at']

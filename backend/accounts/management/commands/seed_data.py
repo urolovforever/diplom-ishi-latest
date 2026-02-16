@@ -41,6 +41,27 @@ class Command(BaseCommand):
                 'password': 'MemberPass123!@#',
                 'role_name': Role.MEMBER,
             },
+            {
+                'email': 'auditor@scp.local',
+                'first_name': 'Security',
+                'last_name': 'Auditor',
+                'password': 'AuditorPass123!@#',
+                'role_name': Role.SECURITY_AUDITOR,
+            },
+            {
+                'email': 'psychologist@scp.local',
+                'first_name': 'Platform',
+                'last_name': 'Psychologist',
+                'password': 'PsychPass123!@#$',
+                'role_name': Role.PSYCHOLOGIST,
+            },
+            {
+                'email': 'itadmin@scp.local',
+                'first_name': 'IT',
+                'last_name': 'Admin',
+                'password': 'ITAdminPass123!@#',
+                'role_name': Role.IT_ADMIN,
+            },
         ]
 
         created_count = 0

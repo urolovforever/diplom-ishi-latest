@@ -6,7 +6,11 @@ const navItems = [
   { path: '/confessions', label: 'Confessions', roles: null },
   { path: '/documents', label: 'Documents', roles: null },
   { path: '/notifications', label: 'Notifications', roles: null },
+  { path: '/ai-dashboard', label: 'AI Dashboard', roles: ['super_admin', 'security_auditor', 'it_admin'] },
+  { path: '/reports', label: 'Reports', roles: ['super_admin', 'security_auditor', 'qomita_rahbar'] },
+  { path: '/audit-log', label: 'Audit Log', roles: ['super_admin', 'security_auditor'] },
   { path: '/users', label: 'User Management', roles: ['super_admin'] },
+  { path: '/settings', label: 'Settings', roles: ['super_admin', 'it_admin'] },
   { path: '/profile', label: 'Profile', roles: null },
 ];
 

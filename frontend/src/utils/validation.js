@@ -21,3 +21,28 @@ export const passwordStrength = (value) => {
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) return 'Must contain a special character';
   return null;
 };
+
+export const ROLE_LABELS = {
+  super_admin: 'Super Admin',
+  qomita_rahbar: 'Qomita Rahbar',
+  confession_leader: 'Confession Leader',
+  member: 'Member',
+  security_auditor: 'Security Auditor',
+  psychologist: 'Psychologist',
+  it_admin: 'IT Admin',
+};
+
+export const SECURITY_LEVEL_LABELS = {
+  public: 'Public',
+  internal: 'Internal',
+  confidential: 'Confidential',
+  secret: 'Secret',
+};
+
+export const DOCUMENT_CATEGORY_LABELS = {
+  confession_doc: 'Confession Document',
+  evidence: 'Evidence',
+  report: 'Report',
+  legal: 'Legal',
+  other: 'Other',
+};

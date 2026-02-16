@@ -70,3 +70,30 @@ def send_welcome_email(recipient_email, first_name):
     except Exception as e:
         logger.error(f'Failed to send welcome email to {recipient_email}: {e}')
         raise
+
+
+@shared_task
+def send_telegram_alert(message, chat_id=None):
+    """Send an alert message via Telegram."""
+    try:
+        from .telegram import TelegramBot
+        bot = TelegramBot()
+        target_chat_id = chat_id or settings.TELEGRAM_DEFAULT_CHAT_ID
+        if not target_chat_id:
+            logger.warning('No Telegram chat_id configured. Skipping.')
+            return
+        bot.send_message(target_chat_id, message)
+        logger.info('Telegram alert sent to %s', target_chat_id)
+    except Exception as e:
+        logger.error('Failed to send Telegram alert: %s', e)
+
+
+@shared_task
+def check_alert_thresholds():
+    """Check all active alert rules and dispatch alerts. Runs every 5 minutes."""
+    try:
+        from .alerting import AlertEngine
+        engine = AlertEngine()
+        engine.check_thresholds()
+    except Exception as e:
+        logger.error('Failed to check alert thresholds: %s', e)
