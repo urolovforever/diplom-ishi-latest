@@ -1,9 +1,13 @@
-from django.test import TestCase
+from datetime import timedelta
+
+from django.test import TestCase, override_settings
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from django.utils import timezone
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
-from .models import CustomUser, Role, UserSession
+from .models import CustomUser, PasswordResetToken, Role, UserSession
 from .validators import validate_password_strength
 from .authentication import generate_totp_secret, verify_totp
 
@@ -410,3 +414,151 @@ class PermissionsTest(APITestCase):
         self._create_and_login('m@test.com', self.member_role)
         response = self.client.get('/api/accounts/users/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ProfileViewTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = CustomUser.objects.create_user(
+            email='profile@example.com',
+            password='TestPass123!@#',
+            first_name='Profile',
+            last_name='User',
+        )
+        response = self.client.post('/api/accounts/login/', {
+            'email': 'profile@example.com',
+            'password': 'TestPass123!@#',
+        })
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
+
+    def test_get_profile(self):
+        response = self.client.get('/api/accounts/profile/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'profile@example.com')
+        self.assertEqual(response.data['first_name'], 'Profile')
+
+    def test_update_profile(self):
+        response = self.client.put('/api/accounts/profile/', {
+            'first_name': 'Updated',
+            'last_name': 'Name',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['first_name'], 'Updated')
+        self.assertEqual(response.data['last_name'], 'Name')
+
+    def test_profile_unauthenticated(self):
+        self.client.credentials()
+        response = self.client.get('/api/accounts/profile/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class PasswordResetViewTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = CustomUser.objects.create_user(
+            email='reset@example.com',
+            password='TestPass123!@#',
+            first_name='Reset',
+            last_name='User',
+        )
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+    def test_request_valid_email(self):
+        response = self.client.post('/api/accounts/password-reset/', {
+            'email': 'reset@example.com',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('If an account', response.data['detail'])
+
+    def test_request_invalid_email_no_enumeration(self):
+        response = self.client.post('/api/accounts/password-reset/', {
+            'email': 'nonexistent@example.com',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('If an account', response.data['detail'])
+
+    def test_confirm_valid_token(self):
+        token = PasswordResetToken.objects.create(
+            user=self.user,
+            token='valid-test-token-123',
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        response = self.client.post('/api/accounts/password-reset/confirm/', {
+            'token': 'valid-test-token-123',
+            'new_password': 'NewSecurePass1!@#',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('NewSecurePass1!@#'))
+        token.refresh_from_db()
+        self.assertTrue(token.is_used)
+
+    def test_confirm_expired_token(self):
+        PasswordResetToken.objects.create(
+            user=self.user,
+            token='expired-token-123',
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.post('/api/accounts/password-reset/confirm/', {
+            'token': 'expired-token-123',
+            'new_password': 'NewSecurePass1!@#',
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_used_token(self):
+        PasswordResetToken.objects.create(
+            user=self.user,
+            token='used-token-123',
+            expires_at=timezone.now() + timedelta(hours=1),
+            is_used=True,
+        )
+        response = self.client.post('/api/accounts/password-reset/confirm/', {
+            'token': 'used-token-123',
+            'new_password': 'NewSecurePass1!@#',
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_invalid_token(self):
+        response = self.client.post('/api/accounts/password-reset/confirm/', {
+            'token': 'totally-invalid-token',
+            'new_password': 'NewSecurePass1!@#',
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class SeedRolesCommandTest(TestCase):
+    def test_seed_roles_creates_four_roles(self):
+        call_command('seed_roles')
+        self.assertEqual(Role.objects.count(), 4)
+        self.assertTrue(Role.objects.filter(name='super_admin').exists())
+        self.assertTrue(Role.objects.filter(name='qomita_rahbar').exists())
+        self.assertTrue(Role.objects.filter(name='confession_leader').exists())
+        self.assertTrue(Role.objects.filter(name='member').exists())
+
+    def test_seed_roles_idempotent(self):
+        call_command('seed_roles')
+        call_command('seed_roles')
+        self.assertEqual(Role.objects.count(), 4)
+
+
+class SeedDataCommandTest(TestCase):
+    def test_seed_data_creates_users(self):
+        call_command('seed_data')
+        self.assertTrue(CustomUser.objects.filter(email='admin@scp.local').exists())
+        self.assertTrue(CustomUser.objects.filter(email='member@scp.local').exists())
+        self.assertEqual(Role.objects.count(), 4)
+
+    def test_seed_data_idempotent(self):
+        call_command('seed_data')
+        count = CustomUser.objects.count()
+        call_command('seed_data')
+        self.assertEqual(CustomUser.objects.count(), count)
+
+
+class HealthCheckTest(APITestCase):
+    def test_health_check_returns_status(self):
+        response = self.client.get('/api/health/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('status', response.json())
+        self.assertIn('services', response.json())
+        self.assertEqual(response.json()['services']['database'], 'ok')

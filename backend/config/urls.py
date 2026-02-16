@@ -3,7 +3,10 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+from config.health import health_check
+
 urlpatterns = [
+    path('api/health/', health_check, name='health-check'),
     path('api/admin/', admin.site.urls),
     path('api/accounts/', include('accounts.urls')),
     path('api/confessions/', include('confessions.urls')),
