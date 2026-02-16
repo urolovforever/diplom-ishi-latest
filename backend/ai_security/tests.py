@@ -83,7 +83,7 @@ class FeatureExtractionTest(TestCase):
         self.assertEqual(vector[1], 5)
 
     def test_feature_names_count(self):
-        self.assertEqual(len(FEATURE_NAMES), 5)
+        self.assertEqual(len(FEATURE_NAMES), 9)
 
 
 class IsolationForestEngineTest(TestCase):
@@ -91,14 +91,14 @@ class IsolationForestEngineTest(TestCase):
         import numpy as np
         engine = IsolationForestEngine()
         np.random.seed(42)
-        data = np.random.randn(50, 5).tolist()
+        data = np.random.randn(50, 9).tolist()
         result = engine.train(data)
         self.assertTrue(result)
         self.assertIsNotNone(engine.model)
 
     def test_train_with_too_few_samples(self):
         engine = IsolationForestEngine()
-        data = [[1, 2, 3, 4, 5] for _ in range(5)]
+        data = [[1, 2, 3, 4, 5, 6, 7, 8, 9] for _ in range(5)]
         result = engine.train(data)
         self.assertFalse(result)
 
@@ -106,26 +106,26 @@ class IsolationForestEngineTest(TestCase):
         import numpy as np
         engine = IsolationForestEngine()
         np.random.seed(42)
-        data = np.random.randn(50, 5).tolist()
+        data = np.random.randn(50, 9).tolist()
         engine.train(data)
-        score = engine.predict([0, 0, 0, 0, 0])
+        score = engine.predict([0, 0, 0, 0, 0, 0, 0, 0, 0])
         self.assertIsInstance(score, float)
 
     def test_predict_without_training_raises(self):
         engine = IsolationForestEngine()
         with self.assertRaises(ValueError):
-            engine.predict([0, 0, 0, 0, 0])
+            engine.predict([0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     def test_is_anomaly(self):
         import numpy as np
         engine = IsolationForestEngine()
         np.random.seed(42)
-        data = np.random.randn(100, 5).tolist()
+        data = np.random.randn(100, 9).tolist()
         engine.train(data)
         # Normal point
-        score_normal = engine.predict([0, 0, 0, 0, 0])
+        score_normal = engine.predict([0, 0, 0, 0, 0, 0, 0, 0, 0])
         # Extreme outlier
-        score_outlier = engine.predict([100, 100, 100, 100, 100])
+        score_outlier = engine.predict([100, 100, 100, 100, 100, 100, 100, 100, 100])
         self.assertGreater(score_normal, score_outlier)
 
     def test_save_and_load(self):
@@ -134,7 +134,7 @@ class IsolationForestEngineTest(TestCase):
         import os
         engine = IsolationForestEngine()
         np.random.seed(42)
-        data = np.random.randn(50, 5).tolist()
+        data = np.random.randn(50, 9).tolist()
         engine.train(data)
 
         with tempfile.NamedTemporaryFile(suffix='.joblib', delete=False) as f:
@@ -143,8 +143,8 @@ class IsolationForestEngineTest(TestCase):
             engine.save(filepath)
             engine2 = IsolationForestEngine()
             engine2.load(filepath)
-            score1 = engine.predict([1, 2, 3, 4, 5])
-            score2 = engine2.predict([1, 2, 3, 4, 5])
+            score1 = engine.predict([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            score2 = engine2.predict([1, 2, 3, 4, 5, 6, 7, 8, 9])
             self.assertAlmostEqual(score1, score2, places=6)
         finally:
             os.unlink(filepath)
@@ -158,10 +158,10 @@ class IsolationForestEngineTest(TestCase):
         import numpy as np
         engine = IsolationForestEngine()
         np.random.seed(42)
-        data = np.random.randn(50, 5).tolist()
+        data = np.random.randn(50, 9).tolist()
         engine.train(data)
-        explanations = engine.explain_features([1, 2, 3, 4, 5])
-        self.assertEqual(len(explanations), 5)
+        explanations = engine.explain_features([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.assertEqual(len(explanations), 9)
         for name in FEATURE_NAMES:
             self.assertIn(name, explanations)
             self.assertIn('contribution', explanations[name])

@@ -9,6 +9,7 @@ urlpatterns = [
     path('<uuid:pk>/download/', views.DocumentDownloadView.as_view(), name='document-download'),
     path('<uuid:doc_pk>/versions/', views.DocumentVersionListCreateView.as_view(), name='document-version-list'),
     path('<uuid:doc_pk>/versions/diff/', views.DocumentVersionDiffView.as_view(), name='document-version-diff'),
+    path('<uuid:doc_pk>/versions/<int:version_number>/rollback/', views.DocumentVersionRollbackView.as_view(), name='document-version-rollback'),
     path('access-logs/', views.DocumentAccessLogListView.as_view(), name='document-access-logs'),
     path('honeypot/', views.HoneypotFileListCreateView.as_view(), name='honeypot-list'),
     path('honeypot/<uuid:pk>/', views.HoneypotFileDetailView.as_view(), name='honeypot-detail'),

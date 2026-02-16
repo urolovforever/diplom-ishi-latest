@@ -117,6 +117,41 @@ class ManualScanView(APIView):
         return Response({'detail': 'Scan initiated.'}, status=status.HTTP_202_ACCEPTED)
 
 
+class ModelEvaluationView(APIView):
+    """Evaluate the AI model and return Precision, Recall, F1 metrics."""
+    permission_classes = [IsSuperAdmin | IsITAdmin]
+
+    def get(self, request):
+        from accounts.models import CustomUser
+        from .features import extract_user_features, features_to_vector
+        from .training import ModelTrainer
+
+        users = CustomUser.objects.filter(is_active=True)
+        feature_matrix = []
+
+        for user in users:
+            features = extract_user_features(user, hours=24)
+            vector = features_to_vector(features)
+            if any(v != 0 for v in vector):
+                feature_matrix.append(vector)
+
+        if len(feature_matrix) < 10:
+            return Response({
+                'detail': 'Not enough data for evaluation.',
+                'samples': len(feature_matrix),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        trainer = ModelTrainer()
+        metrics = trainer.evaluate_model(feature_matrix)
+
+        return Response({
+            'metrics': metrics,
+            'feature_names': list(
+                __import__('ai_security.features', fromlist=['FEATURE_NAMES']).FEATURE_NAMES
+            ),
+        })
+
+
 class ReviewAnomalyView(APIView):
     permission_classes = [IsSuperAdmin | IsSecurityAuditor]
 

@@ -37,6 +37,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'ai_security.middleware.ActivityLogMiddleware',
+    'ai_security.middleware.SessionTimeoutMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
