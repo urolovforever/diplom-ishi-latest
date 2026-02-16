@@ -19,6 +19,48 @@ class AuditLogListView(generics.ListAPIView):
         return AuditLog.objects.select_related('user__role').all()
 
 
+class AuditLogExportCSVView(APIView):
+    """Export audit logs as CSV file."""
+    permission_classes = [IsSuperAdmin | IsSecurityAuditor]
+
+    def get(self, request):
+        import csv
+        import io
+
+        qs = AuditLog.objects.select_related('user').all()
+
+        # Apply filters
+        user_id = request.query_params.get('user')
+        action = request.query_params.get('action')
+        model_name = request.query_params.get('model_name')
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+        if action:
+            qs = qs.filter(action=action)
+        if model_name:
+            qs = qs.filter(model_name=model_name)
+
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(['ID', 'User', 'Action', 'Model', 'Object ID', 'Changes', 'IP Address', 'Created At'])
+
+        for log in qs[:5000]:  # Limit to 5000 rows
+            writer.writerow([
+                str(log.id),
+                log.user.email if log.user else '',
+                log.action,
+                log.model_name,
+                str(log.object_id) if log.object_id else '',
+                str(log.changes) if log.changes else '',
+                log.ip_address or '',
+                log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ])
+
+        response = HttpResponse(buffer.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="audit_logs.csv"'
+        return response
+
+
 class ReportListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsSuperAdmin | IsSecurityAuditor | IsQomitaRahbar]
     queryset = Report.objects.select_related('generated_by__role').all()

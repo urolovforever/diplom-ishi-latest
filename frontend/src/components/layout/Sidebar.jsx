@@ -5,6 +5,7 @@ const navItems = [
   { path: '/', label: 'Dashboard', roles: null },
   { path: '/confessions', label: 'Confessions', roles: null },
   { path: '/documents', label: 'Documents', roles: null },
+  { path: '/organizations', label: 'Organizations', roles: ['super_admin', 'qomita_rahbar'] },
   { path: '/notifications', label: 'Notifications', roles: null },
   { path: '/ai-dashboard', label: 'AI Dashboard', roles: ['super_admin', 'security_auditor', 'it_admin'] },
   { path: '/reports', label: 'Reports', roles: ['super_admin', 'security_auditor', 'qomita_rahbar'] },

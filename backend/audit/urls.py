@@ -5,6 +5,7 @@ app_name = 'audit'
 
 urlpatterns = [
     path('logs/', views.AuditLogListView.as_view(), name='audit-log-list'),
+    path('logs/export/', views.AuditLogExportCSVView.as_view(), name='audit-log-export'),
     path('reports/', views.ReportListCreateView.as_view(), name='report-list'),
     path('reports/<uuid:pk>/download/', views.ReportDownloadView.as_view(), name='report-download'),
 ]

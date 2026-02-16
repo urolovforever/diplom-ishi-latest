@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class ModelTrainer:
     """Handles training, retraining, and evaluation of the Isolation Forest model."""
 
-    def __init__(self, contamination=0.1, n_estimators=100, random_state=42):
+    def __init__(self, contamination=0.05, n_estimators=200, random_state=42):
         self.contamination = contamination
         self.n_estimators = n_estimators
         self.random_state = random_state

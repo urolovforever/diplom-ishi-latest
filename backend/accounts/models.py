@@ -67,6 +67,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_2fa_enabled = models.BooleanField(default=False)
     totp_secret = models.CharField(max_length=64, blank=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+    twofa_method = models.CharField(
+        max_length=10, choices=[('totp', 'TOTP'), ('sms', 'SMS')],
+        default='totp', blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
