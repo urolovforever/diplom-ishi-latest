@@ -14,18 +14,22 @@ class UserSerializer(serializers.ModelSerializer):
     role = RoleSerializer(read_only=True)
     role_id = serializers.UUIDField(write_only=True, required=False)
     full_name = serializers.SerializerMethodField()
+    has_public_key = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'role_id', 'is_active', 'is_2fa_enabled',
-            'created_at', 'updated_at',
+            'has_public_key', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_full_name(self, obj):
         return obj.get_full_name()
+
+    def get_has_public_key(self, obj):
+        return bool(obj.public_key)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -109,3 +113,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['first_name', 'last_name']
+
+
+class PublicKeySerializer(serializers.Serializer):
+    public_key = serializers.CharField()
+    encrypted_private_key = serializers.CharField(required=False)

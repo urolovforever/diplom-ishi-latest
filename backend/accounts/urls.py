@@ -15,4 +15,8 @@ urlpatterns = [
     path('password-reset/', views.PasswordResetRequestView.as_view(), name='password-reset'),
     path('password-reset/confirm/', views.PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    # E2E Encryption endpoints
+    path('e2e/keys/', views.PublicKeyView.as_view(), name='e2e-keys'),
+    path('e2e/keys/<uuid:pk>/', views.UserPublicKeyView.as_view(), name='e2e-user-key'),
+    path('e2e/recipients/', views.E2ERecipientsView.as_view(), name='e2e-recipients'),
 ]

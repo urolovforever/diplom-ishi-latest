@@ -2,16 +2,22 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDocuments, uploadDocument, deleteDocument, fetchVersions } from '../store/documentsSlice';
 import { formatDate } from '../utils/helpers';
+import { useCrypto } from '../hooks/useCrypto';
+import KeySetup from '../components/auth/KeySetup';
 
 function DocumentsPage() {
   const dispatch = useDispatch();
   const { list, count, versions, loading } = useSelector((state) => state.documents);
+  const { isE2EReady, encryptDocument } = useCrypto();
+
   const [showUpload, setShowUpload] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
+  const [useE2E, setUseE2E] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [expandedDoc, setExpandedDoc] = useState(null);
+  const [showKeySetup, setShowKeySetup] = useState(false);
 
   useEffect(() => {
     dispatch(fetchDocuments());
@@ -21,16 +27,35 @@ function DocumentsPage() {
     e.preventDefault();
     if (!file) return;
     setUploading(true);
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('file', file);
-    await dispatch(uploadDocument(formData));
-    setTitle('');
-    setDescription('');
-    setFile(null);
-    setShowUpload(false);
-    setUploading(false);
+
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+
+      if (useE2E && isE2EReady) {
+        // E2E encrypt the file
+        const { encryptedBlob, encryptedKeys } = await encryptDocument(file);
+        const encryptedFile = new File([encryptedBlob], file.name, {
+          type: 'application/octet-stream',
+        });
+        formData.append('file', encryptedFile);
+        formData.append('is_e2e_encrypted', 'true');
+        formData.append('encrypted_keys', JSON.stringify(encryptedKeys));
+      } else {
+        formData.append('file', file);
+      }
+
+      await dispatch(uploadDocument(formData));
+      setTitle('');
+      setDescription('');
+      setFile(null);
+      setShowUpload(false);
+    } catch (err) {
+      alert('Upload failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -49,6 +74,21 @@ function DocumentsPage() {
       }
     }
   };
+
+  if (showKeySetup) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Set Up E2E Encryption</h1>
+        <KeySetup onComplete={() => setShowKeySetup(false)} />
+        <button
+          onClick={() => setShowKeySetup(false)}
+          className="mt-4 text-gray-600 hover:text-gray-800 text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -92,6 +132,38 @@ function DocumentsPage() {
               required
             />
           </div>
+
+          <div className="mb-4 p-3 bg-gray-50 rounded">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useE2E}
+                onChange={(e) => setUseE2E(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                End-to-End Encryption
+              </span>
+            </label>
+            {useE2E && !isE2EReady && (
+              <div className="mt-2 text-sm text-yellow-600">
+                E2E encryption is not set up.{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowKeySetup(true)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Set up now
+                </button>
+              </div>
+            )}
+            {useE2E && isE2EReady && (
+              <p className="mt-1 text-xs text-green-600">
+                File will be encrypted in your browser before uploading.
+              </p>
+            )}
+          </div>
+
           <button
             type="submit"
             disabled={uploading}
@@ -112,6 +184,7 @@ function DocumentsPage() {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Title</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Uploaded By</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">E2E</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
@@ -131,6 +204,13 @@ function DocumentsPage() {
                     {formatDate(doc.created_at)}
                   </td>
                   <td className="px-4 py-3 text-sm">
+                    {doc.is_e2e_encrypted ? (
+                      <span className="text-green-600 font-medium">Yes</span>
+                    ) : (
+                      <span className="text-gray-400">No</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
                     <button
                       onClick={() => toggleVersions(doc.id)}
                       className="text-blue-600 hover:underline mr-3"
@@ -148,7 +228,7 @@ function DocumentsPage() {
               ))}
               {expandedDoc && versions[expandedDoc] && (
                 <tr>
-                  <td colSpan="4" className="px-4 py-3 bg-gray-50">
+                  <td colSpan="5" className="px-4 py-3 bg-gray-50">
                     <p className="text-sm font-medium text-gray-600 mb-2">Version History</p>
                     {versions[expandedDoc].length > 0 ? (
                       <ul className="text-sm text-gray-500 space-y-1">
@@ -166,7 +246,7 @@ function DocumentsPage() {
               )}
               {list.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
                     No documents found.
                   </td>
                 </tr>

@@ -39,6 +39,7 @@ class Confession(models.Model):
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     is_anonymous = models.BooleanField(default=False)
+    is_e2e_encrypted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,3 +48,22 @@ class Confession(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ConfessionEncryptedKey(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    confession = models.ForeignKey(
+        Confession, on_delete=models.CASCADE, related_name='encrypted_keys',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='confession_encrypted_keys',
+    )
+    encrypted_key = models.TextField()  # Base64 encoded RSA-encrypted symmetric key
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['confession', 'user']
+
+    def __str__(self):
+        return f'EncKey: {self.confession.title} -> {self.user.email}'

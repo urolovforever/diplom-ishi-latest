@@ -8,6 +8,8 @@ import {
   fetchOrganizations,
   clearCurrent,
 } from '../store/confessionsSlice';
+import { useCrypto } from '../hooks/useCrypto';
+import KeySetup from '../components/auth/KeySetup';
 
 function CreateConfessionPage() {
   const { id } = useParams();
@@ -15,13 +17,16 @@ function CreateConfessionPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { current, organizations } = useSelector((state) => state.confessions);
+  const { isE2EReady, hasPublicKey, encryptConfession } = useCrypto();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [organization, setOrganization] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [useE2E, setUseE2E] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [showKeySetup, setShowKeySetup] = useState(false);
 
   useEffect(() => {
     dispatch(fetchOrganizations());
@@ -45,9 +50,25 @@ function CreateConfessionPage() {
     setSubmitting(true);
     setError(null);
 
-    const data = { title, content, organization, is_anonymous: isAnonymous };
-
     try {
+      let data;
+
+      if (useE2E && isE2EReady && !isEdit) {
+        // E2E encrypt the confession
+        const { encryptedContent, encryptedKeys } = await encryptConfession(content, organization);
+        data = {
+          title,
+          content: encryptedContent,
+          organization,
+          is_anonymous: isAnonymous,
+          is_e2e_encrypted: true,
+          encrypted_keys: encryptedKeys,
+        };
+      } else {
+        // Plain text (backwards compatible)
+        data = { title, content, organization, is_anonymous: isAnonymous };
+      }
+
       let result;
       if (isEdit) {
         result = await dispatch(updateConfession({ id, data }));
@@ -63,6 +84,21 @@ function CreateConfessionPage() {
       setSubmitting(false);
     }
   };
+
+  if (showKeySetup) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Set Up E2E Encryption</h1>
+        <KeySetup onComplete={() => setShowKeySetup(false)} />
+        <button
+          onClick={() => setShowKeySetup(false)}
+          className="mt-4 text-gray-600 hover:text-gray-800 text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -112,7 +148,7 @@ function CreateConfessionPage() {
           </select>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -123,6 +159,39 @@ function CreateConfessionPage() {
             <span className="text-sm text-gray-700">Submit anonymously</span>
           </label>
         </div>
+
+        {!isEdit && (
+          <div className="mb-6 p-3 bg-gray-50 rounded">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useE2E}
+                onChange={(e) => setUseE2E(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                End-to-End Encryption
+              </span>
+            </label>
+            {useE2E && !isE2EReady && (
+              <div className="mt-2 text-sm text-yellow-600">
+                E2E encryption is not set up yet.{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowKeySetup(true)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Set up now
+                </button>
+              </div>
+            )}
+            {useE2E && isE2EReady && (
+              <p className="mt-1 text-xs text-green-600">
+                Content will be encrypted in your browser before sending.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2">
           <button

@@ -59,6 +59,25 @@ class DocumentVersion(models.Model):
         return f'{self.document.title} v{self.version_number}'
 
 
+class DocumentEncryptedKey(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name='encrypted_keys',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='document_encrypted_keys',
+    )
+    encrypted_key = models.TextField()  # Base64 encoded RSA-encrypted symmetric key
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['document', 'user']
+
+    def __str__(self):
+        return f'EncKey: {self.document.title} -> {self.user.email}'
+
+
 class DocumentAccessLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='access_logs')
