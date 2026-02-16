@@ -57,9 +57,15 @@ class LoginView(APIView):
         user = serializer.validated_data['user']
 
         if user.is_2fa_enabled and user.totp_secret:
+            # Send SMS code if user prefers SMS 2FA
+            if user.twofa_method == 'sms' and user.phone_number:
+                from .sms import create_and_send_sms_code
+                create_and_send_sms_code(user)
+
             return Response({
                 'requires_2fa': True,
                 'user_id': str(user.id),
+                'twofa_method': user.twofa_method or 'totp',
             }, status=status.HTTP_200_OK)
 
         SecurityManager.record_login_attempt(email, ip_address, user_agent, True, user)
@@ -107,7 +113,15 @@ class Verify2FAView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not verify_totp(user.totp_secret, serializer.validated_data['token']):
+        # Verify based on 2FA method
+        token_value = serializer.validated_data['token']
+        if user.twofa_method == 'sms':
+            from .sms import verify_sms_code
+            valid = verify_sms_code(user, token_value)
+        else:
+            valid = verify_totp(user.totp_secret, token_value)
+
+        if not valid:
             return Response(
                 {'detail': 'Invalid 2FA token.'},
                 status=status.HTTP_400_BAD_REQUEST,

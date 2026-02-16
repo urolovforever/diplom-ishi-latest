@@ -110,8 +110,8 @@ REST_FRAMEWORK = {
 
 # JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME', 30))),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME', 1440))),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME', 15))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 7))),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -201,13 +201,19 @@ CORS_ALLOWED_ORIGINS = [
 # AI Security
 AI_SECURITY = {
     'ISOLATION_FOREST': {
-        'CONTAMINATION': 0.1,
-        'N_ESTIMATORS': 100,
+        'CONTAMINATION': 0.05,
+        'N_ESTIMATORS': 200,
         'THRESHOLD': -0.5,
     },
     'SCAN_INTERVAL_MINUTES': 15,
     'LOG_RETENTION_DAYS': 90,
 }
+
+# SMS 2FA
+SMS_BACKEND = os.environ.get('SMS_BACKEND', 'console')  # 'console', 'twilio'
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')

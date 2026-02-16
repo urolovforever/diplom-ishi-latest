@@ -10,6 +10,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ProfilePage from './pages/ProfilePage';
 import UserManagementPage from './pages/UserManagementPage';
 import UserDetailPage from './pages/UserDetailPage';
+import OrganizationsPage from './pages/OrganizationsPage';
 import PasswordResetRequestPage from './pages/PasswordResetRequestPage';
 import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
 import AIDashboardPage from './pages/AIDashboardPage';
@@ -40,6 +41,14 @@ function App() {
         <Route path="confessions/:id" element={<ConfessionDetailPage />} />
         <Route path="confessions/:id/edit" element={<CreateConfessionPage />} />
         <Route path="documents" element={<DocumentsPage />} />
+        <Route
+          path="organizations"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar']}>
+              <OrganizationsPage />
+            </RoleBasedRoute>
+          }
+        />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route
