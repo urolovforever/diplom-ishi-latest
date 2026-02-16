@@ -20,6 +20,7 @@ import AuditLogPage from './pages/AuditLogPage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleBasedRoute from './components/auth/RoleBasedRoute';
+import KeySetup from './components/auth/KeySetup';
 
 function App() {
   return (
@@ -31,7 +32,9 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <MainLayout />
+            <KeySetup>
+              <MainLayout />
+            </KeySetup>
           </ProtectedRoute>
         }
       >

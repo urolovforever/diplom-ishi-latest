@@ -5,6 +5,7 @@ import documentsReducer from './documentsSlice';
 import notificationsReducer from './notificationsSlice';
 import aiReducer from './aiSlice';
 import uiReducer from './uiSlice';
+import cryptoReducer from './cryptoSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,5 +15,6 @@ export const store = configureStore({
     notifications: notificationsReducer,
     ai: aiReducer,
     ui: uiReducer,
+    crypto: cryptoReducer,
   },
 });
