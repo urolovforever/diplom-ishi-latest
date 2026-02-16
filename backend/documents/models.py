@@ -31,6 +31,7 @@ class Document(models.Model):
         related_name='documents', null=True, blank=True,
     )
     is_encrypted = models.BooleanField(default=True)
+    is_e2e_encrypted = models.BooleanField(default=False)
     security_level = models.CharField(max_length=20, choices=SECURITY_LEVELS, default='internal')
     category = models.CharField(max_length=20, choices=CATEGORIES, default='other')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -38,6 +39,23 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class DocumentEncryptedKey(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(
+        Document, on_delete=models.CASCADE, related_name='encrypted_keys',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='document_encrypted_keys',
+    )
+    encrypted_key = models.TextField()
+
+    class Meta:
+        unique_together = ['document', 'user']
+
+    def __str__(self):
+        return f'{self.document.title} - {self.user.email}'
 
 
 class DocumentVersion(models.Model):

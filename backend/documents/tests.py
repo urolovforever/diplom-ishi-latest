@@ -157,6 +157,53 @@ class DocumentVisibilityTest(DocumentTestBase):
         self.assertNotIn('Secret', titles)
 
 
+class DocumentE2EEncryptionTest(DocumentTestBase):
+    def test_create_e2e_encrypted_document(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        response = self.client.post('/api/documents/', {
+            'title': 'E2E Doc',
+            'file': self._make_file(),
+            'is_e2e_encrypted': True,
+        }, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data['is_e2e_encrypted'])
+
+    def test_e2e_document_returns_encrypted_keys(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        from documents.models import DocumentEncryptedKey
+        doc = Document.objects.create(
+            title='E2E Doc', file='test.txt', uploaded_by=member,
+            is_e2e_encrypted=True,
+        )
+        DocumentEncryptedKey.objects.create(
+            document=doc, user=member, encrypted_key='dockey123',
+        )
+        response = self.client.get(f'/api/documents/{doc.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['is_e2e_encrypted'])
+        self.assertEqual(len(response.data['encrypted_keys']), 1)
+        self.assertEqual(response.data['encrypted_keys'][0]['encrypted_key'], 'dockey123')
+
+    def test_is_e2e_encrypted_default_false(self):
+        self._create_and_login('m@test.com', self.member_role)
+        response = self.client.post('/api/documents/', {
+            'title': 'Normal Doc',
+            'file': self._make_file(),
+        }, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(response.data['is_e2e_encrypted'])
+
+    def test_non_e2e_document_has_empty_keys(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        doc = Document.objects.create(
+            title='Normal Doc', file='test.txt', uploaded_by=member,
+        )
+        response = self.client.get(f'/api/documents/{doc.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['is_e2e_encrypted'])
+        self.assertEqual(len(response.data['encrypted_keys']), 0)
+
+
 class DocumentVersionTest(DocumentTestBase):
     def test_list_versions(self):
         user = self._create_and_login('m@test.com', self.member_role)

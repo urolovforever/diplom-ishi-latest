@@ -760,6 +760,93 @@ class SeedDataCommandTest(TestCase):
         self.assertEqual(CustomUser.objects.count(), count)
 
 
+class PublicKeyViewTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = CustomUser.objects.create_user(
+            email='crypto@example.com',
+            password='TestPass123!@#',
+            first_name='Crypto',
+            last_name='User',
+        )
+        response = self.client.post('/api/accounts/login/', {
+            'email': 'crypto@example.com',
+            'password': 'TestPass123!@#',
+        })
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
+
+    def test_save_public_key(self):
+        response = self.client.post('/api/accounts/public-key/', {
+            'public_key': '{"kty":"RSA","n":"test"}',
+            'encrypted_private_key': '{"encrypted":"data"}',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['has_keys'])
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.public_key, '{"kty":"RSA","n":"test"}')
+
+    def test_get_own_keys(self):
+        self.user.public_key = '{"kty":"RSA","n":"test"}'
+        self.user.encrypted_private_key = '{"encrypted":"data"}'
+        self.user.save()
+        response = self.client.get('/api/accounts/public-key/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['has_keys'])
+        self.assertEqual(response.data['public_key'], '{"kty":"RSA","n":"test"}')
+
+    def test_get_keys_when_none(self):
+        response = self.client.get('/api/accounts/public-key/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['has_keys'])
+
+    def test_save_requires_public_key(self):
+        response = self.client.post('/api/accounts/public-key/', {})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_unauthenticated_denied(self):
+        self.client.credentials()
+        response = self.client.get('/api/accounts/public-key/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class UserPublicKeyViewTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = CustomUser.objects.create_user(
+            email='viewer@example.com',
+            password='TestPass123!@#',
+            first_name='Viewer',
+            last_name='User',
+        )
+        self.target = CustomUser.objects.create_user(
+            email='target@example.com',
+            password='TestPass123!@#',
+            first_name='Target',
+            last_name='User',
+            public_key='{"kty":"RSA","n":"targetkey"}',
+        )
+        response = self.client.post('/api/accounts/login/', {
+            'email': 'viewer@example.com',
+            'password': 'TestPass123!@#',
+        })
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
+
+    def test_get_user_public_key(self):
+        response = self.client.get(f'/api/accounts/users/{self.target.id}/public-key/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['public_key'], '{"kty":"RSA","n":"targetkey"}')
+        self.assertEqual(response.data['user_id'], str(self.target.id))
+
+    def test_get_nonexistent_user_key(self):
+        response = self.client.get('/api/accounts/users/00000000-0000-0000-0000-000000000000/public-key/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_unauthenticated_denied(self):
+        self.client.credentials()
+        response = self.client.get(f'/api/accounts/users/{self.target.id}/public-key/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
 class HealthCheckTest(APITestCase):
     def test_health_check_returns_status(self):
         response = self.client.get('/api/health/')
