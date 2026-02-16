@@ -14,6 +14,12 @@ const authAPI = {
   updateProfile: (data) => api.put('/accounts/profile/', data),
   requestPasswordReset: (email) => api.post('/accounts/password-reset/', { email }),
   confirmPasswordReset: (data) => api.post('/accounts/password-reset/confirm/', data),
+  getTelegramConfig: () => api.get('/notifications/telegram-config/'),
+  updateTelegramConfig: (data) => api.put('/notifications/telegram-config/', data),
+  getAlertRules: (params) => api.get('/notifications/alert-rules/', { params }),
+  createAlertRule: (data) => api.post('/notifications/alert-rules/', data),
+  updateAlertRule: (id, data) => api.patch(`/notifications/alert-rules/${id}/`, data),
+  deleteAlertRule: (id) => api.delete(`/notifications/alert-rules/${id}/`),
 };
 
 export default authAPI;

@@ -7,9 +7,10 @@ from django.utils import timezone
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
-from .models import CustomUser, PasswordResetToken, Role, UserSession
+from .models import CustomUser, LoginAttempt, PasswordHistory, PasswordResetToken, Role, UserSession
 from .validators import validate_password_strength
 from .authentication import generate_totp_secret, verify_totp
+from .security import SecurityManager
 
 
 class RoleModelTest(TestCase):
@@ -22,6 +23,14 @@ class RoleModelTest(TestCase):
         Role.objects.create(name=Role.MEMBER)
         with self.assertRaises(Exception):
             Role.objects.create(name=Role.MEMBER)
+
+    def test_seven_role_choices(self):
+        self.assertEqual(len(Role.ROLE_CHOICES), 7)
+
+    def test_new_role_constants(self):
+        self.assertEqual(Role.SECURITY_AUDITOR, 'security_auditor')
+        self.assertEqual(Role.PSYCHOLOGIST, 'psychologist')
+        self.assertEqual(Role.IT_ADMIN, 'it_admin')
 
 
 class CustomUserManagerTest(TestCase):
@@ -101,6 +110,23 @@ class CustomUserModelTest(TestCase):
         self.assertIsNotNone(self.user.id)
         self.assertEqual(len(str(self.user.id)), 36)
 
+    def test_is_locked_false_by_default(self):
+        self.assertFalse(self.user.is_locked)
+
+    def test_is_locked_when_locked_until_in_future(self):
+        self.user.locked_until = timezone.now() + timedelta(minutes=30)
+        self.assertTrue(self.user.is_locked)
+
+    def test_is_locked_false_when_expired(self):
+        self.user.locked_until = timezone.now() - timedelta(minutes=1)
+        self.assertFalse(self.user.is_locked)
+
+    def test_security_fields_defaults(self):
+        self.assertIsNone(self.user.password_changed_at)
+        self.assertFalse(self.user.must_change_password)
+        self.assertEqual(self.user.failed_login_count, 0)
+        self.assertIsNone(self.user.locked_until)
+
 
 class PasswordValidatorTest(TestCase):
     def test_valid_password(self):
@@ -143,6 +169,82 @@ class TOTPAuthenticationTest(TestCase):
     def test_verify_totp_invalid(self):
         secret = generate_totp_secret()
         self.assertFalse(verify_totp(secret, '000000'))
+
+
+class SecurityManagerTest(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            email='sec@example.com',
+            password='TestPass123!@#',
+            first_name='Sec',
+            last_name='User',
+        )
+
+    def test_save_and_check_password_history(self):
+        SecurityManager.save_password_history(self.user)
+        self.assertTrue(SecurityManager.check_password_history(self.user, 'TestPass123!@#'))
+        self.assertFalse(SecurityManager.check_password_history(self.user, 'DifferentPass1!@'))
+
+    def test_password_history_limit(self):
+        # Save 6 passwords, only last 5 should be checked
+        passwords = [f'Password{i}!@#A' for i in range(6)]
+        for pw in passwords:
+            self.user.set_password(pw)
+            self.user.save()
+            SecurityManager.save_password_history(self.user)
+
+        # Oldest (first) password should not be in history check
+        self.assertFalse(SecurityManager.check_password_history(self.user, passwords[0]))
+
+    def test_check_password_expiry_not_expired(self):
+        self.user.password_changed_at = timezone.now()
+        self.assertFalse(SecurityManager.check_password_expiry(self.user))
+
+    def test_check_password_expiry_expired(self):
+        self.user.password_changed_at = timezone.now() - timedelta(days=91)
+        self.assertTrue(SecurityManager.check_password_expiry(self.user))
+
+    def test_check_password_expiry_no_date(self):
+        self.user.password_changed_at = None
+        self.assertFalse(SecurityManager.check_password_expiry(self.user))
+
+    def test_record_login_attempt_success(self):
+        SecurityManager.record_login_attempt('sec@example.com', '127.0.0.1', '', True, self.user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.failed_login_count, 0)
+        self.assertIsNone(self.user.locked_until)
+        self.assertEqual(LoginAttempt.objects.count(), 1)
+
+    def test_record_login_attempt_failure(self):
+        SecurityManager.record_login_attempt('sec@example.com', '127.0.0.1', '', False, self.user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.failed_login_count, 1)
+
+    def test_account_lockout_after_5_failures(self):
+        for _ in range(5):
+            SecurityManager.record_login_attempt('sec@example.com', '127.0.0.1', '', False, self.user)
+            self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.locked_until)
+        self.assertTrue(SecurityManager.check_account_lockout(self.user))
+
+    def test_lockout_expires(self):
+        self.user.locked_until = timezone.now() - timedelta(minutes=1)
+        self.user.failed_login_count = 5
+        self.user.save()
+        self.assertFalse(SecurityManager.check_account_lockout(self.user))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.failed_login_count, 0)
+
+    def test_enforce_session_limit(self):
+        for i in range(5):
+            UserSession.objects.create(
+                user=self.user,
+                refresh_token=f'token_{i}',
+                expires_at=timezone.now() + timedelta(days=1),
+            )
+        SecurityManager.enforce_session_limit(self.user)
+        active = UserSession.objects.filter(user=self.user, is_active=True).count()
+        self.assertLessEqual(active, 3)
 
 
 class LoginViewTest(APITestCase):
@@ -208,6 +310,41 @@ class LoginViewTest(APITestCase):
             'password': 'TestPass123!@#',
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_locked_account(self):
+        self.user.locked_until = timezone.now() + timedelta(minutes=30)
+        self.user.save()
+        response = self.client.post(self.login_url, {
+            'email': 'login@example.com',
+            'password': 'TestPass123!@#',
+        })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_login_records_attempt(self):
+        self.client.post(self.login_url, {
+            'email': 'login@example.com',
+            'password': 'TestPass123!@#',
+        })
+        self.assertEqual(LoginAttempt.objects.filter(email='login@example.com').count(), 1)
+
+    def test_login_failed_records_attempt(self):
+        self.client.post(self.login_url, {
+            'email': 'login@example.com',
+            'password': 'wrongpassword',
+        })
+        attempt = LoginAttempt.objects.filter(email='login@example.com').first()
+        self.assertIsNotNone(attempt)
+        self.assertFalse(attempt.success)
+
+    def test_login_password_expiry_flag(self):
+        self.user.password_changed_at = timezone.now() - timedelta(days=91)
+        self.user.save()
+        response = self.client.post(self.login_url, {
+            'email': 'login@example.com',
+            'password': 'TestPass123!@#',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data.get('must_change_password'))
 
 
 class Verify2FAViewTest(APITestCase):
@@ -316,6 +453,40 @@ class ChangePasswordViewTest(APITestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_change_password_saves_history(self):
+        self.client.post('/api/accounts/change-password/', {
+            'old_password': 'OldPass123!@#$',
+            'new_password': 'NewPass456!@#$',
+        })
+        self.assertEqual(PasswordHistory.objects.filter(user=self.user).count(), 1)
+
+    def test_change_password_blocks_reuse(self):
+        # Change password first time
+        self.client.post('/api/accounts/change-password/', {
+            'old_password': 'OldPass123!@#$',
+            'new_password': 'NewPass456!@#$',
+        })
+        # Re-login with new password
+        response = self.client.post('/api/accounts/login/', {
+            'email': 'changepass@example.com',
+            'password': 'NewPass456!@#$',
+        })
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
+        # Try to reuse old password
+        response = self.client.post('/api/accounts/change-password/', {
+            'old_password': 'NewPass456!@#$',
+            'new_password': 'OldPass123!@#$',
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_sets_changed_at(self):
+        self.client.post('/api/accounts/change-password/', {
+            'old_password': 'OldPass123!@#$',
+            'new_password': 'NewPass456!@#$',
+        })
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.password_changed_at)
+
 
 class UserListViewTest(APITestCase):
     def setUp(self):
@@ -379,6 +550,9 @@ class PermissionsTest(APITestCase):
         self.qomita_role = Role.objects.create(name=Role.QOMITA_RAHBAR)
         self.leader_role = Role.objects.create(name=Role.CONFESSION_LEADER)
         self.member_role = Role.objects.create(name=Role.MEMBER)
+        self.auditor_role = Role.objects.create(name=Role.SECURITY_AUDITOR)
+        self.psych_role = Role.objects.create(name=Role.PSYCHOLOGIST)
+        self.it_admin_role = Role.objects.create(name=Role.IT_ADMIN)
 
     def _create_and_login(self, email, role):
         user = CustomUser.objects.create_user(
@@ -414,6 +588,31 @@ class PermissionsTest(APITestCase):
         self._create_and_login('m@test.com', self.member_role)
         response = self.client.get('/api/accounts/users/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_security_auditor_can_access_audit_logs(self):
+        self._create_and_login('aud@test.com', self.auditor_role)
+        response = self.client.get('/api/audit/logs/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_security_auditor_can_access_anomaly_reports(self):
+        self._create_and_login('aud@test.com', self.auditor_role)
+        response = self.client.get('/api/ai-security/anomaly-reports/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_it_admin_can_access_ai_configs(self):
+        self._create_and_login('it@test.com', self.it_admin_role)
+        response = self.client.get('/api/ai-security/ai-configs/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_psychologist_can_access_confessions(self):
+        self._create_and_login('psych@test.com', self.psych_role)
+        response = self.client.get('/api/confessions/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_security_auditor_can_access_documents(self):
+        self._create_and_login('aud@test.com', self.auditor_role)
+        response = self.client.get('/api/documents/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class ProfileViewTest(APITestCase):
@@ -527,18 +726,21 @@ class PasswordResetViewTest(APITestCase):
 
 
 class SeedRolesCommandTest(TestCase):
-    def test_seed_roles_creates_four_roles(self):
+    def test_seed_roles_creates_seven_roles(self):
         call_command('seed_roles')
-        self.assertEqual(Role.objects.count(), 4)
+        self.assertEqual(Role.objects.count(), 7)
         self.assertTrue(Role.objects.filter(name='super_admin').exists())
         self.assertTrue(Role.objects.filter(name='qomita_rahbar').exists())
         self.assertTrue(Role.objects.filter(name='confession_leader').exists())
         self.assertTrue(Role.objects.filter(name='member').exists())
+        self.assertTrue(Role.objects.filter(name='security_auditor').exists())
+        self.assertTrue(Role.objects.filter(name='psychologist').exists())
+        self.assertTrue(Role.objects.filter(name='it_admin').exists())
 
     def test_seed_roles_idempotent(self):
         call_command('seed_roles')
         call_command('seed_roles')
-        self.assertEqual(Role.objects.count(), 4)
+        self.assertEqual(Role.objects.count(), 7)
 
 
 class SeedDataCommandTest(TestCase):
@@ -546,7 +748,10 @@ class SeedDataCommandTest(TestCase):
         call_command('seed_data')
         self.assertTrue(CustomUser.objects.filter(email='admin@scp.local').exists())
         self.assertTrue(CustomUser.objects.filter(email='member@scp.local').exists())
-        self.assertEqual(Role.objects.count(), 4)
+        self.assertTrue(CustomUser.objects.filter(email='auditor@scp.local').exists())
+        self.assertTrue(CustomUser.objects.filter(email='psychologist@scp.local').exists())
+        self.assertTrue(CustomUser.objects.filter(email='itadmin@scp.local').exists())
+        self.assertEqual(Role.objects.count(), 7)
 
     def test_seed_data_idempotent(self):
         call_command('seed_data')

@@ -42,7 +42,15 @@ class AnomalyReport(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='anomaly_reports',
     )
+    anomaly_score = models.FloatField(null=True, blank=True)
+    features = models.JSONField(default=dict, blank=True)
+    is_false_positive = models.BooleanField(default=False)
     is_resolved = models.BooleanField(default=False)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='reviewed_anomalies',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
     detected_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 
@@ -59,6 +67,10 @@ class AIModelConfig(models.Model):
     model_type = models.CharField(max_length=100)
     parameters = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
+    model_file_path = models.CharField(max_length=500, blank=True)
+    last_trained_at = models.DateTimeField(null=True, blank=True)
+    training_samples_count = models.IntegerField(default=0)
+    threshold = models.FloatField(default=-0.5)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

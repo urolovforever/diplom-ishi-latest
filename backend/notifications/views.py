@@ -3,9 +3,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin
-from .models import Notification, AlertConfig
-from .serializers import NotificationSerializer, MarkReadSerializer, AlertConfigSerializer
+from accounts.permissions import IsSuperAdmin, IsITAdmin
+from .models import Notification, AlertConfig, TelegramConfig, AlertRule
+from .serializers import (
+    NotificationSerializer, MarkReadSerializer,
+    AlertConfigSerializer, TelegramConfigSerializer, AlertRuleSerializer,
+)
 
 
 class NotificationListView(generics.ListAPIView):
@@ -66,3 +69,45 @@ class AlertConfigDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsSuperAdmin]
     queryset = AlertConfig.objects.all()
     lookup_field = 'pk'
+
+
+class AlertRuleListCreateView(generics.ListCreateAPIView):
+    serializer_class = AlertRuleSerializer
+    permission_classes = [IsSuperAdmin | IsITAdmin]
+    queryset = AlertRule.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class AlertRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AlertRuleSerializer
+    permission_classes = [IsSuperAdmin | IsITAdmin]
+    queryset = AlertRule.objects.all()
+    lookup_field = 'pk'
+
+
+class TelegramConfigView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            config = TelegramConfig.objects.get(user=request.user)
+            return Response(TelegramConfigSerializer(config).data)
+        except TelegramConfig.DoesNotExist:
+            return Response({'detail': 'Not configured.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request):
+        config, created = TelegramConfig.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'chat_id': request.data.get('chat_id', ''),
+                'alert_types': request.data.get('alert_types', []),
+            },
+        )
+        if not created:
+            serializer = TelegramConfigSerializer(config, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        return Response(TelegramConfigSerializer(config).data, status=status.HTTP_201_CREATED)

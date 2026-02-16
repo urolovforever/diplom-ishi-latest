@@ -50,6 +50,8 @@ class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
         qs = Confession.objects.select_related('author__role', 'organization').all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
             return qs
+        if user.role and user.role.name == Role.PSYCHOLOGIST:
+            return qs  # Read-only access to all confessions
         if user.role and user.role.name == Role.CONFESSION_LEADER:
             # Leaders see confessions in orgs they lead + their own
             return qs.filter(Q(organization__leader=user) | Q(author=user))
@@ -76,6 +78,8 @@ class ConfessionDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
         qs = Confession.objects.select_related('author__role', 'organization').all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
             return qs
+        if user.role and user.role.name == Role.PSYCHOLOGIST:
+            return qs  # Read-only access
         if user.role and user.role.name == Role.CONFESSION_LEADER:
             return qs.filter(Q(organization__leader=user) | Q(author=user))
         return qs.filter(author=user)

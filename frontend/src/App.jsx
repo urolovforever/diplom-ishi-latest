@@ -11,6 +11,10 @@ import ProfilePage from './pages/ProfilePage';
 import UserManagementPage from './pages/UserManagementPage';
 import PasswordResetRequestPage from './pages/PasswordResetRequestPage';
 import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
+import AIDashboardPage from './pages/AIDashboardPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
+import AuditLogPage from './pages/AuditLogPage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleBasedRoute from './components/auth/RoleBasedRoute';
@@ -42,6 +46,38 @@ function App() {
           element={
             <RoleBasedRoute allowedRoles={['super_admin']}>
               <UserManagementPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="ai-dashboard"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin', 'security_auditor', 'it_admin']}>
+              <AIDashboardPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin', 'security_auditor', 'qomita_rahbar']}>
+              <ReportsPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="audit-log"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin', 'security_auditor']}>
+              <AuditLogPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin', 'it_admin']}>
+              <SettingsPage />
             </RoleBasedRoute>
           }
         />

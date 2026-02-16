@@ -5,6 +5,9 @@ export const ROLES = {
   QOMITA_RAHBAR: 'qomita_rahbar',
   CONFESSION_LEADER: 'confession_leader',
   MEMBER: 'member',
+  SECURITY_AUDITOR: 'security_auditor',
+  PSYCHOLOGIST: 'psychologist',
+  IT_ADMIN: 'it_admin',
 };
 
 export const CONFESSION_STATUS = {
@@ -13,4 +16,19 @@ export const CONFESSION_STATUS = {
   UNDER_REVIEW: 'under_review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+};
+
+export const SECURITY_LEVELS = {
+  PUBLIC: 'public',
+  INTERNAL: 'internal',
+  CONFIDENTIAL: 'confidential',
+  SECRET: 'secret',
+};
+
+export const DOCUMENT_CATEGORIES = {
+  CONFESSION_DOC: 'confession_doc',
+  EVIDENCE: 'evidence',
+  REPORT: 'report',
+  LEGAL: 'legal',
+  OTHER: 'other',
 };

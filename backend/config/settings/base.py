@@ -122,7 +122,25 @@ CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_BEAT_SCHEDULE = {}
+CELERY_BEAT_SCHEDULE = {
+    'train-isolation-forest': {
+        'task': 'ai_security.tasks.train_isolation_forest',
+        'schedule': 60 * 60 * 24,  # Daily
+        'options': {'queue': 'default'},
+    },
+    'scan-recent-activity': {
+        'task': 'ai_security.tasks.scan_recent_activity',
+        'schedule': 60 * 15,  # Every 15 minutes
+    },
+    'cleanup-old-logs': {
+        'task': 'ai_security.tasks.cleanup_old_logs',
+        'schedule': 60 * 60 * 24 * 7,  # Weekly
+    },
+    'check-alert-thresholds': {
+        'task': 'notifications.tasks.check_alert_thresholds',
+        'schedule': 60 * 5,  # Every 5 minutes
+    },
+}
 
 # Email
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
@@ -178,3 +196,18 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://localhost:3000',
 ]
+
+# AI Security
+AI_SECURITY = {
+    'ISOLATION_FOREST': {
+        'CONTAMINATION': 0.1,
+        'N_ESTIMATORS': 100,
+        'THRESHOLD': -0.5,
+    },
+    'SCAN_INTERVAL_MINUTES': 15,
+    'LOG_RETENTION_DAYS': 90,
+}
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_DEFAULT_CHAT_ID = os.environ.get('TELEGRAM_DEFAULT_CHAT_ID', '')

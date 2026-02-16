@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Notification, AlertConfig
+from .models import Notification, AlertConfig, TelegramConfig, AlertRule
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -25,3 +25,24 @@ class AlertConfigSerializer(serializers.ModelSerializer):
             'threshold', 'created_by', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+
+class TelegramConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TelegramConfig
+        fields = [
+            'id', 'user', 'chat_id', 'is_active', 'alert_types',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+
+class AlertRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AlertRule
+        fields = [
+            'id', 'name', 'condition_type', 'threshold', 'action',
+            'is_active', 'last_triggered_at', 'created_by',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'last_triggered_at', 'created_at', 'updated_at']

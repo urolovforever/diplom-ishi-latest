@@ -11,12 +11,18 @@ class Role(models.Model):
     QOMITA_RAHBAR = 'qomita_rahbar'
     CONFESSION_LEADER = 'confession_leader'
     MEMBER = 'member'
+    SECURITY_AUDITOR = 'security_auditor'
+    PSYCHOLOGIST = 'psychologist'
+    IT_ADMIN = 'it_admin'
 
     ROLE_CHOICES = [
         (SUPER_ADMIN, 'Super Admin'),
         (QOMITA_RAHBAR, 'Qomita Rahbar'),
         (CONFESSION_LEADER, 'Confession Leader'),
         (MEMBER, 'Member'),
+        (SECURITY_AUDITOR, 'Security Auditor'),
+        (PSYCHOLOGIST, 'Psychologist'),
+        (IT_ADMIN, 'IT Admin'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -64,6 +70,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    password_changed_at = models.DateTimeField(null=True, blank=True)
+    must_change_password = models.BooleanField(default=False)
+    failed_login_count = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
@@ -77,6 +88,41 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def get_full_name(self):
         return f'{self.first_name} {self.last_name}'.strip()
+
+    @property
+    def is_locked(self):
+        if self.locked_until and timezone.now() < self.locked_until:
+            return True
+        return False
+
+
+class PasswordHistory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='password_history')
+    password_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user.email} - {self.created_at}'
+
+
+class LoginAttempt(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='login_attempts')
+    email = models.EmailField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    success = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.email} - {"OK" if self.success else "FAIL"} - {self.created_at}'
 
 
 class UserSession(models.Model):

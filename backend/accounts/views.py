@@ -11,6 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .authentication import verify_totp
 from .models import CustomUser, PasswordResetToken, UserSession
 from .permissions import IsSuperAdmin
+from .security import SecurityManager
 from .serializers import (
     ChangePasswordSerializer,
     InviteSerializer,
@@ -28,8 +29,31 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        email = request.data.get('email', '')
+        password = request.data.get('password', '')
+        ip_address = request.META.get('REMOTE_ADDR')
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        # Check if user exists and is locked
+        try:
+            user = CustomUser.objects.get(email=email)
+            if SecurityManager.check_account_lockout(user):
+                SecurityManager.record_login_attempt(email, ip_address, user_agent, False, user)
+                return Response(
+                    {'detail': 'Account is locked due to multiple failed login attempts. Try again later.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        except CustomUser.DoesNotExist:
+            user = None
+
         serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            if user:
+                SecurityManager.record_login_attempt(email, ip_address, user_agent, False, user)
+            else:
+                SecurityManager.record_login_attempt(email, ip_address, user_agent, False)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         user = serializer.validated_data['user']
 
         if user.is_2fa_enabled and user.totp_secret:
@@ -38,7 +62,18 @@ class LoginView(APIView):
                 'user_id': str(user.id),
             }, status=status.HTTP_200_OK)
 
-        return self._issue_tokens(user, request)
+        SecurityManager.record_login_attempt(email, ip_address, user_agent, True, user)
+
+        response_data = self._issue_tokens(user, request)
+
+        # Check password expiry
+        if SecurityManager.check_password_expiry(user):
+            response_data['must_change_password'] = True
+
+        if user.must_change_password:
+            response_data['must_change_password'] = True
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     def _issue_tokens(self, user, request):
         refresh = RefreshToken.for_user(user)
@@ -49,11 +84,12 @@ class LoginView(APIView):
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
             expires_at=timezone.now() + timedelta(days=1),
         )
-        return Response({
+        SecurityManager.enforce_session_limit(user)
+        return {
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data,
-        }, status=status.HTTP_200_OK)
+        }
 
 
 class Verify2FAView(APIView):
@@ -77,19 +113,29 @@ class Verify2FAView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        ip_address = request.META.get('REMOTE_ADDR')
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        SecurityManager.record_login_attempt(user.email, ip_address, user_agent, True, user)
+
         refresh = RefreshToken.for_user(user)
         UserSession.objects.create(
             user=user,
             refresh_token=str(refresh),
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            ip_address=ip_address,
+            user_agent=user_agent,
             expires_at=timezone.now() + timedelta(days=1),
         )
-        return Response({
+        SecurityManager.enforce_session_limit(user)
+
+        response_data = {
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data,
-        }, status=status.HTTP_200_OK)
+        }
+        if SecurityManager.check_password_expiry(user) or user.must_change_password:
+            response_data['must_change_password'] = True
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
@@ -136,8 +182,25 @@ class ChangePasswordView(APIView):
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
-        request.user.set_password(serializer.validated_data['new_password'])
-        request.user.save()
+
+        user = request.user
+        new_password = serializer.validated_data['new_password']
+
+        # Check password history
+        if SecurityManager.check_password_history(user, new_password):
+            return Response(
+                {'detail': 'Cannot reuse one of your last 5 passwords.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Save current password to history before changing
+        SecurityManager.save_password_history(user)
+
+        user.set_password(new_password)
+        user.password_changed_at = timezone.now()
+        user.must_change_password = False
+        user.save(update_fields=['password', 'password_changed_at', 'must_change_password'])
+
         return Response({'detail': 'Password changed successfully.'}, status=status.HTTP_200_OK)
 
 
@@ -186,8 +249,17 @@ class PasswordResetConfirmView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        reset_token.user.set_password(serializer.validated_data['new_password'])
-        reset_token.user.save()
+        user = reset_token.user
+        new_password = serializer.validated_data['new_password']
+
+        # Save current password to history
+        SecurityManager.save_password_history(user)
+
+        user.set_password(new_password)
+        user.password_changed_at = timezone.now()
+        user.must_change_password = False
+        user.save(update_fields=['password', 'password_changed_at', 'must_change_password'])
+
         reset_token.is_used = True
         reset_token.save(update_fields=['is_used'])
 

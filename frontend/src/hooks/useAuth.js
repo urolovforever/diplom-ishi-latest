@@ -11,5 +11,9 @@ export function useAuth() {
     isQomitaRahbar: user?.role?.name === ROLES.QOMITA_RAHBAR,
     isConfessionLeader: user?.role?.name === ROLES.CONFESSION_LEADER,
     isMember: user?.role?.name === ROLES.MEMBER,
+    isSecurityAuditor: user?.role?.name === ROLES.SECURITY_AUDITOR,
+    isPsychologist: user?.role?.name === ROLES.PSYCHOLOGIST,
+    isITAdmin: user?.role?.name === ROLES.IT_ADMIN,
+    hasRole: (...roles) => roles.includes(user?.role?.name),
   };
 }
