@@ -7,13 +7,20 @@ import CreateConfessionPage from './pages/CreateConfessionPage';
 import DocumentsPage from './pages/DocumentsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import ProfilePage from './pages/ProfilePage';
+import UserManagementPage from './pages/UserManagementPage';
+import PasswordResetRequestPage from './pages/PasswordResetRequestPage';
+import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import RoleBasedRoute from './components/auth/RoleBasedRoute';
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/password-reset" element={<PasswordResetRequestPage />} />
+      <Route path="/password-reset/confirm" element={<PasswordResetConfirmPage />} />
       <Route
         path="/"
         element={
@@ -29,6 +36,15 @@ function App() {
         <Route path="confessions/:id/edit" element={<CreateConfessionPage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route
+          path="users"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin']}>
+              <UserManagementPage />
+            </RoleBasedRoute>
+          }
+        />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

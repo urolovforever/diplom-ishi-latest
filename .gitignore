@@ -35,6 +35,7 @@ Thumbs.db
 *.sqlite3
 media/
 staticfiles/
+logs/
 
 # Coverage
 htmlcov/

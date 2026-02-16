@@ -90,3 +90,22 @@ class ChangePasswordSerializer(serializers.Serializer):
 class Verify2FASerializer(serializers.Serializer):
     token = serializers.CharField(max_length=6)
     user_id = serializers.UUIDField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password_strength(value)
+        return value
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name']

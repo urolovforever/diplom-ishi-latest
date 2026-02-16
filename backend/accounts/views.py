@@ -1,3 +1,5 @@
+import uuid
+
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import generics, status
@@ -7,15 +9,19 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .authentication import verify_totp
-from .models import CustomUser, UserSession
+from .models import CustomUser, PasswordResetToken, UserSession
 from .permissions import IsSuperAdmin
 from .serializers import (
     ChangePasswordSerializer,
     InviteSerializer,
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    ProfileUpdateSerializer,
     UserSerializer,
     Verify2FASerializer,
 )
+from notifications.tasks import send_password_reset_email
 
 
 class LoginView(APIView):
@@ -133,3 +139,73 @@ class ChangePasswordView(APIView):
         request.user.set_password(serializer.validated_data['new_password'])
         request.user.save()
         return Response({'detail': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+
+        try:
+            user = CustomUser.objects.get(email=email, is_active=True)
+            token = uuid.uuid4().hex
+            PasswordResetToken.objects.create(user=user, token=token)
+            send_password_reset_email.delay(user.email, token)
+        except CustomUser.DoesNotExist:
+            pass  # Don't reveal whether email exists
+
+        return Response(
+            {'detail': 'If an account with that email exists, a reset link has been sent.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            reset_token = PasswordResetToken.objects.get(
+                token=serializer.validated_data['token'],
+            )
+        except PasswordResetToken.DoesNotExist:
+            return Response(
+                {'detail': 'Invalid or expired token.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not reset_token.is_valid:
+            return Response(
+                {'detail': 'Invalid or expired token.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        reset_token.user.set_password(serializer.validated_data['new_password'])
+        reset_token.user.save()
+        reset_token.is_used = True
+        reset_token.save(update_fields=['is_used'])
+
+        return Response(
+            {'detail': 'Password has been reset successfully.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+    def put(self, request):
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)

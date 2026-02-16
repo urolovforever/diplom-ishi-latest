@@ -1,13 +1,23 @@
 import { NavLink } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const navItems = [
-  { path: '/', label: 'Dashboard' },
-  { path: '/confessions', label: 'Confessions' },
-  { path: '/documents', label: 'Documents' },
-  { path: '/notifications', label: 'Notifications' },
+  { path: '/', label: 'Dashboard', roles: null },
+  { path: '/confessions', label: 'Confessions', roles: null },
+  { path: '/documents', label: 'Documents', roles: null },
+  { path: '/notifications', label: 'Notifications', roles: null },
+  { path: '/users', label: 'User Management', roles: ['super_admin'] },
+  { path: '/profile', label: 'Profile', roles: null },
 ];
 
 function Sidebar() {
+  const user = useSelector((state) => state.auth.user);
+  const userRole = user?.role?.name;
+
+  const filteredItems = navItems.filter(
+    (item) => item.roles === null || item.roles.includes(userRole),
+  );
+
   return (
     <aside className="w-64 bg-gray-800 text-white min-h-screen p-4">
       <div className="mb-8">
@@ -16,7 +26,7 @@ function Sidebar() {
       </div>
       <nav>
         <ul className="space-y-2">
-          {navItems.map((item) => (
+          {filteredItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}

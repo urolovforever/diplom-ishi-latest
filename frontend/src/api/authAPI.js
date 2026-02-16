@@ -6,8 +6,14 @@ const authAPI = {
   logout: (refreshToken) => api.post('/accounts/logout/', { refresh: refreshToken }),
   refreshToken: (refreshToken) => api.post('/accounts/token/refresh/', { refresh: refreshToken }),
   changePassword: (data) => api.post('/accounts/change-password/', data),
-  getUsers: () => api.get('/accounts/users/'),
+  getUsers: (params) => api.get('/accounts/users/', { params }),
   getUser: (id) => api.get(`/accounts/users/${id}/`),
+  inviteUser: (data) => api.post('/accounts/users/', data),
+  updateUser: (id, data) => api.patch(`/accounts/users/${id}/`, data),
+  getProfile: () => api.get('/accounts/profile/'),
+  updateProfile: (data) => api.put('/accounts/profile/', data),
+  requestPasswordReset: (email) => api.post('/accounts/password-reset/', { email }),
+  confirmPasswordReset: (data) => api.post('/accounts/password-reset/confirm/', data),
 };
 
 export default authAPI;
