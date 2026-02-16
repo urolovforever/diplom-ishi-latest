@@ -13,4 +13,5 @@ urlpatterns = [
     path('dashboard/', views.AnomalyDashboardView.as_view(), name='anomaly-dashboard'),
     path('model-status/', views.AIModelStatusView.as_view(), name='model-status'),
     path('scan/', views.ManualScanView.as_view(), name='manual-scan'),
+    path('evaluate/', views.ModelEvaluationView.as_view(), name='model-evaluation'),
 ]

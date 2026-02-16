@@ -44,6 +44,7 @@ class OrganizationDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     filterset_fields = ['status', 'organization', 'is_anonymous']
+    filterset_class = None  # Uses filterset_fields; see confessions/filters.py for advanced filtering
 
     def get_queryset(self):
         user = self.request.user

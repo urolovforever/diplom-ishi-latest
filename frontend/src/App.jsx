@@ -9,6 +9,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProfilePage from './pages/ProfilePage';
 import UserManagementPage from './pages/UserManagementPage';
+import UserDetailPage from './pages/UserDetailPage';
 import PasswordResetRequestPage from './pages/PasswordResetRequestPage';
 import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
 import AIDashboardPage from './pages/AIDashboardPage';
@@ -46,6 +47,14 @@ function App() {
           element={
             <RoleBasedRoute allowedRoles={['super_admin']}>
               <UserManagementPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="users/:id"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin']}>
+              <UserDetailPage />
             </RoleBasedRoute>
           }
         />

@@ -254,6 +254,60 @@ class DocumentVersionDiffView(APIView):
         })
 
 
+class DocumentVersionRollbackView(APIView):
+    """Rollback a document to a previous version."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, doc_pk, version_number):
+        try:
+            document = Document.objects.get(pk=doc_pk)
+        except Document.DoesNotExist:
+            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only owner or admins can rollback
+        user = request.user
+        if document.uploaded_by != user and (
+            not user.role or user.role.name not in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]
+        ):
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            target_version = DocumentVersion.objects.get(
+                document=document, version_number=version_number,
+            )
+        except DocumentVersion.DoesNotExist:
+            return Response({'detail': 'Version not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create a new version from the target version's file
+        latest = document.versions.first()
+        next_num = (latest.version_number + 1) if latest else 1
+
+        new_version = DocumentVersion.objects.create(
+            document=document,
+            version_number=next_num,
+            file=target_version.file,
+            change_summary=f'Rolled back to version {version_number}',
+            created_by=user,
+        )
+
+        # Update document's main file
+        document.file = target_version.file
+        document.save(update_fields=['file', 'updated_at'])
+
+        # Log access
+        DocumentAccessLog.objects.create(
+            document=document,
+            user=user,
+            action='rollback',
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({
+            'detail': f'Document rolled back to version {version_number}.',
+            'new_version_number': next_num,
+        }, status=status.HTTP_200_OK)
+
+
 class DocumentAccessLogListView(generics.ListAPIView):
     serializer_class = DocumentAccessLogSerializer
     permission_classes = [IsSuperAdmin | IsSecurityAuditor]
