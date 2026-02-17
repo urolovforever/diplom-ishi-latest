@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
-from .models import Organization, Confession
+from .models import Organization, Confession, ConfessionEncryptedKey
 
 
 class OrganizationListSerializer(serializers.ModelSerializer):
@@ -19,15 +19,23 @@ class OrganizationWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class ConfessionEncryptedKeySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfessionEncryptedKey
+        fields = ['user', 'encrypted_key']
+
+
 class ConfessionListSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source='organization.name', read_only=True)
+    encrypted_keys = ConfessionEncryptedKeySerializer(many=True, read_only=True)
 
     class Meta:
         model = Confession
         fields = [
             'id', 'title', 'content', 'author', 'organization', 'organization_name',
-            'status', 'is_anonymous', 'created_at', 'updated_at',
+            'status', 'is_anonymous', 'is_e2e_encrypted', 'encrypted_keys',
+            'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -45,10 +53,20 @@ class ConfessionListSerializer(serializers.ModelSerializer):
 
 
 class ConfessionWriteSerializer(serializers.ModelSerializer):
+    encrypted_keys = serializers.ListField(child=serializers.DictField(), required=False, write_only=True)
+
     class Meta:
         model = Confession
-        fields = ['id', 'title', 'content', 'organization', 'is_anonymous']
+        fields = ['id', 'title', 'content', 'organization', 'is_anonymous', 'is_e2e_encrypted', 'encrypted_keys']
         read_only_fields = ['id']
+
+    def create(self, validated_data):
+        validated_data.pop('encrypted_keys', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('encrypted_keys', None)
+        return super().update(instance, validated_data)
 
 
 class ConfessionStatusSerializer(serializers.Serializer):
