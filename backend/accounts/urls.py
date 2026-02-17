@@ -19,4 +19,7 @@ urlpatterns = [
     path('e2e/keys/', views.PublicKeyView.as_view(), name='e2e-keys'),
     path('e2e/keys/<uuid:pk>/', views.UserPublicKeyView.as_view(), name='e2e-user-key'),
     path('e2e/recipients/', views.E2ERecipientsView.as_view(), name='e2e-recipients'),
+    # IP Restriction
+    path('ip-restrictions/', views.IPRestrictionListCreateView.as_view(), name='ip-restriction-list'),
+    path('ip-restrictions/<uuid:pk>/', views.IPRestrictionDeleteView.as_view(), name='ip-restriction-delete'),
 ]

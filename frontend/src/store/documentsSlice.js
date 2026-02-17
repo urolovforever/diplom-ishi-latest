@@ -49,12 +49,25 @@ export const fetchVersions = createAsyncThunk(
   }
 );
 
+export const fetchAccessLogs = createAsyncThunk(
+  'documents/fetchAccessLogs',
+  async (docId, { rejectWithValue }) => {
+    try {
+      const response = await documentsAPI.getAccessLogs(docId);
+      return { docId, logs: response.data.results || response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch access logs');
+    }
+  }
+);
+
 const documentsSlice = createSlice({
   name: 'documents',
   initialState: {
     list: [],
     count: 0,
     versions: {},
+    accessLogs: {},
     loading: false,
     error: null,
   },
@@ -76,6 +89,9 @@ const documentsSlice = createSlice({
       })
       .addCase(fetchVersions.fulfilled, (state, action) => {
         state.versions[action.payload.docId] = action.payload.versions;
+      })
+      .addCase(fetchAccessLogs.fulfilled, (state, action) => {
+        state.accessLogs[action.payload.docId] = action.payload.logs;
       });
   },
 });

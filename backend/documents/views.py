@@ -72,9 +72,9 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
         qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
             'versions', 'encrypted_keys__user',
         ).all()
-        if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.SECURITY_AUDITOR]:
+        if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI]:
             return filter_by_security_level(qs, user)
-        if user.role and user.role.name == Role.CONFESSION_LEADER:
+        if user.role and user.role.name == Role.KONFESSIYA_RAHBARI:
             qs = qs.filter(
                 Q(uploaded_by=user) | Q(confession__organization__leader=user)
             )
@@ -123,9 +123,9 @@ class DocumentDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
         qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
             'versions', 'encrypted_keys__user',
         ).all()
-        if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.SECURITY_AUDITOR]:
+        if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI]:
             return filter_by_security_level(qs, user)
-        if user.role and user.role.name == Role.CONFESSION_LEADER:
+        if user.role and user.role.name == Role.KONFESSIYA_RAHBARI:
             qs = qs.filter(
                 Q(uploaded_by=user) | Q(confession__organization__leader=user)
             )
@@ -316,9 +316,22 @@ class DocumentVersionRollbackView(APIView):
 class DocumentAccessLogListView(generics.ListAPIView):
     serializer_class = DocumentAccessLogSerializer
     permission_classes = [IsSuperAdmin | IsSecurityAuditor]
+    filterset_fields = ['document', 'user', 'action']
 
     def get_queryset(self):
         return DocumentAccessLog.objects.select_related('user__role', 'document').all()
+
+
+class DocumentAccessLogByDocView(generics.ListAPIView):
+    """Get access logs for a specific document — who viewed/downloaded it."""
+    serializer_class = DocumentAccessLogSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        doc_pk = self.kwargs['pk']
+        return DocumentAccessLog.objects.filter(
+            document_id=doc_pk,
+        ).select_related('user__role', 'document').order_by('-created_at')
 
 
 class HoneypotFileListCreateView(generics.ListCreateAPIView):

@@ -14,6 +14,9 @@ const documentsAPI = {
   uploadVersion: (docId, formData) => api.post(`/documents/${docId}/versions/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+
+  // Access logs
+  getAccessLogs: (docId) => api.get(`/documents/${docId}/access-logs/`),
 };
 
 export default documentsAPI;

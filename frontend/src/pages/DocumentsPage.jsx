@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchDocuments, uploadDocument, deleteDocument, fetchVersions } from '../store/documentsSlice';
+import { fetchDocuments, uploadDocument, deleteDocument, fetchVersions, fetchAccessLogs } from '../store/documentsSlice';
 import { useCrypto } from '../hooks/useCrypto';
 import { useAuth } from '../hooks/useAuth';
-import { formatDate } from '../utils/helpers';
+import { formatDate, formatDateTime } from '../utils/helpers';
 import KeySetup from '../components/auth/KeySetup';
 import Modal from '../components/ui/Modal';
 import {
   Upload, Eye, Download, Trash2, Filter, ChevronDown, ChevronUp,
-  Lock, FileText, Search, X, CloudUpload,
+  Lock, FileText, Search, X, CloudUpload, ClipboardList,
 } from 'lucide-react';
 
 function DocumentsPage() {
   const dispatch = useDispatch();
-  const { list, count, versions, loading } = useSelector((state) => state.documents);
+  const { list, count, versions, accessLogs, loading } = useSelector((state) => state.documents);
   const { isE2EReady, encryptDocument, decryptDocument, getRecipientPublicKeys } = useCrypto();
   const { user } = useAuth();
 
@@ -28,10 +28,20 @@ function DocumentsPage() {
   const [showKeySetup, setShowKeySetup] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [auditDoc, setAuditDoc] = useState(null);
+
+  const isAdmin = user?.role?.name === 'super_admin' || user?.role?.name === 'qomita_rahbar';
 
   useEffect(() => {
     dispatch(fetchDocuments());
   }, [dispatch]);
+
+  const openAuditLog = (doc) => {
+    setAuditDoc(doc);
+    if (!accessLogs[doc.id]) {
+      dispatch(fetchAccessLogs(doc.id));
+    }
+  };
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -271,6 +281,15 @@ function DocumentsPage() {
                         >
                           <Trash2 size={16} />
                         </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => openAuditLog(doc)}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Kim ko'rganini ko'rish"
+                          >
+                            <ClipboardList size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -310,6 +329,62 @@ function DocumentsPage() {
           )}
         </div>
       )}
+
+      {/* Audit Log Modal */}
+      <Modal
+        isOpen={!!auditDoc}
+        onClose={() => setAuditDoc(null)}
+        title={`Audit trail: ${auditDoc?.title || ''}`}
+        maxWidth="max-w-2xl"
+      >
+        {auditDoc && (
+          <div>
+            <p className="text-sm text-text-secondary mb-4">
+              Bu hujjatni kim, qachon va qanday ko'rgan/yuklab olganini ko'ring.
+            </p>
+            {accessLogs[auditDoc.id]?.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-surface">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary uppercase">Foydalanuvchi</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary uppercase">Amal</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary uppercase">IP manzil</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary uppercase">Vaqti</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {accessLogs[auditDoc.id].map((log) => (
+                      <tr key={log.id} className="hover:bg-surface/50">
+                        <td className="px-3 py-2 text-text-primary">
+                          {log.user?.full_name || log.user?.email || '-'}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            log.action === 'download'
+                              ? 'bg-blue-100 text-blue-700'
+                              : log.action === 'view'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {log.action === 'download' ? 'Yuklab oldi' : log.action === 'view' ? "Ko'rdi" : log.action}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-text-secondary font-mono text-xs">{log.ip_address || '-'}</td>
+                        <td className="px-3 py-2 text-text-secondary">{formatDateTime(log.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-text-secondary text-center py-8">
+                Bu hujjat hali hech kim tomonidan ko'rilmagan.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Upload Modal */}
       <Modal isOpen={showUpload} onClose={() => setShowUpload(false)} title="Hujjat yuklash">

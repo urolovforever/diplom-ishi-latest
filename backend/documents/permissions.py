@@ -11,11 +11,11 @@ SECURITY_LEVEL_HIERARCHY = {
 ROLE_MAX_SECURITY_LEVEL = {
     Role.SUPER_ADMIN: 'secret',
     Role.QOMITA_RAHBAR: 'secret',
-    Role.SECURITY_AUDITOR: 'secret',
-    Role.IT_ADMIN: 'confidential',
-    Role.CONFESSION_LEADER: 'confidential',
-    Role.PSYCHOLOGIST: 'internal',
-    Role.MEMBER: 'internal',
+    Role.QOMITA_XODIMI: 'secret',
+    Role.KONFESSIYA_RAHBARI: 'confidential',
+    Role.KONFESSIYA_XODIMI: 'confidential',
+    Role.ADLIYA_XODIMI: 'confidential',
+    Role.KENGASH_AZO: 'internal',
 }
 
 
