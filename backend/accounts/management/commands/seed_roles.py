@@ -8,13 +8,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         roles = [
-            (Role.SUPER_ADMIN, 'Full system access'),
-            (Role.QOMITA_RAHBAR, 'Committee leader with elevated permissions'),
-            (Role.CONFESSION_LEADER, 'Manages confessions and related processes'),
-            (Role.MEMBER, 'Basic member access'),
-            (Role.SECURITY_AUDITOR, 'Security monitoring and audit access'),
-            (Role.PSYCHOLOGIST, 'Read-only access to confessions for psychological support'),
-            (Role.IT_ADMIN, 'IT infrastructure and AI system administration'),
+            (Role.SUPER_ADMIN, 'Tizimga to\'liq kirish huquqi'),
+            (Role.QOMITA_RAHBAR, 'Qo\'mita rahbari - yuqori darajali ruxsatlar'),
+            (Role.QOMITA_XODIMI, 'Qo\'mita xodimi - monitoring va audit'),
+            (Role.KONFESSIYA_RAHBARI, 'Konfessiya rahbari - konfessiyalarni boshqarish'),
+            (Role.KONFESSIYA_XODIMI, 'Konfessiya xodimi - oddiy kirish'),
+            (Role.ADLIYA_XODIMI, 'Adliya xodimi - huquqiy hujjatlar'),
+            (Role.KENGASH_AZO, 'Kengash a\'zosi - kengash materiallari'),
         ]
 
         created_count = 0
