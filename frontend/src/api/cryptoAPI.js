@@ -15,9 +15,6 @@ const cryptoAPI = {
     api.get('/accounts/e2e/recipients/', {
       params: organizationId ? { organization: organizationId } : {},
     }),
-  savePublicKey: (data) => api.post('/accounts/public-key/', data),
-  getMyKeys: () => api.get('/accounts/public-key/'),
-  getUserPublicKey: (userId) => api.get(`/accounts/users/${userId}/public-key/`),
 };
 
 export default cryptoAPI;

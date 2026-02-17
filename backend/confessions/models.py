@@ -59,15 +59,11 @@ class ConfessionEncryptedKey(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='confession_encrypted_keys',
     )
-    encrypted_key = models.TextField()  # Base64 encoded RSA-encrypted symmetric key
-    created_at = models.DateTimeField(auto_now_add=True)
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='confession_encrypted_keys',
-    )
     encrypted_key = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ['confession', 'user']
 
     def __str__(self):
         return f'EncKey: {self.confession.title} -> {self.user.email}'
-        return f'{self.confession.title} - {self.user.email}'
