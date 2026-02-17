@@ -323,6 +323,35 @@ class PublicKeyView(APIView):
             'public_key': user.public_key,
             'encrypted_private_key': user.encrypted_private_key,
             'has_public_key': bool(user.public_key),
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'public_key': user.public_key,
+            'encrypted_private_key': user.encrypted_private_key,
+            'has_keys': bool(user.public_key),
+        })
+
+    def post(self, request):
+        user = request.user
+        public_key = request.data.get('public_key')
+        encrypted_private_key = request.data.get('encrypted_private_key')
+
+        if not public_key:
+            return Response(
+                {'detail': 'public_key is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.public_key = public_key
+        if encrypted_private_key:
+            user.encrypted_private_key = encrypted_private_key
+        user.save(update_fields=['public_key', 'encrypted_private_key'])
+
+        return Response({
+            'detail': 'Keys saved successfully.',
+            'has_keys': True,
         })
 
 
@@ -396,3 +425,13 @@ class E2ERecipientsView(APIView):
             })
 
         return Response(recipients)
+            target_user = CustomUser.objects.get(pk=pk)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response({
+            'user_id': str(target_user.id),
+            'public_key': target_user.public_key,
+        })

@@ -30,12 +30,17 @@ class ConfessionEncryptedKeyReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfessionEncryptedKey
         fields = ['user_id', 'encrypted_key']
+class ConfessionEncryptedKeySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfessionEncryptedKey
+        fields = ['user', 'encrypted_key']
 
 
 class ConfessionListSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     encrypted_keys = ConfessionEncryptedKeyReadSerializer(many=True, read_only=True)
+    encrypted_keys = ConfessionEncryptedKeySerializer(many=True, read_only=True)
 
     class Meta:
         model = Confession
@@ -61,6 +66,7 @@ class ConfessionListSerializer(serializers.ModelSerializer):
 
 class ConfessionWriteSerializer(serializers.ModelSerializer):
     encrypted_keys = EncryptedKeySerializer(many=True, required=False, write_only=True)
+    encrypted_keys = serializers.ListField(child=serializers.DictField(), required=False, write_only=True)
 
     class Meta:
         model = Confession
@@ -94,6 +100,12 @@ class ConfessionWriteSerializer(serializers.ModelSerializer):
                 )
 
         return instance
+        validated_data.pop('encrypted_keys', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('encrypted_keys', None)
+        return super().update(instance, validated_data)
 
 
 class ConfessionStatusSerializer(serializers.Serializer):

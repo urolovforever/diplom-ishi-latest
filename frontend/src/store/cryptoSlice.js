@@ -3,6 +3,8 @@ import cryptoAPI from '../api/cryptoAPI';
 
 export const fetchMyKeys = createAsyncThunk(
   'crypto/fetchMyKeys',
+export const checkKeyStatus = createAsyncThunk(
+  'crypto/checkKeyStatus',
   async (_, { rejectWithValue }) => {
     try {
       const response = await cryptoAPI.getMyKeys();
@@ -15,6 +17,13 @@ export const fetchMyKeys = createAsyncThunk(
 
 export const savePublicKey = createAsyncThunk(
   'crypto/savePublicKey',
+      return rejectWithValue(error.response?.data?.detail || 'Failed to check key status');
+    }
+  }
+);
+
+export const uploadPublicKey = createAsyncThunk(
+  'crypto/uploadPublicKey',
   async (data, { rejectWithValue }) => {
     try {
       const response = await cryptoAPI.savePublicKey(data);
@@ -33,6 +42,7 @@ export const fetchRecipients = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.detail || 'Failed to fetch recipients');
+      return rejectWithValue(error.response?.data?.detail || 'Failed to upload public key');
     }
   }
 );
@@ -45,6 +55,9 @@ const cryptoSlice = createSlice({
     encryptedPrivateKey: null,
     privateKeyUnlocked: null, // Decrypted private key (in-memory only, never persisted)
     recipients: [],
+    keyPairGenerated: false,
+    publicKey: null,
+    hasPrivateKey: false,
     loading: false,
     error: null,
   },
@@ -64,6 +77,13 @@ const cryptoSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    setKeyPairGenerated: (state, action) => {
+      state.keyPairGenerated = action.payload;
+    },
+    clearCryptoState: (state) => {
+      state.keyPairGenerated = false;
+      state.publicKey = null;
+      state.hasPrivateKey = false;
     },
   },
   extraReducers: (builder) => {
@@ -89,4 +109,22 @@ const cryptoSlice = createSlice({
 });
 
 export const { setPrivateKey, clearPrivateKey, clearCryptoState, clearError } = cryptoSlice.actions;
+      .addCase(checkKeyStatus.pending, (state) => { state.loading = true; })
+      .addCase(checkKeyStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.keyPairGenerated = action.payload.has_keys;
+        state.publicKey = action.payload.public_key;
+        state.hasPrivateKey = !!action.payload.encrypted_private_key;
+      })
+      .addCase(checkKeyStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(uploadPublicKey.fulfilled, (state) => {
+        state.keyPairGenerated = true;
+      });
+  },
+});
+
+export const { setKeyPairGenerated, clearCryptoState } = cryptoSlice.actions;
 export default cryptoSlice.reducer;

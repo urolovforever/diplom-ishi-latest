@@ -4,6 +4,12 @@ from .models import Document, DocumentVersion, DocumentAccessLog, DocumentEncryp
 from .utils import validate_document_file
 
 
+class DocumentEncryptedKeySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentEncryptedKey
+        fields = ['user', 'encrypted_key']
+
+
 class DocumentVersionSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
 
@@ -31,6 +37,7 @@ class DocumentListSerializer(serializers.ModelSerializer):
     latest_version = serializers.SerializerMethodField()
     encrypted_keys = DocumentEncryptedKeyReadSerializer(many=True, read_only=True)
     is_e2e_encrypted = serializers.SerializerMethodField()
+    encrypted_keys = DocumentEncryptedKeySerializer(many=True, read_only=True)
 
     class Meta:
         model = Document
@@ -62,6 +69,11 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
             'is_encrypted', 'is_e2e_encrypted', 'security_level', 'category',
             'encrypted_keys',
         ]
+    encrypted_keys = serializers.ListField(child=serializers.DictField(), required=False, write_only=True)
+
+    class Meta:
+        model = Document
+        fields = ['id', 'title', 'description', 'file', 'confession', 'is_encrypted', 'is_e2e_encrypted', 'security_level', 'category', 'encrypted_keys']
         read_only_fields = ['id']
 
     def validate_file(self, value):
@@ -81,6 +93,12 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
             )
 
         return document
+        validated_data.pop('encrypted_keys', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('encrypted_keys', None)
+        return super().update(instance, validated_data)
 
 
 class DocumentAccessLogSerializer(serializers.ModelSerializer):
