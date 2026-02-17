@@ -7,12 +7,13 @@ import {
   deleteNotification,
 } from '../store/notificationsSlice';
 import { formatDateTime } from '../utils/helpers';
+import { Bell, AlertTriangle, Info, AlertCircle, CheckCheck, Trash2, Cpu } from 'lucide-react';
 
-const TYPE_COLORS = {
-  info: 'bg-blue-100 text-blue-700',
-  warning: 'bg-yellow-100 text-yellow-700',
-  alert: 'bg-red-100 text-red-700',
-  system: 'bg-purple-100 text-purple-700',
+const TYPE_CONFIG = {
+  info: { icon: Info, bg: 'bg-blue-50', color: 'text-primary-light' },
+  warning: { icon: AlertTriangle, bg: 'bg-amber-50', color: 'text-warning' },
+  alert: { icon: AlertCircle, bg: 'bg-red-50', color: 'text-danger' },
+  system: { icon: Cpu, bg: 'bg-purple-50', color: 'text-purple-600' },
 };
 
 function NotificationsPage() {
@@ -45,85 +46,91 @@ function NotificationsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Bildirishnomalar</h1>
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-              {unreadCount} unread
+            <span className="bg-danger text-white text-xs font-bold px-2.5 py-1 rounded-full">
+              {unreadCount}
             </span>
           )}
         </div>
         {unreadCount > 0 && (
-          <button
-            onClick={handleMarkAllRead}
-            className="text-blue-600 hover:text-blue-800 text-sm"
-          >
-            Mark all as read
+          <button onClick={handleMarkAllRead} className="btn-secondary flex items-center gap-2 text-sm">
+            <CheckCheck size={16} />
+            Hammasini o'qilgan deb belgilash
           </button>
         )}
       </div>
 
       <div className="mb-4">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2"
-        >
-          <option value="">All</option>
-          <option value="unread">Unread</option>
-          <option value="read">Read</option>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field max-w-xs">
+          <option value="">Barchasi</option>
+          <option value="unread">O'qilmagan</option>
+          <option value="read">O'qilgan</option>
         </select>
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
-      ) : (
         <div className="space-y-3">
-          {list.map((notif) => (
-            <div
-              key={notif.id}
-              className={`bg-white rounded-lg shadow p-4 flex justify-between items-start ${
-                !notif.is_read ? 'border-l-4 border-blue-500' : ''
-              }`}
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className={`text-sm font-medium ${!notif.is_read ? 'text-gray-900' : 'text-gray-600'}`}>
-                    {notif.title}
-                  </h3>
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${TYPE_COLORS[notif.notification_type] || ''}`}>
-                    {notif.notification_type}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">{notif.message}</p>
-                <p className="text-xs text-gray-400 mt-1">{formatDateTime(notif.created_at)}</p>
-              </div>
-              <div className="flex gap-2 ml-4">
-                {!notif.is_read && (
-                  <button
-                    onClick={() => handleMarkOneRead(notif.id)}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    Mark read
-                  </button>
-                )}
-                <button
-                  onClick={() => handleDelete(notif.id)}
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  Delete
-                </button>
-              </div>
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="card p-4 space-y-2">
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-3 w-1/2" />
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {list.map((notif) => {
+            const config = TYPE_CONFIG[notif.notification_type] || TYPE_CONFIG.info;
+            const Icon = config.icon;
+            return (
+              <div
+                key={notif.id}
+                className={`card p-4 flex items-start gap-4 transition-all ${
+                  !notif.is_read ? 'border-l-4 border-primary-light bg-blue-50/30' : ''
+                }`}
+              >
+                <div className={`p-2 rounded-xl ${config.bg} flex-shrink-0`}>
+                  <Icon size={18} className={config.color} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-sm font-medium ${!notif.is_read ? 'text-text-primary' : 'text-text-secondary'}`}>
+                    {notif.title}
+                  </h3>
+                  <p className="text-sm text-text-secondary mt-0.5">{notif.message}</p>
+                  <p className="text-xs text-text-secondary/70 mt-1">{formatDateTime(notif.created_at)}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {!notif.is_read && (
+                    <button
+                      onClick={() => handleMarkOneRead(notif.id)}
+                      className="p-1.5 text-primary-light hover:bg-blue-50 rounded-lg transition-colors"
+                      title="O'qilgan deb belgilash"
+                    >
+                      <CheckCheck size={16} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(notif.id)}
+                    className="p-1.5 text-danger hover:bg-red-50 rounded-lg transition-colors"
+                    title="O'chirish"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
           {list.length === 0 && (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-              No notifications.
+            <div className="card p-12 text-center">
+              <Bell size={40} className="mx-auto mb-3 text-text-secondary/30" />
+              <p className="text-text-secondary">Bildirishnomalar yo'q</p>
             </div>
           )}
           {count > 0 && (
-            <p className="text-sm text-gray-500">{count} notification{count !== 1 ? 's' : ''} total</p>
+            <p className="text-sm text-text-secondary text-center pt-2">Jami {count} ta bildirishnoma</p>
           )}
         </div>
       )}
