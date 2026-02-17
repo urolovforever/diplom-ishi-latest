@@ -188,11 +188,13 @@ export async function storePrivateKey(privateKeyJwk, password) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(JSON.stringify(privateKeyJwk));
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, derivedKey, encoded);
-  await idbPut('private_key', {
+  const encryptedData = {
     encrypted: bufferToBase64(encrypted),
     iv: bufferToBase64(iv),
     salt: bufferToBase64(salt),
-  });
+  };
+  await idbPut('private_key', encryptedData);
+  return encryptedData;
 }
 
 export async function loadPrivateKey(password) {
