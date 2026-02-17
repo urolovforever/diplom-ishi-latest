@@ -310,6 +310,62 @@ class ConfessionTransitionTest(ConfessionTestBase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class ConfessionE2EEncryptionTest(ConfessionTestBase):
+    def setUp(self):
+        super().setUp()
+        self.org = Organization.objects.create(name='Test Org')
+
+    def test_create_e2e_encrypted_confession(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        response = self.client.post('/api/confessions/', {
+            'title': 'E2E Confession',
+            'content': '{"ciphertext":"abc","iv":"def"}',
+            'organization': str(self.org.id),
+            'is_e2e_encrypted': True,
+            'encrypted_keys': [
+                {'user': str(member.id), 'encrypted_key': 'encryptedkey123'},
+            ],
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data['is_e2e_encrypted'])
+
+    def test_e2e_confession_returns_encrypted_keys(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        from confessions.models import ConfessionEncryptedKey
+        confession = Confession.objects.create(
+            title='E2E', content='encrypted', author=member,
+            organization=self.org, is_e2e_encrypted=True,
+        )
+        ConfessionEncryptedKey.objects.create(
+            confession=confession, user=member, encrypted_key='key123',
+        )
+        response = self.client.get(f'/api/confessions/{confession.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['is_e2e_encrypted'])
+        self.assertEqual(len(response.data['encrypted_keys']), 1)
+        self.assertEqual(response.data['encrypted_keys'][0]['encrypted_key'], 'key123')
+
+    def test_non_e2e_confession_has_empty_keys(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        confession = Confession.objects.create(
+            title='Normal', content='plaintext', author=member,
+            organization=self.org, is_e2e_encrypted=False,
+        )
+        response = self.client.get(f'/api/confessions/{confession.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['is_e2e_encrypted'])
+        self.assertEqual(len(response.data['encrypted_keys']), 0)
+
+    def test_is_e2e_encrypted_default_false(self):
+        member = self._create_and_login('m@test.com', self.member_role)
+        response = self.client.post('/api/confessions/', {
+            'title': 'Normal Confession', 'content': 'Plaintext content',
+            'organization': str(self.org.id),
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(response.data['is_e2e_encrypted'])
+
+
 class DashboardStatsTest(ConfessionTestBase):
     def test_authenticated_gets_stats(self):
         self._create_and_login('m@test.com', self.member_role)

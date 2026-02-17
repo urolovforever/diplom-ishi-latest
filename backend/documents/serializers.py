@@ -1,7 +1,13 @@
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
-from .models import Document, DocumentVersion, DocumentAccessLog, HoneypotFile
+from .models import Document, DocumentVersion, DocumentAccessLog, DocumentEncryptedKey, HoneypotFile
 from .utils import validate_document_file
+
+
+class DocumentEncryptedKeySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentEncryptedKey
+        fields = ['user', 'encrypted_key']
 
 
 class DocumentVersionSerializer(serializers.ModelSerializer):
@@ -16,13 +22,14 @@ class DocumentVersionSerializer(serializers.ModelSerializer):
 class DocumentListSerializer(serializers.ModelSerializer):
     uploaded_by = UserSerializer(read_only=True)
     latest_version = serializers.SerializerMethodField()
+    encrypted_keys = DocumentEncryptedKeySerializer(many=True, read_only=True)
 
     class Meta:
         model = Document
         fields = [
             'id', 'title', 'description', 'file', 'uploaded_by',
-            'confession', 'is_encrypted', 'security_level', 'category',
-            'latest_version', 'created_at', 'updated_at',
+            'confession', 'is_encrypted', 'is_e2e_encrypted', 'security_level', 'category',
+            'encrypted_keys', 'latest_version', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'uploaded_by', 'created_at', 'updated_at']
 
@@ -34,14 +41,24 @@ class DocumentListSerializer(serializers.ModelSerializer):
 
 
 class DocumentWriteSerializer(serializers.ModelSerializer):
+    encrypted_keys = serializers.ListField(child=serializers.DictField(), required=False, write_only=True)
+
     class Meta:
         model = Document
-        fields = ['id', 'title', 'description', 'file', 'confession', 'is_encrypted', 'security_level', 'category']
+        fields = ['id', 'title', 'description', 'file', 'confession', 'is_encrypted', 'is_e2e_encrypted', 'security_level', 'category', 'encrypted_keys']
         read_only_fields = ['id']
 
     def validate_file(self, value):
         validate_document_file(value)
         return value
+
+    def create(self, validated_data):
+        validated_data.pop('encrypted_keys', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('encrypted_keys', None)
+        return super().update(instance, validated_data)
 
 
 class DocumentAccessLogSerializer(serializers.ModelSerializer):
