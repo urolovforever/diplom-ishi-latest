@@ -11,4 +11,5 @@ urlpatterns = [
     path('<uuid:pk>/', views.ConfessionDetailView.as_view(), name='confession-detail'),
     path('<uuid:pk>/<str:action>/', views.ConfessionTransitionView.as_view(), name='confession-transition'),
     path('stats/dashboard/', DashboardStatsView.as_view(), name='dashboard-stats'),
+    path('export/csv/', views.ConfessionExportCSVView.as_view(), name='confession-export-csv'),
 ]

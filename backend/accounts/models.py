@@ -188,3 +188,28 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f'{self.user.email} - {self.token[:8]}...'
+
+
+class IPRestriction(models.Model):
+    LIST_TYPES = [
+        ('whitelist', 'Whitelist'),
+        ('blacklist', 'Blacklist'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ip_address = models.GenericIPAddressField()
+    list_type = models.CharField(max_length=10, choices=LIST_TYPES)
+    reason = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='ip_restrictions',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['ip_address', 'list_type']
+
+    def __str__(self):
+        return f'{self.list_type}: {self.ip_address}'

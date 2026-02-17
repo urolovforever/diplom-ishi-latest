@@ -397,3 +397,29 @@ class E2ERecipientsView(APIView):
             })
 
         return Response(recipients)
+
+
+class IPRestrictionListCreateView(generics.ListCreateAPIView):
+    """Manage IP whitelist/blacklist entries."""
+    permission_classes = [IsSuperAdmin]
+
+    def get_queryset(self):
+        from .models import IPRestriction
+        return IPRestriction.objects.select_related('created_by').all()
+
+    def get_serializer_class(self):
+        from .serializers import IPRestrictionSerializer
+        return IPRestrictionSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class IPRestrictionDeleteView(generics.DestroyAPIView):
+    """Delete an IP restriction entry."""
+    permission_classes = [IsSuperAdmin]
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        from .models import IPRestriction
+        return IPRestriction.objects.all()
