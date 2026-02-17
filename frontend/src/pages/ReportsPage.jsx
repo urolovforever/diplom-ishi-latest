@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import reportAPI from '../api/reportAPI';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import Skeleton from '../components/ui/Skeleton';
+import { FileDown, BarChart3, Calendar, Plus } from 'lucide-react';
 
 function ReportsPage() {
   const [reports, setReports] = useState([]);
@@ -19,7 +20,7 @@ function ReportsPage() {
       const response = await reportAPI.getReports();
       setReports(response.data.results || response.data || []);
     } catch {
-      setError('Failed to load reports.');
+      setError("Hisobotlarni yuklashda xatolik.");
     } finally {
       setLoading(false);
     }
@@ -37,7 +38,7 @@ function ReportsPage() {
       await reportAPI.generateReport(form);
       fetchReports();
     } catch {
-      setError('Failed to generate report.');
+      setError("Hisobot yaratishda xatolik.");
     } finally {
       setGenerating(false);
     }
@@ -49,112 +50,104 @@ function ReportsPage() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${title || 'report'}.pdf`);
+      link.setAttribute('download', `${title || 'hisobot'}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      setError('Failed to download report.');
+      setError("Hisobotni yuklab olishda xatolik.");
     }
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Reports</h1>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-text-primary">Hisobotlar</h1>
+        <p className="text-sm text-text-secondary mt-1">Hisobotlarni yaratish va yuklab olish</p>
+      </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
+        <div className="bg-red-50 border border-red-100 text-danger px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
       )}
 
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <h2 className="text-lg font-semibold mb-4">Generate Report</h2>
-        <form onSubmit={handleGenerate} className="flex flex-wrap gap-4 items-end">
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <Plus size={20} className="text-primary-light" />
+          Hisobot yaratish
+        </h2>
+        <form onSubmit={handleGenerate} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Report Type</label>
-            <select
-              value={form.report_type}
-              onChange={(e) => setForm({ ...form, report_type: e.target.value })}
-              className="border rounded px-3 py-2"
-            >
-              <option value="activity">Activity Report</option>
-              <option value="security">Security Report</option>
-              <option value="confession">Confession Report</option>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">Hisobot turi</label>
+            <select value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className="input-field">
+              <option value="activity">Faollik hisoboti</option>
+              <option value="security">Xavfsizlik hisoboti</option>
+              <option value="confession">Konfessiya hisoboti</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">From</label>
-            <input
-              type="date"
-              value={form.date_from}
-              onChange={(e) => setForm({ ...form, date_from: e.target.value })}
-              className="border rounded px-3 py-2"
-            />
+            <label className="block text-sm font-medium text-text-primary mb-1.5">Boshlanish</label>
+            <input type="date" value={form.date_from} onChange={(e) => setForm({ ...form, date_from: e.target.value })} className="input-field" />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">To</label>
-            <input
-              type="date"
-              value={form.date_to}
-              onChange={(e) => setForm({ ...form, date_to: e.target.value })}
-              className="border rounded px-3 py-2"
-            />
+            <label className="block text-sm font-medium text-text-primary mb-1.5">Tugash</label>
+            <input type="date" value={form.date_to} onChange={(e) => setForm({ ...form, date_to: e.target.value })} className="input-field" />
           </div>
-          <button
-            type="submit"
-            disabled={generating}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {generating ? 'Generating...' : 'Generate'}
+          <button type="submit" disabled={generating} className="btn-primary flex items-center justify-center gap-2">
+            <BarChart3 size={16} />
+            {generating ? 'Yaratilmoqda...' : 'Yaratish'}
           </button>
         </form>
       </div>
 
       {loading ? (
-        <LoadingSpinner />
+        <div className="card p-5">
+          <Skeleton lines={5} />
+        </div>
       ) : (
-        <div className="bg-white rounded shadow">
-          <h2 className="text-lg font-semibold p-4 border-b">Generated Reports</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left">Title</th>
-                  <th className="px-4 py-2 text-left">Type</th>
-                  <th className="px-4 py-2 text-left">Created</th>
-                  <th className="px-4 py-2 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((report) => (
-                  <tr key={report.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">{report.title}</td>
-                    <td className="px-4 py-2">{report.report_type}</td>
-                    <td className="px-4 py-2">
-                      {new Date(report.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2">
-                      <button
-                        onClick={() => handleDownload(report.id, report.title)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Download PDF
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {reports.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                      No reports generated yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-text-primary">Yaratilgan hisobotlar</h3>
           </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-surface">
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Nomi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Turi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Yaratilgan</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {reports.map((report) => (
+                <tr key={report.id} className="hover:bg-surface/50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-text-primary">{report.title}</td>
+                  <td className="px-4 py-3">
+                    <span className="badge-info">{report.report_type}</span>
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {new Date(report.created_at).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleDownload(report.id, report.title)}
+                      className="flex items-center gap-1.5 text-primary-light hover:text-primary font-medium text-sm transition-colors"
+                    >
+                      <FileDown size={16} />
+                      PDF yuklab olish
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {reports.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="px-4 py-12 text-center text-text-secondary">
+                    Hisobotlar hali yaratilmagan
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

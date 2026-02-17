@@ -4,13 +4,30 @@ import { Link } from 'react-router-dom';
 import { fetchConfessions } from '../store/confessionsSlice';
 import { CONFESSION_STATUS } from '../utils/constants';
 import { formatDate } from '../utils/helpers';
+import { Plus, Users, FileText, Building2, ChevronRight } from 'lucide-react';
 
 const STATUS_COLORS = {
-  draft: 'bg-gray-100 text-gray-700',
-  submitted: 'bg-blue-100 text-blue-700',
-  under_review: 'bg-yellow-100 text-yellow-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
+  draft: 'badge-neutral',
+  submitted: 'badge-info',
+  under_review: 'badge-warning',
+  approved: 'badge-success',
+  rejected: 'badge-danger',
+};
+
+const STATUS_LABELS = {
+  draft: 'Qoralama',
+  submitted: 'Yuborilgan',
+  under_review: "Ko'rib chiqilmoqda",
+  approved: 'Tasdiqlangan',
+  rejected: 'Rad etilgan',
+};
+
+const STRIP_COLORS = {
+  draft: 'bg-gray-400',
+  submitted: 'bg-primary-light',
+  under_review: 'bg-warning',
+  approved: 'bg-success',
+  rejected: 'bg-danger',
 };
 
 function ConfessionsListPage() {
@@ -26,80 +43,93 @@ function ConfessionsListPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Confessions</h1>
-        <Link
-          to="/confessions/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          New Confession
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Konfessiyalar</h1>
+          <p className="text-sm text-text-secondary mt-1">
+            {count > 0 ? `Jami ${count} ta konfessiya` : 'Barcha konfessiyalar'}
+          </p>
+        </div>
+        <Link to="/confessions/new" className="btn-primary flex items-center gap-2">
+          <Plus size={18} />
+          Yangi konfessiya
         </Link>
       </div>
 
-      <div className="mb-4">
+      {/* Filter */}
+      <div className="mb-6">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2"
+          className="input-field max-w-xs"
         >
-          <option value="">All Statuses</option>
+          <option value="">Barcha holatlar</option>
           {Object.entries(CONFESSION_STATUS).map(([key, value]) => (
             <option key={value} value={value}>
-              {key.replace('_', ' ')}
+              {STATUS_LABELS[value] || key.replace('_', ' ')}
             </option>
           ))}
         </select>
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="card p-5 space-y-3">
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-3 w-1/2" />
+              <div className="skeleton h-3 w-full" />
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Title</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Organization</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {list.map((confession) => (
-                <tr key={confession.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <Link to={`/confessions/${confession.id}`} className="text-blue-600 hover:underline">
-                      {confession.title}
-                    </Link>
-                    {confession.is_anonymous && (
-                      <span className="ml-2 text-xs text-gray-400">(anonymous)</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {confession.organization_name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-xs rounded-full ${STATUS_COLORS[confession.status] || ''}`}>
-                      {confession.status?.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
-                    {formatDate(confession.created_at)}
-                  </td>
-                </tr>
-              ))}
-              {list.length === 0 && (
-                <tr>
-                  <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                    No confessions found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {count > 0 && (
-            <div className="px-4 py-3 bg-gray-50 text-sm text-gray-500">
-              {count} confession{count !== 1 ? 's' : ''} total
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {list.map((confession) => (
+            <div key={confession.id} className="card-hover overflow-hidden flex">
+              {/* Colored left strip */}
+              <div className={`w-1.5 flex-shrink-0 ${STRIP_COLORS[confession.status] || 'bg-gray-300'}`} />
+              <div className="flex-1 p-5">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <h3 className="font-semibold text-text-primary line-clamp-1">
+                    {confession.title}
+                  </h3>
+                  <span className={STATUS_COLORS[confession.status] || 'badge-neutral'}>
+                    {STATUS_LABELS[confession.status] || confession.status}
+                  </span>
+                </div>
+
+                {confession.is_anonymous && (
+                  <span className="text-xs text-text-secondary bg-gray-100 px-2 py-0.5 rounded-full">
+                    Anonim
+                  </span>
+                )}
+
+                <div className="flex items-center gap-4 mt-4 text-xs text-text-secondary">
+                  {confession.organization_name && (
+                    <div className="flex items-center gap-1">
+                      <Building2 size={13} />
+                      <span className="truncate max-w-[120px]">{confession.organization_name}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <FileText size={13} />
+                    <span>{formatDate(confession.created_at)}</span>
+                  </div>
+                </div>
+
+                <Link
+                  to={`/confessions/${confession.id}`}
+                  className="flex items-center gap-1 mt-4 text-sm text-primary-light hover:text-primary font-medium transition-colors"
+                >
+                  Batafsil
+                  <ChevronRight size={16} />
+                </Link>
+              </div>
+            </div>
+          ))}
+          {list.length === 0 && (
+            <div className="col-span-full card p-12 text-center text-text-secondary">
+              Konfessiyalar topilmadi
             </div>
           )}
         </div>

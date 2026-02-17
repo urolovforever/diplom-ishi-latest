@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import authAPI from '../api/authAPI';
 import FormField from '../components/ui/FormField';
 import { required, email as emailValidator } from '../utils/validation';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 
 function PasswordResetRequestPage() {
   const [emailValue, setEmailValue] = useState('');
@@ -12,10 +13,7 @@ function PasswordResetRequestPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const err = required(emailValue) || emailValidator(emailValue);
-    if (err) {
-      setError(err);
-      return;
-    }
+    if (err) { setError(err); return; }
     try {
       await authAPI.requestPasswordReset(emailValue);
     } catch {
@@ -26,14 +24,15 @@ function PasswordResetRequestPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Check your email</h1>
-          <p className="text-gray-600 mb-6">
-            If an account with that email exists, we sent a password reset link.
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="card max-w-md w-full p-8 text-center mx-4">
+          <CheckCircle size={48} className="mx-auto mb-4 text-success" />
+          <h1 className="text-xl font-bold text-text-primary mb-2">Emailingizni tekshiring</h1>
+          <p className="text-text-secondary mb-6">
+            Agar bunday email bilan hisob mavjud bo'lsa, parolni tiklash havolasini yubordik.
           </p>
-          <Link to="/login" className="text-blue-500 hover:text-blue-600">
-            Back to Login
+          <Link to="/login" className="text-primary-light hover:text-primary font-medium transition-colors">
+            Kirish sahifasiga qaytish
           </Link>
         </div>
       </div>
@@ -41,30 +40,32 @@ function PasswordResetRequestPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white rounded-lg shadow p-8">
-        <h1 className="text-2xl font-bold mb-6">Reset Password</h1>
-        <form onSubmit={handleSubmit}>
+    <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="card max-w-md w-full p-8 mx-4">
+        <h1 className="text-xl font-bold text-text-primary mb-1">Parolni tiklash</h1>
+        <p className="text-sm text-text-secondary mb-6">Email manzilingizni kiriting va biz sizga tiklash havolasini yuboramiz</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <FormField label="Email" error={error} id="reset-email">
-            <input
-              id="reset-email"
-              type="email"
-              value={emailValue}
-              onChange={(e) => { setEmailValue(e.target.value); setError(''); }}
-              className="w-full border rounded px-3 py-2"
-              placeholder="Enter your email"
-            />
+            <div className="relative">
+              <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <input
+                id="reset-email"
+                type="email"
+                value={emailValue}
+                onChange={(e) => { setEmailValue(e.target.value); setError(''); }}
+                className="input-field pl-10"
+                placeholder="email@example.com"
+              />
+            </div>
           </FormField>
-          <button
-            type="submit"
-            className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Send Reset Link
+          <button type="submit" className="btn-primary w-full">
+            Tiklash havolasini yuborish
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500">
-          <Link to="/login" className="text-blue-500 hover:text-blue-600">
-            Back to Login
+        <p className="mt-4 text-center text-sm">
+          <Link to="/login" className="text-primary-light hover:text-primary font-medium flex items-center justify-center gap-1 transition-colors">
+            <ArrowLeft size={16} />
+            Kirish sahifasiga qaytish
           </Link>
         </p>
       </div>

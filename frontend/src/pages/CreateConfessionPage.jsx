@@ -10,7 +10,7 @@ import {
 } from '../store/confessionsSlice';
 import { useCrypto } from '../hooks/useCrypto';
 import KeySetup from '../components/auth/KeySetup';
-import confessionsAPI from '../api/confessionsAPI';
+import { Lock, Send, ArrowLeft } from 'lucide-react';
 
 function CreateConfessionPage() {
   const { id } = useParams();
@@ -18,9 +18,8 @@ function CreateConfessionPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { current, organizations } = useSelector((state) => state.confessions);
-  const { isE2EReady, hasPublicKey, encryptConfession } = useCrypto();
   const { user } = useSelector((state) => state.auth);
-  const { encryptConfession, getRecipientPublicKeys } = useCrypto();
+  const { isE2EReady, encryptConfession, getRecipientPublicKeys } = useCrypto();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -54,31 +53,11 @@ function CreateConfessionPage() {
     setError(null);
 
     try {
-      let data;
-
-      if (useE2E && isE2EReady && !isEdit) {
-        // E2E encrypt the confession
-        const { encryptedContent, encryptedKeys } = await encryptConfession(content, organization);
-        data = {
-          title,
-          content: encryptedContent,
-          organization,
-          is_anonymous: isAnonymous,
-          is_e2e_encrypted: true,
-          encrypted_keys: encryptedKeys,
-        };
-      } else {
-        // Plain text (backwards compatible)
-        data = { title, content, organization, is_anonymous: isAnonymous };
-      }
-
-      let result;
       if (isEdit) {
         const data = { title, content, organization, is_anonymous: isAnonymous };
         const result = await dispatch(updateConfession({ id, data }));
-        if (updateConfession.rejected.match(result)) throw new Error('Update failed');
+        if (updateConfession.rejected.match(result)) throw new Error("Yangilash amalga oshmadi");
       } else {
-        // Collect recipient user IDs (org leader + current user)
         const selectedOrg = organizations.find((o) => o.id === organization);
         const recipientUserIds = new Set();
         recipientUserIds.add(user.id);
@@ -86,33 +65,32 @@ function CreateConfessionPage() {
           recipientUserIds.add(selectedOrg.leader.id);
         }
 
-        const recipientPublicKeys = await getRecipientPublicKeys([...recipientUserIds]);
-
-        if (recipientPublicKeys.length > 0) {
-          const { encryptedContent, encryptedKeys } = await encryptConfession(
-            content,
-            recipientPublicKeys
-          );
-          const data = {
-            title,
-            content: encryptedContent,
-            organization,
-            is_anonymous: isAnonymous,
-            is_e2e_encrypted: true,
-            encrypted_keys: encryptedKeys,
-          };
-          const result = await dispatch(createConfession(data));
-          if (createConfession.rejected.match(result)) throw new Error('Create failed');
+        let data;
+        if (useE2E && isE2EReady) {
+          const recipientPublicKeys = await getRecipientPublicKeys([...recipientUserIds]);
+          if (recipientPublicKeys.length > 0) {
+            const { encryptedContent, encryptedKeys } = await encryptConfession(content, recipientPublicKeys);
+            data = {
+              title,
+              content: encryptedContent,
+              organization,
+              is_anonymous: isAnonymous,
+              is_e2e_encrypted: true,
+              encrypted_keys: encryptedKeys,
+            };
+          } else {
+            data = { title, content, organization, is_anonymous: isAnonymous };
+          }
         } else {
-          // Fallback: no keys available, send unencrypted
-          const data = { title, content, organization, is_anonymous: isAnonymous };
-          const result = await dispatch(createConfession(data));
-          if (createConfession.rejected.match(result)) throw new Error('Create failed');
+          data = { title, content, organization, is_anonymous: isAnonymous };
         }
+
+        const result = await dispatch(createConfession(data));
+        if (createConfession.rejected.match(result)) throw new Error("Yaratish amalga oshmadi");
       }
       navigate('/confessions');
     } catch (err) {
-      setError(err.message || 'Something went wrong');
+      setError(err.message || "Xatolik yuz berdi");
     } finally {
       setSubmitting(false);
     }
@@ -121,13 +99,13 @@ function CreateConfessionPage() {
   if (showKeySetup) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Set Up E2E Encryption</h1>
+        <h1 className="text-2xl font-bold mb-6 text-text-primary">E2E shifrlashni sozlash</h1>
         <KeySetup onComplete={() => setShowKeySetup(false)} />
         <button
           onClick={() => setShowKeySetup(false)}
-          className="mt-4 text-gray-600 hover:text-gray-800 text-sm"
+          className="mt-4 text-text-secondary hover:text-text-primary text-sm"
         >
-          Skip for now
+          Hozircha o'tkazib yuborish
         </button>
       </div>
     );
@@ -135,116 +113,116 @@ function CreateConfessionPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Edit Confession' : 'New Confession'}
-      </h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-text-primary">
+          {isEdit ? "Konfessiyani tahrirlash" : "Yangi konfessiya"}
+        </h1>
+        <p className="text-sm text-text-secondary mt-1">
+          {isEdit ? "Konfessiya ma'lumotlarini yangilang" : "Yangi konfessiya yarating"}
+        </p>
+      </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{error}</div>
+        <div className="bg-red-50 border border-red-100 text-danger p-3 rounded-xl mb-4 text-sm">{error}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 max-w-2xl">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+      <form onSubmit={handleSubmit} className="card p-6 max-w-2xl space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Sarlavha</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input-field"
+            placeholder="Konfessiya sarlavhasi"
             required
           />
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Mazmun</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={8}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input-field"
+            placeholder="Konfessiya mazmunini kiriting..."
             required
           />
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Tashkilot</label>
           <select
             value={organization}
             onChange={(e) => setOrganization(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input-field"
             required
           >
-            <option value="">Select organization...</option>
+            <option value="">Tashkilotni tanlang...</option>
             {organizations.map((org) => (
               <option key={org.id} value={org.id}>{org.name}</option>
             ))}
           </select>
         </div>
 
-        <div className="mb-4">
+        <div>
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={isAnonymous}
               onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="rounded"
+              className="rounded border-gray-300"
             />
-            <span className="text-sm text-gray-700">Submit anonymously</span>
+            <span className="text-sm text-text-primary">Anonim yuborish</span>
           </label>
         </div>
 
         {!isEdit && (
-          <div className="mb-6 p-3 bg-gray-50 rounded">
+          <div className="p-3 bg-surface rounded-xl">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={useE2E}
                 onChange={(e) => setUseE2E(e.target.checked)}
-                className="rounded"
+                className="rounded border-gray-300"
               />
-              <span className="text-sm font-medium text-gray-700">
-                End-to-End Encryption
+              <span className="text-sm font-medium text-text-primary">
+                End-to-End shifrlash
               </span>
             </label>
             {useE2E && !isE2EReady && (
-              <div className="mt-2 text-sm text-yellow-600">
-                E2E encryption is not set up yet.{' '}
+              <div className="mt-2 text-sm text-warning">
+                E2E shifrlash sozlanmagan.{' '}
                 <button
                   type="button"
                   onClick={() => setShowKeySetup(true)}
-                  className="text-blue-600 hover:underline"
+                  className="text-primary-light hover:underline"
                 >
-                  Set up now
+                  Hozir sozlash
                 </button>
               </div>
             )}
             {useE2E && isE2EReady && (
-              <p className="mt-1 text-xs text-green-600">
-                Content will be encrypted in your browser before sending.
+              <p className="mt-1 text-xs text-success flex items-center gap-1">
+                <Lock size={12} /> Mazmun brauzeringizda shifrlangan holda yuboriladi
               </p>
             )}
-          <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-            End-to-end encrypted
           </div>
         )}
 
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {submitting ? 'Saving...' : isEdit ? 'Update' : 'Create'}
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={submitting} className="btn-primary flex items-center gap-2">
+            <Send size={16} />
+            {submitting ? 'Saqlanmoqda...' : isEdit ? 'Yangilash' : 'Yaratish'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/confessions')}
-            className="text-gray-600 hover:text-gray-800 px-4 py-2"
+            className="btn-secondary flex items-center gap-2"
           >
-            Cancel
+            <ArrowLeft size={16} />
+            Bekor qilish
           </button>
         </div>
       </form>
