@@ -5,15 +5,15 @@ export function usePermission() {
 
   return {
     canManageUsers: hasRole('super_admin'),
-    canViewAIDashboard: hasRole('super_admin', 'security_auditor', 'it_admin'),
-    canViewReports: hasRole('super_admin', 'security_auditor', 'qomita_rahbar'),
-    canViewAuditLog: hasRole('super_admin', 'security_auditor'),
-    canManageSettings: hasRole('super_admin', 'it_admin'),
-    canManageConfessions: hasRole('super_admin', 'qomita_rahbar', 'confession_leader'),
+    canViewAIDashboard: hasRole('super_admin', 'qomita_rahbar', 'qomita_xodimi'),
+    canViewReports: hasRole('super_admin', 'qomita_rahbar', 'qomita_xodimi'),
+    canViewAuditLog: hasRole('super_admin', 'qomita_rahbar'),
+    canManageSettings: hasRole('super_admin', 'qomita_xodimi'),
+    canManageConfessions: hasRole('super_admin', 'qomita_rahbar', 'konfessiya_rahbari'),
     canUploadDocuments: !!user,
-    canManageHoneypots: hasRole('super_admin', 'it_admin'),
-    canManageAlertRules: hasRole('super_admin', 'it_admin'),
-    canViewAccessLogs: hasRole('super_admin', 'security_auditor'),
-    canReviewAnomalies: hasRole('super_admin', 'security_auditor'),
+    canManageHoneypots: hasRole('super_admin', 'qomita_xodimi'),
+    canManageAlertRules: hasRole('super_admin', 'qomita_xodimi'),
+    canViewAccessLogs: hasRole('super_admin', 'qomita_rahbar'),
+    canReviewAnomalies: hasRole('super_admin', 'qomita_rahbar'),
   };
 }

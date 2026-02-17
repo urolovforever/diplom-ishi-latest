@@ -24,11 +24,11 @@ const navItems = [
   { path: '/documents', label: 'Hujjatlar', icon: FileText, roles: null },
   { path: '/organizations', label: 'Tashkilotlar', icon: Building2, roles: ['super_admin', 'qomita_rahbar'] },
   { path: '/notifications', label: 'Bildirishnomalar', icon: Bell, roles: null },
-  { path: '/ai-dashboard', label: 'AI Xavfsizlik', icon: BrainCircuit, roles: ['super_admin', 'security_auditor', 'it_admin'] },
-  { path: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['super_admin', 'security_auditor', 'qomita_rahbar'] },
-  { path: '/audit-log', label: 'Audit jurnali', icon: ScrollText, roles: ['super_admin', 'security_auditor'] },
+  { path: '/ai-dashboard', label: 'AI Xavfsizlik', icon: BrainCircuit, roles: ['super_admin', 'qomita_rahbar', 'qomita_xodimi'] },
+  { path: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['super_admin', 'qomita_rahbar', 'qomita_xodimi'] },
+  { path: '/audit-log', label: 'Audit jurnali', icon: ScrollText, roles: ['super_admin', 'qomita_rahbar'] },
   { path: '/users', label: 'Foydalanuvchilar', icon: Users, roles: ['super_admin'] },
-  { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: ['super_admin', 'it_admin'] },
+  { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: ['super_admin', 'qomita_xodimi'] },
   { path: '/profile', label: 'Profil', icon: User, roles: null },
 ];
 

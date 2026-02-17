@@ -20,7 +20,7 @@ class IsQomitaRahbar(BasePermission):
         )
 
 
-class IsConfessionLeader(BasePermission):
+class IsQomitaXodimi(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
@@ -28,36 +28,68 @@ class IsConfessionLeader(BasePermission):
             and request.user.role.name in [
                 Role.SUPER_ADMIN,
                 Role.QOMITA_RAHBAR,
-                Role.CONFESSION_LEADER,
+                Role.QOMITA_XODIMI,
             ]
         )
 
 
-class IsSecurityAuditor(BasePermission):
+class IsKonfessiyaRahbari(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
             and request.user.role
-            and request.user.role.name in [Role.SUPER_ADMIN, Role.SECURITY_AUDITOR]
+            and request.user.role.name in [
+                Role.SUPER_ADMIN,
+                Role.QOMITA_RAHBAR,
+                Role.KONFESSIYA_RAHBARI,
+            ]
         )
 
 
-class IsPsychologist(BasePermission):
+class IsKonfessiyaXodimi(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
             and request.user.role
-            and request.user.role.name in [Role.SUPER_ADMIN, Role.PSYCHOLOGIST]
+            and request.user.role.name in [
+                Role.SUPER_ADMIN,
+                Role.QOMITA_RAHBAR,
+                Role.KONFESSIYA_RAHBARI,
+                Role.KONFESSIYA_XODIMI,
+            ]
         )
 
 
-class IsITAdmin(BasePermission):
+class IsAdliyaXodimi(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
             and request.user.role
-            and request.user.role.name in [Role.SUPER_ADMIN, Role.IT_ADMIN]
+            and request.user.role.name in [
+                Role.SUPER_ADMIN,
+                Role.ADLIYA_XODIMI,
+            ]
         )
+
+
+class IsKengashAzo(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and request.user.role
+            and request.user.role.name in [
+                Role.SUPER_ADMIN,
+                Role.QOMITA_RAHBAR,
+                Role.KENGASH_AZO,
+            ]
+        )
+
+
+# Backward-compatible aliases for views that used old permission names
+IsConfessionLeader = IsKonfessiyaRahbari
+IsSecurityAuditor = IsQomitaRahbar
+IsPsychologist = IsKonfessiyaXodimi
+IsITAdmin = IsQomitaXodimi
 
 
 class HasRole(BasePermission):

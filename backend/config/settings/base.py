@@ -78,6 +78,15 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# TZ: bcrypt with cost factor 12
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+]
+
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 LANGUAGE_CODE = 'en-us'
@@ -106,6 +115,15 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # TZ: Rate limiting - 60 requests per minute per IP
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '30/minute',
+        'user': '60/minute',
+    },
 }
 
 # JWT
@@ -140,6 +158,10 @@ CELERY_BEAT_SCHEDULE = {
     'check-alert-thresholds': {
         'task': 'notifications.tasks.check_alert_thresholds',
         'schedule': 60 * 5,  # Every 5 minutes
+    },
+    'daily-encrypted-backup': {
+        'task': 'audit.tasks.daily_encrypted_backup',
+        'schedule': 60 * 60 * 24,  # Daily
     },
 }
 
@@ -206,7 +228,7 @@ AI_SECURITY = {
         'THRESHOLD': -0.5,
     },
     'SCAN_INTERVAL_MINUTES': 15,
-    'LOG_RETENTION_DAYS': 90,
+    'LOG_RETENTION_DAYS': 730,  # TZ: 2 years retention
 }
 
 # SMS 2FA
