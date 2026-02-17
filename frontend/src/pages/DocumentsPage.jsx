@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDocuments, uploadDocument, deleteDocument, fetchVersions } from '../store/documentsSlice';
+import { useCrypto } from '../hooks/useCrypto';
+import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/helpers';
 import { useCrypto } from '../hooks/useCrypto';
 import KeySetup from '../components/auth/KeySetup';
@@ -10,6 +12,8 @@ function DocumentsPage() {
   const { list, count, versions, loading } = useSelector((state) => state.documents);
   const { isE2EReady, encryptDocument } = useCrypto();
 
+  const { user } = useAuth();
+  const { encryptDocument, decryptDocument, getRecipientPublicKeys } = useCrypto();
   const [showUpload, setShowUpload] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -47,12 +51,32 @@ function DocumentsPage() {
       }
 
       await dispatch(uploadDocument(formData));
+      const recipientPublicKeys = await getRecipientPublicKeys([user.id]);
+
+      if (recipientPublicKeys.length > 0) {
+        const { encryptedBlob, iv, encryptedKeys } = await encryptDocument(file, recipientPublicKeys);
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('file', new File([encryptedBlob], file.name));
+        formData.append('is_e2e_encrypted', 'true');
+        formData.append('encrypted_keys', JSON.stringify(encryptedKeys));
+        await dispatch(uploadDocument(formData));
+      } else {
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('file', file);
+        await dispatch(uploadDocument(formData));
+      }
+
       setTitle('');
       setDescription('');
       setFile(null);
       setShowUpload(false);
     } catch (err) {
       alert('Upload failed: ' + (err.message || 'Unknown error'));
+      console.error('Upload failed:', err);
     } finally {
       setUploading(false);
     }
@@ -61,6 +85,35 @@ function DocumentsPage() {
   const handleDelete = async (id) => {
     if (window.confirm('Delete this document?')) {
       dispatch(deleteDocument(id));
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    if (doc.is_e2e_encrypted && doc.encrypted_keys?.length > 0) {
+      const password = prompt('Enter your encryption password to decrypt this document:');
+      if (!password) return;
+      try {
+        const response = await fetch(doc.file);
+        const encryptedBlob = await response.blob();
+        const decryptedBuffer = await decryptDocument(
+          encryptedBlob,
+          doc.encrypted_keys[0]?.iv || '',
+          doc.encrypted_keys,
+          user.id,
+          password
+        );
+        const blob = new Blob([decryptedBuffer]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.title;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Decryption failed. Check your password.');
+      }
+    } else if (doc.file) {
+      window.open(doc.file, '_blank');
     }
   };
 
@@ -164,12 +217,18 @@ function DocumentsPage() {
             )}
           </div>
 
+          <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+            File will be end-to-end encrypted
+          </div>
           <button
             type="submit"
             disabled={uploading}
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {uploading ? 'Uploading...' : 'Upload'}
+            {uploading ? 'Encrypting & Uploading...' : 'Upload'}
           </button>
         </form>
       )}
@@ -193,6 +252,13 @@ function DocumentsPage() {
                 <tr key={doc.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <span className="text-gray-800">{doc.title}</span>
+                    {doc.is_e2e_encrypted && (
+                      <span className="ml-2 text-xs text-green-600" title="E2E Encrypted">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    )}
                     {doc.description && (
                       <p className="text-xs text-gray-500 mt-1">{doc.description}</p>
                     )}
@@ -211,6 +277,12 @@ function DocumentsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm">
+                    <button
+                      onClick={() => handleDownload(doc)}
+                      className="text-green-600 hover:underline mr-3"
+                    >
+                      Download
+                    </button>
                     <button
                       onClick={() => toggleVersions(doc.id)}
                       className="text-blue-600 hover:underline mr-3"

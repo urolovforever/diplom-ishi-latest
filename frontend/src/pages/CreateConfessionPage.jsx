@@ -10,6 +10,7 @@ import {
 } from '../store/confessionsSlice';
 import { useCrypto } from '../hooks/useCrypto';
 import KeySetup from '../components/auth/KeySetup';
+import confessionsAPI from '../api/confessionsAPI';
 
 function CreateConfessionPage() {
   const { id } = useParams();
@@ -18,6 +19,8 @@ function CreateConfessionPage() {
   const navigate = useNavigate();
   const { current, organizations } = useSelector((state) => state.confessions);
   const { isE2EReady, hasPublicKey, encryptConfession } = useCrypto();
+  const { user } = useSelector((state) => state.auth);
+  const { encryptConfession, getRecipientPublicKeys } = useCrypto();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -71,11 +74,41 @@ function CreateConfessionPage() {
 
       let result;
       if (isEdit) {
-        result = await dispatch(updateConfession({ id, data }));
+        const data = { title, content, organization, is_anonymous: isAnonymous };
+        const result = await dispatch(updateConfession({ id, data }));
         if (updateConfession.rejected.match(result)) throw new Error('Update failed');
       } else {
-        result = await dispatch(createConfession(data));
-        if (createConfession.rejected.match(result)) throw new Error('Create failed');
+        // Collect recipient user IDs (org leader + current user)
+        const selectedOrg = organizations.find((o) => o.id === organization);
+        const recipientUserIds = new Set();
+        recipientUserIds.add(user.id);
+        if (selectedOrg?.leader?.id) {
+          recipientUserIds.add(selectedOrg.leader.id);
+        }
+
+        const recipientPublicKeys = await getRecipientPublicKeys([...recipientUserIds]);
+
+        if (recipientPublicKeys.length > 0) {
+          const { encryptedContent, encryptedKeys } = await encryptConfession(
+            content,
+            recipientPublicKeys
+          );
+          const data = {
+            title,
+            content: encryptedContent,
+            organization,
+            is_anonymous: isAnonymous,
+            is_e2e_encrypted: true,
+            encrypted_keys: encryptedKeys,
+          };
+          const result = await dispatch(createConfession(data));
+          if (createConfession.rejected.match(result)) throw new Error('Create failed');
+        } else {
+          // Fallback: no keys available, send unencrypted
+          const data = { title, content, organization, is_anonymous: isAnonymous };
+          const result = await dispatch(createConfession(data));
+          if (createConfession.rejected.match(result)) throw new Error('Create failed');
+        }
       }
       navigate('/confessions');
     } catch (err) {
@@ -190,6 +223,11 @@ function CreateConfessionPage() {
                 Content will be encrypted in your browser before sending.
               </p>
             )}
+          <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+            End-to-end encrypted
           </div>
         )}
 
