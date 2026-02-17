@@ -9,6 +9,7 @@ import {
   clearCurrent,
 } from '../store/confessionsSlice';
 import { useCrypto } from '../hooks/useCrypto';
+import KeySetup from '../components/auth/KeySetup';
 import confessionsAPI from '../api/confessionsAPI';
 
 function CreateConfessionPage() {
@@ -17,6 +18,7 @@ function CreateConfessionPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { current, organizations } = useSelector((state) => state.confessions);
+  const { isE2EReady, hasPublicKey, encryptConfession } = useCrypto();
   const { user } = useSelector((state) => state.auth);
   const { encryptConfession, getRecipientPublicKeys } = useCrypto();
 
@@ -24,8 +26,10 @@ function CreateConfessionPage() {
   const [content, setContent] = useState('');
   const [organization, setOrganization] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [useE2E, setUseE2E] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [showKeySetup, setShowKeySetup] = useState(false);
 
   useEffect(() => {
     dispatch(fetchOrganizations());
@@ -50,6 +54,25 @@ function CreateConfessionPage() {
     setError(null);
 
     try {
+      let data;
+
+      if (useE2E && isE2EReady && !isEdit) {
+        // E2E encrypt the confession
+        const { encryptedContent, encryptedKeys } = await encryptConfession(content, organization);
+        data = {
+          title,
+          content: encryptedContent,
+          organization,
+          is_anonymous: isAnonymous,
+          is_e2e_encrypted: true,
+          encrypted_keys: encryptedKeys,
+        };
+      } else {
+        // Plain text (backwards compatible)
+        data = { title, content, organization, is_anonymous: isAnonymous };
+      }
+
+      let result;
       if (isEdit) {
         const data = { title, content, organization, is_anonymous: isAnonymous };
         const result = await dispatch(updateConfession({ id, data }));
@@ -94,6 +117,21 @@ function CreateConfessionPage() {
       setSubmitting(false);
     }
   };
+
+  if (showKeySetup) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Set Up E2E Encryption</h1>
+        <KeySetup onComplete={() => setShowKeySetup(false)} />
+        <button
+          onClick={() => setShowKeySetup(false)}
+          className="mt-4 text-gray-600 hover:text-gray-800 text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -143,7 +181,7 @@ function CreateConfessionPage() {
           </select>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -156,6 +194,35 @@ function CreateConfessionPage() {
         </div>
 
         {!isEdit && (
+          <div className="mb-6 p-3 bg-gray-50 rounded">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useE2E}
+                onChange={(e) => setUseE2E(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                End-to-End Encryption
+              </span>
+            </label>
+            {useE2E && !isE2EReady && (
+              <div className="mt-2 text-sm text-yellow-600">
+                E2E encryption is not set up yet.{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowKeySetup(true)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Set up now
+                </button>
+              </div>
+            )}
+            {useE2E && isE2EReady && (
+              <p className="mt-1 text-xs text-green-600">
+                Content will be encrypted in your browser before sending.
+              </p>
+            )}
           <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />

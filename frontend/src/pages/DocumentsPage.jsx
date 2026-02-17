@@ -4,18 +4,24 @@ import { fetchDocuments, uploadDocument, deleteDocument, fetchVersions } from '.
 import { useCrypto } from '../hooks/useCrypto';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/helpers';
+import { useCrypto } from '../hooks/useCrypto';
+import KeySetup from '../components/auth/KeySetup';
 
 function DocumentsPage() {
   const dispatch = useDispatch();
   const { list, count, versions, loading } = useSelector((state) => state.documents);
+  const { isE2EReady, encryptDocument } = useCrypto();
+
   const { user } = useAuth();
   const { encryptDocument, decryptDocument, getRecipientPublicKeys } = useCrypto();
   const [showUpload, setShowUpload] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
+  const [useE2E, setUseE2E] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [expandedDoc, setExpandedDoc] = useState(null);
+  const [showKeySetup, setShowKeySetup] = useState(false);
 
   useEffect(() => {
     dispatch(fetchDocuments());
@@ -27,6 +33,24 @@ function DocumentsPage() {
     setUploading(true);
 
     try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+
+      if (useE2E && isE2EReady) {
+        // E2E encrypt the file
+        const { encryptedBlob, encryptedKeys } = await encryptDocument(file);
+        const encryptedFile = new File([encryptedBlob], file.name, {
+          type: 'application/octet-stream',
+        });
+        formData.append('file', encryptedFile);
+        formData.append('is_e2e_encrypted', 'true');
+        formData.append('encrypted_keys', JSON.stringify(encryptedKeys));
+      } else {
+        formData.append('file', file);
+      }
+
+      await dispatch(uploadDocument(formData));
       const recipientPublicKeys = await getRecipientPublicKeys([user.id]);
 
       if (recipientPublicKeys.length > 0) {
@@ -51,6 +75,7 @@ function DocumentsPage() {
       setFile(null);
       setShowUpload(false);
     } catch (err) {
+      alert('Upload failed: ' + (err.message || 'Unknown error'));
       console.error('Upload failed:', err);
     } finally {
       setUploading(false);
@@ -103,6 +128,21 @@ function DocumentsPage() {
     }
   };
 
+  if (showKeySetup) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Set Up E2E Encryption</h1>
+        <KeySetup onComplete={() => setShowKeySetup(false)} />
+        <button
+          onClick={() => setShowKeySetup(false)}
+          className="mt-4 text-gray-600 hover:text-gray-800 text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -145,6 +185,38 @@ function DocumentsPage() {
               required
             />
           </div>
+
+          <div className="mb-4 p-3 bg-gray-50 rounded">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useE2E}
+                onChange={(e) => setUseE2E(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                End-to-End Encryption
+              </span>
+            </label>
+            {useE2E && !isE2EReady && (
+              <div className="mt-2 text-sm text-yellow-600">
+                E2E encryption is not set up.{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowKeySetup(true)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Set up now
+                </button>
+              </div>
+            )}
+            {useE2E && isE2EReady && (
+              <p className="mt-1 text-xs text-green-600">
+                File will be encrypted in your browser before uploading.
+              </p>
+            )}
+          </div>
+
           <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -171,6 +243,7 @@ function DocumentsPage() {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Title</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Uploaded By</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">E2E</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
@@ -197,6 +270,13 @@ function DocumentsPage() {
                     {formatDate(doc.created_at)}
                   </td>
                   <td className="px-4 py-3 text-sm">
+                    {doc.is_e2e_encrypted ? (
+                      <span className="text-green-600 font-medium">Yes</span>
+                    ) : (
+                      <span className="text-gray-400">No</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
                     <button
                       onClick={() => handleDownload(doc)}
                       className="text-green-600 hover:underline mr-3"
@@ -220,7 +300,7 @@ function DocumentsPage() {
               ))}
               {expandedDoc && versions[expandedDoc] && (
                 <tr>
-                  <td colSpan="4" className="px-4 py-3 bg-gray-50">
+                  <td colSpan="5" className="px-4 py-3 bg-gray-50">
                     <p className="text-sm font-medium text-gray-600 mb-2">Version History</p>
                     {versions[expandedDoc].length > 0 ? (
                       <ul className="text-sm text-gray-500 space-y-1">
@@ -238,7 +318,7 @@ function DocumentsPage() {
               )}
               {list.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
                     No documents found.
                   </td>
                 </tr>
