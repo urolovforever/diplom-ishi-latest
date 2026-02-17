@@ -15,7 +15,7 @@ from accounts.permissions import IsITAdmin, IsSecurityAuditor, IsSuperAdmin
 from audit.mixins import AuditMixin
 from .encryption import encrypt_file, decrypt_file
 from .honeypot import HoneypotManager
-from .models import Document, DocumentVersion, DocumentAccessLog, HoneypotFile
+from .models import Document, DocumentVersion, DocumentAccessLog, DocumentEncryptedKey, HoneypotFile
 from .permissions import (
     SECURITY_LEVEL_HIERARCHY, ROLE_MAX_SECURITY_LEVEL,
     filter_by_security_level, requires_download_confirmation,
@@ -86,8 +86,9 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         instance = serializer.save(uploaded_by=self.request.user)
-        # Encrypt file if encryption is enabled
-        if instance.is_encrypted and instance.file:
+
+        # Skip server-side encryption for E2E encrypted documents (already encrypted client-side)
+        if not instance.is_e2e_encrypted and instance.is_encrypted and instance.file:
             try:
                 instance.file.seek(0)
                 content = instance.file.read()
@@ -98,6 +99,16 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
                 instance.save()
             except Exception:
                 pass  # File saved unencrypted if encryption fails
+
+        # Save E2E encrypted keys
+        encrypted_keys = self.request.data.get('encrypted_keys', [])
+        if encrypted_keys and isinstance(encrypted_keys, list):
+            for ek in encrypted_keys:
+                DocumentEncryptedKey.objects.create(
+                    document=instance,
+                    user_id=ek['user'],
+                    encrypted_key=ek['encrypted_key'],
+                )
 
         DocumentVersion.objects.create(
             document=instance,

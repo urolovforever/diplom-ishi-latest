@@ -15,4 +15,6 @@ urlpatterns = [
     path('password-reset/', views.PasswordResetRequestView.as_view(), name='password-reset'),
     path('password-reset/confirm/', views.PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('public-key/', views.PublicKeyView.as_view(), name='public-key'),
+    path('users/<uuid:pk>/public-key/', views.UserPublicKeyView.as_view(), name='user-public-key'),
 ]

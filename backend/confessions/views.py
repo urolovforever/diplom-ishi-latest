@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from accounts.models import Role
 from accounts.permissions import IsQomitaRahbar
 from audit.mixins import AuditMixin
-from .models import Organization, Confession
+from .models import Organization, Confession, ConfessionEncryptedKey
 from .serializers import (
     OrganizationListSerializer,
     OrganizationWriteSerializer,
@@ -66,6 +66,14 @@ class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         instance = serializer.save(author=self.request.user)
+        encrypted_keys = self.request.data.get('encrypted_keys', [])
+        if encrypted_keys and isinstance(encrypted_keys, list):
+            for ek in encrypted_keys:
+                ConfessionEncryptedKey.objects.create(
+                    confession=instance,
+                    user_id=ek['user'],
+                    encrypted_key=ek['encrypted_key'],
+                )
         self._create_audit_log('create', instance)
         return instance
 
