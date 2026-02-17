@@ -19,6 +19,17 @@ class OrganizationWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class EncryptedKeySerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    encrypted_key = serializers.CharField()
+
+
+class ConfessionEncryptedKeyReadSerializer(serializers.ModelSerializer):
+    user_id = serializers.UUIDField(source='user.id')
+
+    class Meta:
+        model = ConfessionEncryptedKey
+        fields = ['user_id', 'encrypted_key']
 class ConfessionEncryptedKeySerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfessionEncryptedKey
@@ -28,6 +39,7 @@ class ConfessionEncryptedKeySerializer(serializers.ModelSerializer):
 class ConfessionListSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source='organization.name', read_only=True)
+    encrypted_keys = ConfessionEncryptedKeyReadSerializer(many=True, read_only=True)
     encrypted_keys = ConfessionEncryptedKeySerializer(many=True, read_only=True)
 
     class Meta:
@@ -53,6 +65,7 @@ class ConfessionListSerializer(serializers.ModelSerializer):
 
 
 class ConfessionWriteSerializer(serializers.ModelSerializer):
+    encrypted_keys = EncryptedKeySerializer(many=True, required=False, write_only=True)
     encrypted_keys = serializers.ListField(child=serializers.DictField(), required=False, write_only=True)
 
     class Meta:
@@ -61,6 +74,32 @@ class ConfessionWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def create(self, validated_data):
+        encrypted_keys_data = validated_data.pop('encrypted_keys', [])
+        confession = super().create(validated_data)
+
+        for key_data in encrypted_keys_data:
+            ConfessionEncryptedKey.objects.create(
+                confession=confession,
+                user_id=key_data['user_id'],
+                encrypted_key=key_data['encrypted_key'],
+            )
+
+        return confession
+
+    def update(self, instance, validated_data):
+        encrypted_keys_data = validated_data.pop('encrypted_keys', None)
+        instance = super().update(instance, validated_data)
+
+        if encrypted_keys_data is not None:
+            instance.encrypted_keys.all().delete()
+            for key_data in encrypted_keys_data:
+                ConfessionEncryptedKey.objects.create(
+                    confession=instance,
+                    user_id=key_data['user_id'],
+                    encrypted_key=key_data['encrypted_key'],
+                )
+
+        return instance
         validated_data.pop('encrypted_keys', None)
         return super().create(validated_data)
 

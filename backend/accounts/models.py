@@ -80,6 +80,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     failed_login_count = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
 
+    # E2E Encryption fields
     public_key = models.TextField(null=True, blank=True)
     encrypted_private_key = models.TextField(null=True, blank=True)
 

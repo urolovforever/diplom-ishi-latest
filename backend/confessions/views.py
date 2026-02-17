@@ -48,7 +48,9 @@ class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Confession.objects.select_related('author__role', 'organization').all()
+        qs = Confession.objects.select_related(
+            'author__role', 'organization',
+        ).prefetch_related('encrypted_keys__user').all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
             return qs
         if user.role and user.role.name == Role.PSYCHOLOGIST:
@@ -84,7 +86,9 @@ class ConfessionDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Confession.objects.select_related('author__role', 'organization').all()
+        qs = Confession.objects.select_related(
+            'author__role', 'organization',
+        ).prefetch_related('encrypted_keys__user').all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
             return qs
         if user.role and user.role.name == Role.PSYCHOLOGIST:
