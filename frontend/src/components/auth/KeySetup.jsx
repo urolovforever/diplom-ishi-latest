@@ -52,13 +52,12 @@ function KeySetup({ children, onComplete }) {
     setGenerating(true);
     try {
       const { publicKeyJwk, privateKeyJwk } = await generateKeyPair();
-      await storePrivateKey(privateKeyJwk, password);
-      const encryptedPrivateKeyBackup = JSON.stringify(privateKeyJwk);
+      const encryptedData = await storePrivateKey(privateKeyJwk, password);
 
       await dispatch(
         uploadPublicKey({
           public_key: JSON.stringify(publicKeyJwk),
-          encrypted_private_key: encryptedPrivateKeyBackup,
+          encrypted_private_key: JSON.stringify(encryptedData),
         })
       ).unwrap();
 
