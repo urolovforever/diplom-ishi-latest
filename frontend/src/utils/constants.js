@@ -3,11 +3,11 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/ap
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
   QOMITA_RAHBAR: 'qomita_rahbar',
-  CONFESSION_LEADER: 'confession_leader',
-  MEMBER: 'member',
-  SECURITY_AUDITOR: 'security_auditor',
-  PSYCHOLOGIST: 'psychologist',
-  IT_ADMIN: 'it_admin',
+  QOMITA_XODIMI: 'qomita_xodimi',
+  KONFESSIYA_RAHBARI: 'konfessiya_rahbari',
+  KONFESSIYA_XODIMI: 'konfessiya_xodimi',
+  ADLIYA_XODIMI: 'adliya_xodimi',
+  KENGASH_AZO: 'kengash_azo',
 };
 
 export const CONFESSION_STATUS = {
@@ -26,9 +26,8 @@ export const SECURITY_LEVELS = {
 };
 
 export const DOCUMENT_CATEGORIES = {
-  CONFESSION_DOC: 'confession_doc',
-  EVIDENCE: 'evidence',
-  REPORT: 'report',
-  LEGAL: 'legal',
-  OTHER: 'other',
+  REGISTRATION: 'registration',
+  REPORTS: 'reports',
+  NORMATIVE: 'normative',
+  CONFIDENTIAL: 'confidential',
 };

@@ -1,6 +1,8 @@
 """
 Step 1: Generate synthetic activity log dataset for AI model training.
 Creates 2994 records simulating normal and anomalous user behavior.
+TZ spec: 9 parameters (failed_logins, docs_accessed, session_duration_min,
+day_of_week, download_mb, own_section, role, confession_type, is_anomaly).
 """
 import csv
 import random
@@ -11,26 +13,37 @@ NUM_NORMAL = 2700
 NUM_ANOMALOUS = 294  # ~10% anomalies
 
 USERS = [f'user_{i}@scp.local' for i in range(1, 51)]
-ENDPOINTS = [
-    '/api/confessions/', '/api/documents/', '/api/accounts/profile/',
-    '/api/notifications/', '/api/audit/logs/', '/api/confessions/organizations/',
-    '/api/documents/access-logs/', '/api/ai-security/dashboard/',
-]
-METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+
+# TZ roles encoded
+ROLES = {
+    'super_admin': 1,
+    'qomita_rahbar': 2,
+    'qomita_xodimi': 3,
+    'konfessiya_rahbari': 4,
+    'konfessiya_xodimi': 5,
+    'adliya_xodimi': 6,
+    'kengash_azo': 7,
+}
+
+# TZ confession types
+CONFESSION_TYPES = {
+    'diniy': 1,
+    'fuqarolik': 2,
+}
 
 
 def generate_normal_record():
-    """Generate a single normal activity record."""
+    """Generate a single normal activity record with TZ-spec features."""
     return {
         'user': random.choice(USERS),
-        'request_count_per_hour': random.randint(5, 50),
-        'unique_endpoints': random.randint(1, 5),
-        'time_of_day': random.randint(8, 18),  # Working hours
-        'error_rate': round(random.uniform(0.0, 0.1), 4),
-        'avg_payload_size': round(random.uniform(100, 5000), 2),
-        'docs_accessed': random.randint(0, 10),
-        'download_count': random.randint(0, 5),
         'failed_logins': 0,
+        'docs_accessed': random.randint(0, 10),
+        'session_duration_min': round(random.uniform(5, 120), 1),
+        'day_of_week': random.randint(0, 4),  # Working days (Mon-Fri)
+        'download_mb': round(random.uniform(0, 50), 2),
+        'own_section': round(random.uniform(0.8, 1.0), 2),  # Mostly own section
+        'role': random.choice(list(ROLES.values())),
+        'confession_type': random.choice(list(CONFESSION_TYPES.values())),
         'is_anomaly': 0,
     }
 
@@ -38,28 +51,26 @@ def generate_normal_record():
 def generate_anomalous_record():
     """Generate a single anomalous activity record."""
     anomaly_type = random.choice([
-        'mass_download', 'off_hours', 'brute_force', 'endpoint_scan', 'high_error'
+        'mass_download', 'off_hours', 'brute_force', 'cross_section', 'excessive_docs'
     ])
 
     record = generate_normal_record()
     record['is_anomaly'] = 1
 
     if anomaly_type == 'mass_download':
-        record['request_count_per_hour'] = random.randint(200, 500)
-        record['download_count'] = random.randint(50, 200)
+        record['download_mb'] = round(random.uniform(500, 2000), 2)
         record['docs_accessed'] = random.randint(30, 100)
     elif anomaly_type == 'off_hours':
-        record['time_of_day'] = random.choice([0, 1, 2, 3, 4, 5, 23])
-        record['request_count_per_hour'] = random.randint(20, 100)
+        record['day_of_week'] = random.choice([5, 6])  # Weekend
+        record['session_duration_min'] = round(random.uniform(200, 480), 1)
     elif anomaly_type == 'brute_force':
         record['failed_logins'] = random.randint(5, 30)
-        record['error_rate'] = round(random.uniform(0.5, 1.0), 4)
-    elif anomaly_type == 'endpoint_scan':
-        record['unique_endpoints'] = random.randint(15, 30)
-        record['request_count_per_hour'] = random.randint(100, 300)
-    elif anomaly_type == 'high_error':
-        record['error_rate'] = round(random.uniform(0.4, 0.9), 4)
-        record['request_count_per_hour'] = random.randint(50, 150)
+    elif anomaly_type == 'cross_section':
+        record['own_section'] = round(random.uniform(0.0, 0.3), 2)  # Accessing other sections
+        record['docs_accessed'] = random.randint(15, 50)
+    elif anomaly_type == 'excessive_docs':
+        record['docs_accessed'] = random.randint(50, 200)
+        record['session_duration_min'] = round(random.uniform(10, 30), 1)  # Short session, many docs
 
     return record
 
@@ -76,9 +87,9 @@ def main():
     random.shuffle(records)
 
     fieldnames = [
-        'user', 'request_count_per_hour', 'unique_endpoints', 'time_of_day',
-        'error_rate', 'avg_payload_size', 'docs_accessed', 'download_count',
-        'failed_logins', 'is_anomaly',
+        'user', 'failed_logins', 'docs_accessed', 'session_duration_min',
+        'day_of_week', 'download_mb', 'own_section', 'role',
+        'confession_type', 'is_anomaly',
     ]
 
     with open(OUTPUT_FILE, 'w', newline='') as f:
