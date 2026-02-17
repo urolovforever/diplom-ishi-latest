@@ -11,12 +11,12 @@ class Document(models.Model):
         ('secret', 'Secret'),
     ]
 
+    # TZ: Document categories
     CATEGORIES = [
-        ('confession_doc', 'Confession Document'),
-        ('evidence', 'Evidence'),
-        ('report', 'Report'),
-        ('legal', 'Legal'),
-        ('other', 'Other'),
+        ('registration', "Ro'yxatga olish hujjatlari"),
+        ('reports', 'Hisobotlar'),
+        ('normative', "Me'yoriy hujjatlar"),
+        ('confidential', 'Maxfiy hujjatlar'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -30,10 +30,12 @@ class Document(models.Model):
         'confessions.Confession', on_delete=models.CASCADE,
         related_name='documents', null=True, blank=True,
     )
+    file_size_mb = models.FloatField(null=True, blank=True)
+    file_type = models.CharField(max_length=50, blank=True)
     is_encrypted = models.BooleanField(default=True)
     is_e2e_encrypted = models.BooleanField(default=False)
     security_level = models.CharField(max_length=20, choices=SECURITY_LEVELS, default='internal')
-    category = models.CharField(max_length=20, choices=CATEGORIES, default='other')
+    category = models.CharField(max_length=20, choices=CATEGORIES, default='registration')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

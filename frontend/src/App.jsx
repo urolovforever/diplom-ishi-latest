@@ -73,7 +73,7 @@ function App() {
         <Route
           path="ai-dashboard"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'security_auditor', 'it_admin']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'qomita_xodimi']}>
               <AIDashboardPage />
             </RoleBasedRoute>
           }
@@ -81,7 +81,7 @@ function App() {
         <Route
           path="reports"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'security_auditor', 'qomita_rahbar']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'qomita_xodimi']}>
               <ReportsPage />
             </RoleBasedRoute>
           }
@@ -89,7 +89,7 @@ function App() {
         <Route
           path="audit-log"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'security_auditor']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar']}>
               <AuditLogPage />
             </RoleBasedRoute>
           }
@@ -97,7 +97,7 @@ function App() {
         <Route
           path="settings"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'it_admin']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_xodimi']}>
               <SettingsPage />
             </RoleBasedRoute>
           }

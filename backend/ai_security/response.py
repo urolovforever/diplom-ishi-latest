@@ -52,7 +52,7 @@ class AnomalyResponseHandler:
         from notifications.models import Notification
 
         admins = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.QOMITA_RAHBAR],
+            role__name__in=[Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI],
             is_active=True,
         )
 
@@ -71,6 +71,22 @@ class AnomalyResponseHandler:
                 ),
                 notification_type='anomaly',
             )
+
+        # TZ: Email alert to admins
+        try:
+            from notifications.tasks import send_notification_email
+            for admin in admins:
+                send_notification_email.delay(
+                    admin.email,
+                    f'AI Anomaly Alert: {severity.upper()}',
+                    f'Foydalanuvchi: {user.email}\n'
+                    f'Anomaliya balli: {score:.4f}\n'
+                    f'Darajasi: {severity.upper()}\n'
+                    f'Asosiy ko\'rsatkichlar: {feature_summary}\n\n'
+                    f'Iltimos, tizimga kirib tekshiring.',
+                )
+        except Exception as e:
+            logger.error('Failed to send email alert: %s', e)
 
         # Telegram alert
         try:

@@ -11,11 +11,15 @@ class ActivityLog(models.Model):
     )
     action = models.CharField(max_length=255)
     resource = models.CharField(max_length=255, blank=True)
+    # TZ required fields
+    resource_type = models.CharField(max_length=100, blank=True)
+    resource_id = models.CharField(max_length=255, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     request_method = models.CharField(max_length=10, blank=True)
     request_path = models.TextField(blank=True)
     response_status = models.IntegerField(null=True, blank=True)
+    details = models.JSONField(default=dict, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

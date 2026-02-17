@@ -28,6 +28,12 @@ class Confession(models.Model):
         ('rejected', 'Rejected'),
     ]
 
+    # TZ: Confession types
+    TYPE_CHOICES = [
+        ('diniy', 'Diniy'),
+        ('fuqarolik', 'Fuqarolik'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     content = models.TextField()
@@ -37,6 +43,12 @@ class Confession(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name='confessions',
     )
+    # TZ required fields
+    confession_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='diniy')
+    registration_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    legal_address = models.TextField(blank=True)
+    organization_count = models.IntegerField(default=0)
+    member_count = models.IntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     is_anonymous = models.BooleanField(default=False)
     is_e2e_encrypted = models.BooleanField(default=False)

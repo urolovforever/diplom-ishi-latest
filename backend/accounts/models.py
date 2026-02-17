@@ -9,20 +9,20 @@ from django.utils import timezone
 class Role(models.Model):
     SUPER_ADMIN = 'super_admin'
     QOMITA_RAHBAR = 'qomita_rahbar'
-    CONFESSION_LEADER = 'confession_leader'
-    MEMBER = 'member'
-    SECURITY_AUDITOR = 'security_auditor'
-    PSYCHOLOGIST = 'psychologist'
-    IT_ADMIN = 'it_admin'
+    QOMITA_XODIMI = 'qomita_xodimi'
+    KONFESSIYA_RAHBARI = 'konfessiya_rahbari'
+    KONFESSIYA_XODIMI = 'konfessiya_xodimi'
+    ADLIYA_XODIMI = 'adliya_xodimi'
+    KENGASH_AZO = 'kengash_azo'
 
     ROLE_CHOICES = [
         (SUPER_ADMIN, 'Super Admin'),
-        (QOMITA_RAHBAR, 'Qomita Rahbar'),
-        (CONFESSION_LEADER, 'Confession Leader'),
-        (MEMBER, 'Member'),
-        (SECURITY_AUDITOR, 'Security Auditor'),
-        (PSYCHOLOGIST, 'Psychologist'),
-        (IT_ADMIN, 'IT Admin'),
+        (QOMITA_RAHBAR, "Qo'mita Rahbari"),
+        (QOMITA_XODIMI, "Qo'mita Xodimi"),
+        (KONFESSIYA_RAHBARI, 'Konfessiya Rahbari'),
+        (KONFESSIYA_XODIMI, 'Konfessiya Xodimi'),
+        (ADLIYA_XODIMI, 'Adliya Xodimi'),
+        (KENGASH_AZO, "Kengash A'zosi"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -65,7 +65,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     role = models.ForeignKey(Role, on_delete=models.PROTECT, null=True, blank=True, related_name='users')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    is_2fa_enabled = models.BooleanField(default=False)
+    is_2fa_enabled = models.BooleanField(default=True)
     totp_secret = models.CharField(max_length=64, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
     twofa_method = models.CharField(
@@ -79,6 +79,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     must_change_password = models.BooleanField(default=False)
     failed_login_count = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
+
+    # TZ: User's confession (organization) and who created the user
+    confession = models.ForeignKey(
+        'confessions.Organization', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='members',
+    )
+    created_by = models.ForeignKey(
+        'self', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_users',
+    )
 
     # E2E Encryption fields
     public_key = models.TextField(null=True, blank=True)
@@ -178,3 +188,28 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f'{self.user.email} - {self.token[:8]}...'
+
+
+class IPRestriction(models.Model):
+    LIST_TYPES = [
+        ('whitelist', 'Whitelist'),
+        ('blacklist', 'Blacklist'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ip_address = models.GenericIPAddressField()
+    list_type = models.CharField(max_length=10, choices=LIST_TYPES)
+    reason = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='ip_restrictions',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['ip_address', 'list_type']
+
+    def __str__(self):
+        return f'{self.list_type}: {self.ip_address}'

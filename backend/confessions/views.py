@@ -1,4 +1,8 @@
+import csv
+import io
+
 from django.db.models import Q
+from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -44,7 +48,7 @@ class OrganizationDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     filterset_fields = ['status', 'organization', 'is_anonymous']
-    filterset_class = None  # Uses filterset_fields; see confessions/filters.py for advanced filtering
+    filterset_class = None
 
     def get_queryset(self):
         user = self.request.user
@@ -53,12 +57,11 @@ class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
         ).prefetch_related('encrypted_keys__user').all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
             return qs
-        if user.role and user.role.name == Role.PSYCHOLOGIST:
+        if user.role and user.role.name == Role.QOMITA_XODIMI:
             return qs  # Read-only access to all confessions
-        if user.role and user.role.name == Role.CONFESSION_LEADER:
-            # Leaders see confessions in orgs they lead + their own
+        if user.role and user.role.name == Role.KONFESSIYA_RAHBARI:
             return qs.filter(Q(organization__leader=user) | Q(author=user))
-        # Members see only their own
+        # Other roles see only their own
         return qs.filter(author=user)
 
     def get_serializer_class(self):
@@ -83,9 +86,9 @@ class ConfessionDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
         ).prefetch_related('encrypted_keys__user').all()
         if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
             return qs
-        if user.role and user.role.name == Role.PSYCHOLOGIST:
-            return qs  # Read-only access
-        if user.role and user.role.name == Role.CONFESSION_LEADER:
+        if user.role and user.role.name == Role.QOMITA_XODIMI:
+            return qs
+        if user.role and user.role.name == Role.KONFESSIYA_RAHBARI:
             return qs.filter(Q(organization__leader=user) | Q(author=user))
         return qs.filter(author=user)
 
@@ -96,12 +99,11 @@ class ConfessionDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 
     def check_object_permissions(self, request, obj):
         super().check_object_permissions(request, obj)
-        # Edit restrictions: authors edit own drafts; leaders+ edit any
         if request.method in ('PUT', 'PATCH', 'DELETE'):
             user = request.user
             if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
                 return
-            if user.role and user.role.name == Role.CONFESSION_LEADER and obj.organization.leader == user:
+            if user.role and user.role.name == Role.KONFESSIYA_RAHBARI and obj.organization.leader == user:
                 return
             if obj.author == user and obj.status == 'draft':
                 return
@@ -109,10 +111,10 @@ class ConfessionDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 
 
 TRANSITIONS = {
-    'submit': {'from': ['draft'], 'to': 'submitted', 'roles': None},  # None = author only
-    'review': {'from': ['submitted'], 'to': 'under_review', 'roles': [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.CONFESSION_LEADER]},
-    'approve': {'from': ['under_review'], 'to': 'approved', 'roles': [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.CONFESSION_LEADER]},
-    'reject': {'from': ['under_review'], 'to': 'rejected', 'roles': [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.CONFESSION_LEADER]},
+    'submit': {'from': ['draft'], 'to': 'submitted', 'roles': None},
+    'review': {'from': ['submitted'], 'to': 'under_review', 'roles': [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.KONFESSIYA_RAHBARI]},
+    'approve': {'from': ['under_review'], 'to': 'approved', 'roles': [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.KONFESSIYA_RAHBARI]},
+    'reject': {'from': ['under_review'], 'to': 'rejected', 'roles': [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.KONFESSIYA_RAHBARI]},
 }
 
 
@@ -131,26 +133,61 @@ class ConfessionTransitionView(APIView):
         transition = TRANSITIONS[action]
         user = request.user
 
-        # Check current status allows this transition
         if confession.status not in transition['from']:
             return Response(
                 {'detail': f'Cannot {action} a confession with status "{confession.status}".'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Check role permission
         if transition['roles'] is None:
-            # Author-only action (submit)
             if confession.author != user:
                 return Response({'detail': 'Only the author can submit.'}, status=status.HTTP_403_FORBIDDEN)
         else:
             if not (user.role and user.role.name in transition['roles']):
                 return Response({'detail': 'Insufficient permissions.'}, status=status.HTTP_403_FORBIDDEN)
-            # Confession leaders can only act on their org's confessions
-            if user.role.name == Role.CONFESSION_LEADER and confession.organization.leader != user:
+            if user.role.name == Role.KONFESSIYA_RAHBARI and confession.organization.leader != user:
                 return Response({'detail': 'Not your organization.'}, status=status.HTTP_403_FORBIDDEN)
 
         confession.status = transition['to']
         confession.save(update_fields=['status', 'updated_at'])
 
         return Response(ConfessionListSerializer(confession, context={'request': request}).data)
+
+
+class ConfessionExportCSVView(APIView):
+    """Export confessions as CSV file."""
+    permission_classes = [IsQomitaRahbar]
+
+    def get(self, request):
+        qs = Confession.objects.select_related('author', 'organization').all()
+
+        # Filters
+        status_filter = request.query_params.get('status')
+        confession_type = request.query_params.get('confession_type')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if confession_type:
+            qs = qs.filter(confession_type=confession_type)
+
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            'ID', 'Nomi', 'Turi', 'Holati', 'Tashkilot',
+            "Ro'yxat raqami", 'Muallif', 'Yaratilgan sana',
+        ])
+
+        for c in qs[:5000]:
+            writer.writerow([
+                str(c.id),
+                c.title,
+                c.get_confession_type_display() if hasattr(c, 'get_confession_type_display') else c.confession_type,
+                c.get_status_display(),
+                c.organization.name if c.organization else '',
+                c.registration_number or '',
+                c.author.email if c.author else '',
+                c.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ])
+
+        response = HttpResponse(buffer.getvalue(), content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="konfessiyalar.csv"'
+        return response

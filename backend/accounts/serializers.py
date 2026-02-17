@@ -118,3 +118,16 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 class PublicKeySerializer(serializers.Serializer):
     public_key = serializers.CharField()
     encrypted_private_key = serializers.CharField(required=False)
+
+
+class IPRestrictionSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+
+    class Meta:
+        from .models import IPRestriction
+        model = IPRestriction
+        fields = [
+            'id', 'ip_address', 'list_type', 'reason',
+            'is_active', 'created_by', 'created_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at']

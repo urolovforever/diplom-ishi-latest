@@ -72,7 +72,7 @@ def scan_recent_activity():
         features = extract_user_features(user, hours=1)
         vector = features_to_vector(features)
 
-        if features['request_count_per_hour'] == 0:
+        if all(v == 0 for v in vector):
             continue
 
         score = engine.predict(vector)
@@ -112,9 +112,11 @@ def scan_recent_activity():
 
 @shared_task
 def cleanup_old_logs():
-    """Clean up old activity logs. Runs weekly, 90-day retention."""
+    """Clean up old activity logs. Runs weekly, 2-year retention (TZ requirement)."""
+    from django.conf import settings
     from .models import ActivityLog
 
-    cutoff = timezone.now() - timedelta(days=90)
+    retention_days = getattr(settings, 'AI_SECURITY', {}).get('LOG_RETENTION_DAYS', 730)
+    cutoff = timezone.now() - timedelta(days=retention_days)
     count, _ = ActivityLog.objects.filter(created_at__lt=cutoff).delete()
-    logger.info('Cleaned up %d old activity logs.', count)
+    logger.info('Cleaned up %d old activity logs (retention: %d days).', count, retention_days)
