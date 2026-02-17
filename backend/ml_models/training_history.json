@@ -1,0 +1,36 @@
+{
+  "model_name": "Isolation Forest - Anomaly Detection",
+  "model_type": "isolation_forest",
+  "version": "1.0",
+  "trained_at": "2026-02-17T05:41:00Z",
+  "training_config": {
+    "n_estimators": 100,
+    "contamination": 0.1,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "dataset": {
+    "total_records": 2994,
+    "normal_records": 2700,
+    "anomalous_records": 294,
+    "anomaly_ratio": 0.098,
+    "train_size": 2395,
+    "test_size": 599
+  },
+  "features": [
+    "request_count_per_hour",
+    "unique_endpoints",
+    "time_of_day",
+    "error_rate",
+    "avg_payload_size",
+    "docs_accessed",
+    "download_count",
+    "failed_logins"
+  ],
+  "scaler": "StandardScaler",
+  "threshold": -0.5,
+  "files": {
+    "model": "isolation_forest.joblib",
+    "scaler": "scaler.joblib"
+  }
+}
