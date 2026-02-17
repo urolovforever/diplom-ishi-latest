@@ -24,12 +24,12 @@ export const passwordStrength = (value) => {
 
 export const ROLE_LABELS = {
   super_admin: 'Super Admin',
-  qomita_rahbar: 'Qomita Rahbar',
-  confession_leader: 'Confession Leader',
-  member: 'Member',
-  security_auditor: 'Security Auditor',
-  psychologist: 'Psychologist',
-  it_admin: 'IT Admin',
+  qomita_rahbar: "Qo'mita Rahbari",
+  qomita_xodimi: "Qo'mita Xodimi",
+  konfessiya_rahbari: 'Konfessiya Rahbari',
+  konfessiya_xodimi: 'Konfessiya Xodimi',
+  adliya_xodimi: 'Adliya Xodimi',
+  kengash_azo: "Kengash A'zosi",
 };
 
 export const SECURITY_LEVEL_LABELS = {
@@ -40,9 +40,8 @@ export const SECURITY_LEVEL_LABELS = {
 };
 
 export const DOCUMENT_CATEGORY_LABELS = {
-  confession_doc: 'Confession Document',
-  evidence: 'Evidence',
-  report: 'Report',
-  legal: 'Legal',
-  other: 'Other',
+  registration: "Ro'yxatga olish hujjatlari",
+  reports: 'Hisobotlar',
+  normative: "Me'yoriy hujjatlar",
+  confidential: 'Maxfiy hujjatlar',
 };
