@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import authAPI from '../api/authAPI';
+import cryptoAPI from '../api/cryptoAPI';
 import FormField from '../components/ui/FormField';
 import Skeleton from '../components/ui/Skeleton';
 import { addToast } from '../store/uiSlice';
 import { passwordStrength, required } from '../utils/validation';
+import { loadPrivateKey, storePrivateKey, hasStoredPrivateKey } from '../utils/crypto';
 import { User, Lock, Save } from 'lucide-react';
 import { getInitials } from '../utils/helpers';
 
@@ -56,6 +58,25 @@ function ProfilePage() {
     if (Object.keys(errs).length) { setPasswordErrors(errs); return; }
     try {
       await authAPI.changePassword({ old_password: oldPassword, new_password: newPassword });
+
+      // Re-encrypt private key with new password
+      const hasKey = await hasStoredPrivateKey();
+      if (hasKey) {
+        try {
+          const privateKeyJwk = await loadPrivateKey(oldPassword);
+          if (privateKeyJwk) {
+            const newEncryptedData = await storePrivateKey(privateKeyJwk, newPassword);
+            // Update server backup with new encrypted private key
+            await cryptoAPI.savePublicKey({
+              public_key: profile?.public_key || (await cryptoAPI.getMyKeys()).data.public_key,
+              encrypted_private_key: JSON.stringify(newEncryptedData),
+            });
+          }
+        } catch {
+          dispatch(addToast({ type: 'warning', message: "Shifrlash kaliti yangilanmadi. Eski parolni eslab qoling." }));
+        }
+      }
+
       setOldPassword('');
       setNewPassword('');
       setPasswordErrors({});
