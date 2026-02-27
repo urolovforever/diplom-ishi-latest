@@ -9,11 +9,16 @@ const api = axios.create({
   },
 });
 
+const PUBLIC_ENDPOINTS = ['/accounts/login/', '/accounts/token/refresh/', '/accounts/password-reset/'];
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const isPublic = PUBLIC_ENDPOINTS.some((url) => config.url?.includes(url));
+    if (!isPublic) {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

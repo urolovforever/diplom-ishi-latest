@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin, IsQomitaRahbar, IsSecurityAuditor, IsITAdmin, has_role
+from accounts.permissions import IsSuperAdmin, IsQomitaRahbar, IsQomitaXodimi, has_role
 from accounts.models import Role
 from .models import ActivityLog, AnomalyReport, AIModelConfig
 from .serializers import (
@@ -18,7 +18,7 @@ from .serializers import (
 
 class ActivityLogListView(generics.ListAPIView):
     serializer_class = ActivityLogSerializer
-    permission_classes = [IsQomitaRahbar | IsSecurityAuditor]
+    permission_classes = [IsQomitaRahbar | IsQomitaRahbar]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['action', 'resource', 'ip_address']
     ordering_fields = ['created_at', 'response_status']
@@ -28,7 +28,7 @@ class ActivityLogListView(generics.ListAPIView):
 
 
 class AnomalyReportListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsSuperAdmin | IsSecurityAuditor]
+    permission_classes = [IsSuperAdmin | IsQomitaRahbar]
     queryset = AnomalyReport.objects.select_related('user__role', 'reviewed_by__role').all()
 
     def get_serializer_class(self):
@@ -38,7 +38,7 @@ class AnomalyReportListCreateView(generics.ListCreateAPIView):
 
 
 class AnomalyReportDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsSuperAdmin | IsSecurityAuditor]
+    permission_classes = [IsSuperAdmin | IsQomitaRahbar]
     queryset = AnomalyReport.objects.select_related('user__role', 'reviewed_by__role').all()
     lookup_field = 'pk'
 
@@ -50,19 +50,19 @@ class AnomalyReportDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class AIModelConfigListCreateView(generics.ListCreateAPIView):
     serializer_class = AIModelConfigSerializer
-    permission_classes = [IsSuperAdmin | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
     queryset = AIModelConfig.objects.all()
 
 
 class AIModelConfigDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AIModelConfigSerializer
-    permission_classes = [IsSuperAdmin | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
     queryset = AIModelConfig.objects.all()
     lookup_field = 'pk'
 
 
 class AnomalyDashboardView(APIView):
-    permission_classes = [IsSuperAdmin | IsSecurityAuditor | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaRahbar | IsQomitaXodimi]
 
     def get(self, request):
         total = AnomalyReport.objects.count()
@@ -97,7 +97,7 @@ class AnomalyDashboardView(APIView):
 
 
 class AIModelStatusView(APIView):
-    permission_classes = [IsSuperAdmin | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
 
     def get(self, request):
         config = AIModelConfig.objects.filter(
@@ -109,7 +109,7 @@ class AIModelStatusView(APIView):
 
 
 class ManualScanView(APIView):
-    permission_classes = [IsSuperAdmin | IsSecurityAuditor | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaRahbar | IsQomitaXodimi]
 
     def post(self, request):
         from .tasks import scan_recent_activity
@@ -119,7 +119,7 @@ class ManualScanView(APIView):
 
 class ModelEvaluationView(APIView):
     """Evaluate the AI model and return Precision, Recall, F1 metrics."""
-    permission_classes = [IsSuperAdmin | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
 
     def get(self, request):
         from accounts.models import CustomUser
@@ -153,7 +153,7 @@ class ModelEvaluationView(APIView):
 
 
 class ReviewAnomalyView(APIView):
-    permission_classes = [IsSuperAdmin | IsSecurityAuditor]
+    permission_classes = [IsSuperAdmin | IsQomitaRahbar]
 
     def post(self, request, pk):
         try:

@@ -1,7 +1,26 @@
+import json
+
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
-from .models import Document, DocumentVersion, DocumentAccessLog, DocumentEncryptedKey, HoneypotFile
+from confessions.models import Organization
+from .models import Document, DocumentShare, DocumentVersion, DocumentAccessLog, DocumentEncryptedKey, HoneypotFile
 from .utils import validate_document_file
+
+
+class OrganizationMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = ['id', 'name', 'org_type']
+
+
+class DocumentShareSerializer(serializers.ModelSerializer):
+    organization = OrganizationMinimalSerializer(read_only=True)
+    shared_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = DocumentShare
+        fields = ['id', 'organization', 'shared_by', 'created_at']
+        read_only_fields = fields
 
 
 class DocumentVersionSerializer(serializers.ModelSerializer):
@@ -26,13 +45,14 @@ class DocumentListSerializer(serializers.ModelSerializer):
     latest_version = serializers.SerializerMethodField()
     encrypted_keys = DocumentEncryptedKeyReadSerializer(many=True, read_only=True)
     is_e2e_encrypted = serializers.SerializerMethodField()
+    shares = DocumentShareSerializer(many=True, read_only=True)
 
     class Meta:
         model = Document
         fields = [
             'id', 'title', 'description', 'file', 'uploaded_by',
-            'confession', 'is_encrypted', 'is_e2e_encrypted', 'security_level', 'category',
-            'encrypted_keys', 'latest_version', 'created_at', 'updated_at',
+            'organization', 'is_encrypted', 'is_e2e_encrypted', 'file_iv', 'security_level', 'category',
+            'encrypted_keys', 'latest_version', 'shares', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'uploaded_by', 'created_at', 'updated_at']
 
@@ -47,17 +67,16 @@ class DocumentListSerializer(serializers.ModelSerializer):
 
 
 class DocumentWriteSerializer(serializers.ModelSerializer):
-    encrypted_keys = serializers.ListField(
-        child=serializers.DictField(), required=False, write_only=True,
-    )
+    encrypted_keys = serializers.CharField(required=False, write_only=True)
     is_e2e_encrypted = serializers.BooleanField(required=False, default=False)
+    shared_with_organizations = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = Document
         fields = [
-            'id', 'title', 'description', 'file', 'confession',
-            'is_encrypted', 'is_e2e_encrypted', 'security_level', 'category',
-            'encrypted_keys',
+            'id', 'title', 'description', 'file', 'organization',
+            'is_encrypted', 'is_e2e_encrypted', 'file_iv', 'security_level', 'category',
+            'encrypted_keys', 'shared_with_organizations',
         ]
         read_only_fields = ['id']
 
@@ -65,7 +84,36 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
         validate_document_file(value)
         return value
 
+    def validate_encrypted_keys(self, value):
+        if not value:
+            return []
+        try:
+            keys = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            raise serializers.ValidationError("JSON formatida ro'yxat kutilmoqda.")
+        if not isinstance(keys, list):
+            raise serializers.ValidationError("Ro'yxat kutilmoqda.")
+        return keys
+
+    def validate_shared_with_organizations(self, value):
+        if not value:
+            return []
+        try:
+            org_ids = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            raise serializers.ValidationError("JSON formatida UUID ro'yxati kutilmoqda.")
+        if not isinstance(org_ids, list):
+            raise serializers.ValidationError("UUID ro'yxati kutilmoqda.")
+        for oid in org_ids:
+            try:
+                import uuid as _uuid
+                _uuid.UUID(str(oid))
+            except ValueError:
+                raise serializers.ValidationError(f"Noto'g'ri UUID: {oid}")
+        return org_ids
+
     def create(self, validated_data):
+        shared_org_ids = validated_data.pop('shared_with_organizations', [])
         encrypted_keys_data = validated_data.pop('encrypted_keys', [])
         document = super().create(validated_data)
 
@@ -76,6 +124,8 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
                 encrypted_key=key_data['encrypted_key'],
             )
 
+        # Store shared_org_ids on instance for view to use
+        document._shared_org_ids = shared_org_ids
         return document
 
     def update(self, instance, validated_data):

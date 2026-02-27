@@ -21,8 +21,8 @@ ROLES = {
     'qomita_xodimi': 3,
     'konfessiya_rahbari': 4,
     'konfessiya_xodimi': 5,
-    'adliya_xodimi': 6,
-    'kengash_azo': 7,
+    'dt_rahbar': 6,
+    'dt_xodimi': 7,
 }
 
 # TZ confession types

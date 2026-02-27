@@ -9,11 +9,11 @@ export function useAuth() {
     isAuthenticated: !!token,
     isSuperAdmin: user?.role?.name === ROLES.SUPER_ADMIN,
     isQomitaRahbar: user?.role?.name === ROLES.QOMITA_RAHBAR,
-    isConfessionLeader: user?.role?.name === ROLES.CONFESSION_LEADER,
-    isMember: user?.role?.name === ROLES.MEMBER,
-    isSecurityAuditor: user?.role?.name === ROLES.SECURITY_AUDITOR,
-    isPsychologist: user?.role?.name === ROLES.PSYCHOLOGIST,
-    isITAdmin: user?.role?.name === ROLES.IT_ADMIN,
+    isQomitaXodimi: user?.role?.name === ROLES.QOMITA_XODIMI,
+    isKonfessiyaRahbari: user?.role?.name === ROLES.KONFESSIYA_RAHBARI,
+    isKonfessiyaXodimi: user?.role?.name === ROLES.KONFESSIYA_XODIMI,
+    isDTRahbar: user?.role?.name === ROLES.DT_RAHBAR,
+    isDTXodimi: user?.role?.name === ROLES.DT_XODIMI,
     hasRole: (...roles) => roles.includes(user?.role?.name),
   };
 }

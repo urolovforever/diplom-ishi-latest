@@ -28,8 +28,8 @@ export const ROLE_LABELS = {
   qomita_xodimi: "Qo'mita Xodimi",
   konfessiya_rahbari: 'Konfessiya Rahbari',
   konfessiya_xodimi: 'Konfessiya Xodimi',
-  adliya_xodimi: 'Adliya Xodimi',
-  kengash_azo: "Kengash A'zosi",
+  dt_rahbar: 'DT Rahbari',
+  dt_xodimi: 'DT Xodimi',
 };
 
 export const SECURITY_LEVEL_LABELS = {

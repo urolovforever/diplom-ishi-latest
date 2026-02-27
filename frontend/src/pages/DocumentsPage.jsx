@@ -4,11 +4,13 @@ import { fetchDocuments, uploadDocument, deleteDocument, fetchVersions, fetchAcc
 import { useCrypto } from '../hooks/useCrypto';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate, formatDateTime } from '../utils/helpers';
+import confessionsAPI from '../api/confessionsAPI';
+import documentsAPI from '../api/documentsAPI';
 import KeySetup from '../components/auth/KeySetup';
 import Modal from '../components/ui/Modal';
 import {
   Upload, Eye, Download, Trash2, Filter, ChevronDown, ChevronUp,
-  Lock, FileText, Search, X, CloudUpload, ClipboardList,
+  Lock, FileText, Search, X, CloudUpload, ClipboardList, Share2,
 } from 'lucide-react';
 
 function DocumentsPage() {
@@ -30,11 +32,25 @@ function DocumentsPage() {
   const [dragActive, setDragActive] = useState(false);
   const [auditDoc, setAuditDoc] = useState(null);
 
+  // Share-related state
+  const [organizations, setOrganizations] = useState([]);
+  const [selectedOrgs, setSelectedOrgs] = useState([]);
+  const [shareDoc, setShareDoc] = useState(null);
+  const [shareOrgs, setShareOrgs] = useState([]);
+  const [sharing, setSharing] = useState(false);
+
   const isAdmin = user?.role?.name === 'super_admin' || user?.role?.name === 'qomita_rahbar';
+  const isOwnerOrAdmin = (doc) => doc.uploaded_by?.id === user?.id || isAdmin;
+  const userOrgId = user?.confession;
 
   useEffect(() => {
     dispatch(fetchDocuments());
-  }, [dispatch]);
+    confessionsAPI.getAllOrganizations().then((res) => {
+      const allOrgs = res.data?.results || res.data || [];
+      // O'zidan boshqa barcha tashkilotlarni ko'rsat (o'z tashkilotini yashir)
+      setOrganizations(allOrgs.filter((org) => org.id !== userOrgId));
+    }).catch(() => {});
+  }, [dispatch, userOrgId]);
 
   const openAuditLog = (doc) => {
     setAuditDoc(doc);
@@ -43,41 +59,51 @@ function DocumentsPage() {
     }
   };
 
+  const toggleOrg = (orgId, list, setter) => {
+    setter(list.includes(orgId) ? list.filter((id) => id !== orgId) : [...list, orgId]);
+  };
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) return;
     setUploading(true);
 
     try {
-      if (useE2E && isE2EReady) {
-        const recipientPublicKeys = await getRecipientPublicKeys([user.id]);
-        if (recipientPublicKeys.length > 0) {
-          const { encryptedBlob, encryptedKeys } = await encryptDocument(file, recipientPublicKeys);
-          const formData = new FormData();
-          formData.append('title', title);
-          formData.append('description', description);
-          formData.append('file', new File([encryptedBlob], file.name));
-          formData.append('is_e2e_encrypted', 'true');
-          formData.append('encrypted_keys', JSON.stringify(encryptedKeys));
-          await dispatch(uploadDocument(formData));
-        } else {
-          const formData = new FormData();
-          formData.append('title', title);
-          formData.append('description', description);
-          formData.append('file', file);
-          await dispatch(uploadDocument(formData));
-        }
-      } else {
+      const buildFormData = (extra = {}) => {
         const formData = new FormData();
         formData.append('title', title);
         formData.append('description', description);
-        formData.append('file', file);
+        Object.entries(extra).forEach(([k, v]) => formData.append(k, v));
+        if (selectedOrgs.length > 0) {
+          formData.append('shared_with_organizations', JSON.stringify(selectedOrgs));
+        }
+        return formData;
+      };
+
+      if (useE2E && isE2EReady) {
+        const recipientPublicKeys = await getRecipientPublicKeys([user.id]);
+        if (recipientPublicKeys.length > 0) {
+          const { encryptedBlob, iv, encryptedKeys } = await encryptDocument(file, recipientPublicKeys);
+          const formData = buildFormData({
+            file: new File([encryptedBlob], file.name),
+            is_e2e_encrypted: 'true',
+            file_iv: iv,
+            encrypted_keys: JSON.stringify(encryptedKeys),
+          });
+          await dispatch(uploadDocument(formData));
+        } else {
+          const formData = buildFormData({ file });
+          await dispatch(uploadDocument(formData));
+        }
+      } else {
+        const formData = buildFormData({ file });
         await dispatch(uploadDocument(formData));
       }
 
       setTitle('');
       setDescription('');
       setFile(null);
+      setSelectedOrgs([]);
       setShowUpload(false);
       dispatch(fetchDocuments());
     } catch (err) {
@@ -95,14 +121,18 @@ function DocumentsPage() {
 
   const handleDownload = async (doc) => {
     if (doc.is_e2e_encrypted && doc.encrypted_keys?.length > 0) {
-      const password = prompt("Hujjatni shifrlash uchun parolingizni kiriting:");
+      if (!doc.file_iv) {
+        alert("Bu hujjatning shifrlash kaliti (IV) topilmadi. Faylni ochib bo'lmaydi.");
+        return;
+      }
+      const password = prompt("E2E shifrlash parolingizni kiriting (KeySetup'da qo'ygan parol):");
       if (!password) return;
       try {
         const response = await fetch(doc.file);
         const encryptedBlob = await response.blob();
         const decryptedBuffer = await decryptDocument(
           encryptedBlob,
-          doc.encrypted_keys[0]?.iv || '',
+          doc.file_iv,
           doc.encrypted_keys,
           user.id,
           password
@@ -119,6 +149,27 @@ function DocumentsPage() {
       }
     } else if (doc.file) {
       window.open(doc.file, '_blank');
+    }
+  };
+
+  const openShareModal = (doc) => {
+    setShareDoc(doc);
+    const alreadyShared = (doc.shares || []).map((s) => s.organization?.id);
+    setShareOrgs(alreadyShared);
+  };
+
+  const handleShare = async () => {
+    if (!shareDoc || shareOrgs.length === 0) return;
+    setSharing(true);
+    try {
+      await documentsAPI.shareDocument(shareDoc.id, shareOrgs);
+      setShareDoc(null);
+      setShareOrgs([]);
+      dispatch(fetchDocuments());
+    } catch {
+      alert("Ulashishda xatolik yuz berdi.");
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -224,6 +275,7 @@ function DocumentsPage() {
                 <tr className="bg-surface">
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Nomi</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Yuklagan</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Ulashilgan</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Sana</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">E2E</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
@@ -245,6 +297,22 @@ function DocumentsPage() {
                     </td>
                     <td className="px-4 py-3 text-text-secondary">
                       {doc.uploaded_by?.full_name || doc.uploaded_by?.email || '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {doc.shares?.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {doc.shares.map((s) => (
+                            <span
+                              key={s.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700"
+                            >
+                              {s.organization?.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-text-secondary text-xs">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-text-secondary">
                       {formatDate(doc.created_at)}
@@ -274,6 +342,15 @@ function DocumentsPage() {
                         >
                           <Download size={16} />
                         </button>
+                        {isOwnerOrAdmin(doc) && (
+                          <button
+                            onClick={() => openShareModal(doc)}
+                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Ulashish"
+                          >
+                            <Share2 size={16} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(doc.id)}
                           className="p-1.5 text-danger hover:bg-red-50 rounded-lg transition-colors"
@@ -296,7 +373,7 @@ function DocumentsPage() {
                 ))}
                 {expandedDoc && versions[expandedDoc] && (
                   <tr>
-                    <td colSpan="5" className="px-4 py-3 bg-surface">
+                    <td colSpan="6" className="px-4 py-3 bg-surface">
                       <p className="text-sm font-medium text-text-primary mb-2">Versiya tarixi</p>
                       {versions[expandedDoc].length > 0 ? (
                         <ul className="text-sm text-text-secondary space-y-1">
@@ -314,7 +391,7 @@ function DocumentsPage() {
                 )}
                 {filteredList.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="px-4 py-12 text-center text-text-secondary">
+                    <td colSpan="6" className="px-4 py-12 text-center text-text-secondary">
                       Hujjatlar topilmadi
                     </td>
                   </tr>
@@ -386,6 +463,60 @@ function DocumentsPage() {
         )}
       </Modal>
 
+      {/* Share Modal */}
+      <Modal
+        isOpen={!!shareDoc}
+        onClose={() => { setShareDoc(null); setShareOrgs([]); }}
+        title={`Hujjatni ulashish: ${shareDoc?.title || ''}`}
+      >
+        {shareDoc && (
+          <div className="space-y-4">
+            <p className="text-sm text-text-secondary">
+              Quyidagi tashkilotlarni tanlang va hujjatni ular bilan ulashing.
+            </p>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {organizations.map((org) => (
+                <label key={org.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-surface cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shareOrgs.includes(org.id)}
+                    onChange={() => toggleOrg(org.id, shareOrgs, setShareOrgs)}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm text-text-primary">{org.name}</span>
+                  <span className="text-xs text-text-secondary">({org.org_type})</span>
+                </label>
+              ))}
+              {organizations.length === 0 && (
+                <p className="text-sm text-text-secondary text-center py-4">Tashkilotlar topilmadi</p>
+              )}
+            </div>
+            {shareOrgs.length > 0 && (
+              <p className="text-xs text-text-secondary">
+                {shareOrgs.length} ta tashkilot tanlandi
+              </p>
+            )}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setShareDoc(null); setShareOrgs([]); }}
+                className="btn-secondary"
+              >
+                Bekor qilish
+              </button>
+              <button
+                onClick={handleShare}
+                disabled={sharing || shareOrgs.length === 0}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Share2 size={16} />
+                {sharing ? 'Ulashilmoqda...' : 'Ulashish'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Upload Modal */}
       <Modal isOpen={showUpload} onClose={() => setShowUpload(false)} title="Hujjat yuklash">
         <form onSubmit={handleUpload} className="space-y-4">
@@ -444,6 +575,33 @@ function DocumentsPage() {
               </>
             )}
           </div>
+
+          {/* Organization sharing */}
+          {organizations.length > 0 && (
+            <div className="p-3 bg-surface rounded-xl">
+              <p className="text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
+                <Share2 size={14} />
+                Tashkilotlarga ulashish
+                {selectedOrgs.length > 0 && (
+                  <span className="text-xs text-primary-light">({selectedOrgs.length} ta tanlandi)</span>
+                )}
+              </p>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {organizations.map((org) => (
+                  <label key={org.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-white/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrgs.includes(org.id)}
+                      onChange={() => toggleOrg(org.id, selectedOrgs, setSelectedOrgs)}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm text-text-primary">{org.name}</span>
+                    <span className="text-xs text-text-secondary">({org.org_type})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* E2E toggle */}
           <div className="p-3 bg-surface rounded-xl">

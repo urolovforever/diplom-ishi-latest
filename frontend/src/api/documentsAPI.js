@@ -17,6 +17,9 @@ const documentsAPI = {
 
   // Access logs
   getAccessLogs: (docId) => api.get(`/documents/${docId}/access-logs/`),
+
+  // Share
+  shareDocument: (docId, organizationIds) => api.post(`/documents/${docId}/share/`, { organization_ids: organizationIds }),
 };
 
 export default documentsAPI;

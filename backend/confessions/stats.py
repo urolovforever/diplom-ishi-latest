@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from accounts.models import CustomUser, Role
 from ai_security.models import AnomalyReport, ActivityLog
-from confessions.models import Confession, Organization
+from confessions.models import Organization
 from documents.models import Document, DocumentAccessLog
 from notifications.models import Notification
 
@@ -21,40 +21,29 @@ class DashboardStatsView(APIView):
         is_admin = user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]
 
         if is_admin:
-            confessions_count = Confession.objects.count()
             documents_count = Document.objects.count()
             organizations_count = Organization.objects.count()
         else:
-            confessions_count = Confession.objects.filter(author=user).count()
             documents_count = Document.objects.filter(uploaded_by=user).count()
             organizations_count = Organization.objects.filter(leader=user).count()
 
         notifications_count = Notification.objects.filter(recipient=user, is_read=False).count()
 
         stats = {
-            'confessions': confessions_count,
             'documents': documents_count,
             'notifications': notifications_count,
             'organizations': organizations_count,
         }
 
-        # Status breakdown
+        # Organization type breakdown
         if is_admin:
-            qs = Confession.objects
-        else:
-            qs = Confession.objects.filter(author=user)
-
-        for s in ['draft', 'submitted', 'under_review', 'approved', 'rejected']:
-            stats[f'confessions_{s}'] = qs.filter(status=s).count()
+            org_types = Organization.objects.values('org_type').annotate(count=Count('id'))
+            stats['org_types'] = {
+                item['org_type']: item['count'] for item in org_types
+            }
 
         # --- Enhanced stats for admin dashboard ---
         if is_admin:
-            # Confession type breakdown (diniy / fuqarolik)
-            type_stats = qs.values('confession_type').annotate(count=Count('id'))
-            stats['confession_types'] = {
-                item['confession_type']: item['count'] for item in type_stats
-            }
-
             # Document category breakdown
             doc_cats = Document.objects.values('category').annotate(count=Count('id'))
             stats['document_categories'] = {

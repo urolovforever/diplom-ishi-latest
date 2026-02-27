@@ -1,98 +1,104 @@
 from rest_framework import serializers
+from accounts.models import Role
 from accounts.serializers import UserSerializer
-from .models import Organization, Confession, ConfessionEncryptedKey
+from .models import Organization
+
+
+class OrganizationChildSerializer(serializers.ModelSerializer):
+    leader = UserSerializer(read_only=True)
+    children_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Organization
+        fields = [
+            'id', 'name', 'description', 'org_type', 'leader',
+            'is_active', 'children_count', 'created_at', 'updated_at',
+        ]
+
+    def get_children_count(self, obj):
+        return obj.children.count()
 
 
 class OrganizationListSerializer(serializers.ModelSerializer):
     leader = UserSerializer(read_only=True)
+    children = OrganizationChildSerializer(many=True, read_only=True)
+    members_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'description', 'leader', 'is_active', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'description', 'org_type', 'parent',
+            'leader', 'is_active', 'children', 'members_count',
+            'created_at', 'updated_at',
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_members_count(self, obj):
+        return obj.members.count()
 
 
 class OrganizationWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'description', 'leader', 'is_active']
+        fields = ['id', 'name', 'description', 'org_type', 'parent', 'leader', 'is_active']
         read_only_fields = ['id']
 
-
-class ConfessionEncryptedKeyReadSerializer(serializers.ModelSerializer):
-    user = serializers.UUIDField(source='user.id')
-
-    class Meta:
-        model = ConfessionEncryptedKey
-        fields = ['user', 'encrypted_key']
-
-
-class ConfessionListSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
-    organization_name = serializers.CharField(source='organization.name', read_only=True)
-    encrypted_keys = ConfessionEncryptedKeyReadSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Confession
-        fields = [
-            'id', 'title', 'content', 'author', 'organization', 'organization_name',
-            'status', 'is_anonymous', 'is_e2e_encrypted', 'encrypted_keys',
-            'created_at', 'updated_at',
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def get_author(self, obj):
+    def validate(self, data):
         request = self.context.get('request')
-        if obj.is_anonymous and request:
+        # Leader o'zgartirilayotganda huquqni tekshirish
+        if 'leader' in data and request and request.user:
+            new_leader = data['leader']
             user = request.user
-            # Author can see themselves, leaders+ can see author
-            if user == obj.author or (
-                user.role and user.role.name in ['super_admin', 'qomita_rahbar', 'confession_leader']
-            ):
-                return UserSerializer(obj.author).data
-            return None
-        return UserSerializer(obj.author).data
+            role_name = user.role.name if user.role else None
 
+            # super_admin hamma joyga rahbar tayinlay oladi
+            if role_name == Role.SUPER_ADMIN:
+                return data
 
-class ConfessionWriteSerializer(serializers.ModelSerializer):
-    encrypted_keys = serializers.ListField(
-        child=serializers.DictField(), required=False, write_only=True,
-    )
+            org = self.instance
+            if not org:
+                return data
 
-    class Meta:
-        model = Confession
-        fields = ['id', 'title', 'content', 'organization', 'is_anonymous', 'is_e2e_encrypted', 'encrypted_keys']
-        read_only_fields = ['id']
-
-    def create(self, validated_data):
-        encrypted_keys_data = validated_data.pop('encrypted_keys', [])
-        confession = super().create(validated_data)
-
-        for key_data in encrypted_keys_data:
-            ConfessionEncryptedKey.objects.create(
-                confession=confession,
-                user_id=key_data['user'],
-                encrypted_key=key_data['encrypted_key'],
-            )
-
-        return confession
-
-    def update(self, instance, validated_data):
-        encrypted_keys_data = validated_data.pop('encrypted_keys', None)
-        instance = super().update(instance, validated_data)
-
-        if encrypted_keys_data is not None:
-            instance.encrypted_keys.all().delete()
-            for key_data in encrypted_keys_data:
-                ConfessionEncryptedKey.objects.create(
-                    confession=instance,
-                    user_id=key_data['user'],
-                    encrypted_key=key_data['encrypted_key'],
+            # User o'zini o'zi rahbar qilib qo'yishni oldini olish
+            if new_leader and new_leader.id == user.id:
+                raise serializers.ValidationError(
+                    {"leader": "O'zingizni rahbar qilib tayinlay olmaysiz."}
                 )
 
-        return instance
+            # qomita_rahbar → faqat o'z qomitasiga tegishli konfessiyalarga
+            if role_name == Role.QOMITA_RAHBAR:
+                if org.org_type == 'qomita':
+                    raise serializers.ValidationError(
+                        {"leader": "Qo'mita rahbarini faqat Super Admin tayinlay oladi."}
+                    )
+                if org.org_type == 'konfessiya' and org.parent_id != user.confession_id:
+                    raise serializers.ValidationError(
+                        {"leader": "Siz faqat o'z qo'mitangizdagi konfessiyalarga rahbar tayinlaysiz."}
+                    )
+                if org.org_type == 'diniy_tashkilot':
+                    # DT ning parent konfessiya bo'lishi kerak va u qomitaga tegishli
+                    parent_conf = org.parent
+                    if not parent_conf or parent_conf.parent_id != user.confession_id:
+                        raise serializers.ValidationError(
+                            {"leader": "Siz faqat o'z qo'mitangizdagi tashkilotlarga rahbar tayinlaysiz."}
+                        )
+                return data
 
+            # konfessiya_rahbari → faqat o'z konfessiyasiga tegishli DT larga
+            if role_name == Role.KONFESSIYA_RAHBARI:
+                if org.org_type in ('qomita', 'konfessiya'):
+                    raise serializers.ValidationError(
+                        {"leader": "Siz bu turdagi tashkilotga rahbar tayinlay olmaysiz."}
+                    )
+                if org.org_type == 'diniy_tashkilot' and org.parent_id != user.confession_id:
+                    raise serializers.ValidationError(
+                        {"leader": "Siz faqat o'z konfessiyangizdagi DT larga rahbar tayinlaysiz."}
+                    )
+                return data
 
-class ConfessionStatusSerializer(serializers.Serializer):
-    """Used for status transition validation only."""
-    pass
+            # Boshqa rollar rahbar tayinlay olmaydi
+            raise serializers.ValidationError(
+                {"leader": "Sizda rahbar tayinlash huquqi yo'q."}
+            )
+
+        return data

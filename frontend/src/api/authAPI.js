@@ -3,9 +3,11 @@ import api from './axiosConfig';
 const authAPI = {
   login: (credentials) => api.post('/accounts/login/', credentials),
   verify2FA: (data) => api.post('/accounts/verify-2fa/', data),
+  get2FASetup: (userId) => api.post('/accounts/2fa-setup/', { user_id: userId }),
   logout: (refreshToken) => api.post('/accounts/logout/', { refresh: refreshToken }),
   refreshToken: (refreshToken) => api.post('/accounts/token/refresh/', { refresh: refreshToken }),
   changePassword: (data) => api.post('/accounts/change-password/', data),
+  getRoles: () => api.get('/accounts/roles/'),
   getUsers: (params) => api.get('/accounts/users/', { params }),
   getUser: (id) => api.get(`/accounts/users/${id}/`),
   inviteUser: (data) => api.post('/accounts/users/', data),

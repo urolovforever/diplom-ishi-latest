@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
 from accounts.models import CustomUser, Role
-from confessions.models import Organization, Confession
+from confessions.models import Organization
 from documents.models import Document, DocumentVersion, DocumentAccessLog, HoneypotFile
 
 

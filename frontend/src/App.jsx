@@ -1,9 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import ConfessionsListPage from './pages/ConfessionsListPage';
-import ConfessionDetailPage from './pages/ConfessionDetailPage';
-import CreateConfessionPage from './pages/CreateConfessionPage';
 import DocumentsPage from './pages/DocumentsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -39,15 +36,11 @@ function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="confessions" element={<ConfessionsListPage />} />
-        <Route path="confessions/new" element={<CreateConfessionPage />} />
-        <Route path="confessions/:id" element={<ConfessionDetailPage />} />
-        <Route path="confessions/:id/edit" element={<CreateConfessionPage />} />
         <Route path="documents" element={<DocumentsPage />} />
         <Route
           path="organizations"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar']}>
               <OrganizationsPage />
             </RoleBasedRoute>
           }
@@ -57,7 +50,7 @@ function App() {
         <Route
           path="users"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar']}>
               <UserManagementPage />
             </RoleBasedRoute>
           }
@@ -65,7 +58,7 @@ function App() {
         <Route
           path="users/:id"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar']}>
               <UserDetailPage />
             </RoleBasedRoute>
           }

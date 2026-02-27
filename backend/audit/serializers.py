@@ -28,6 +28,6 @@ class ReportSerializer(serializers.ModelSerializer):
 
 
 class ReportGenerateSerializer(serializers.Serializer):
-    report_type = serializers.ChoiceField(choices=['activity', 'security', 'confession'])
+    report_type = serializers.ChoiceField(choices=['activity', 'security', 'organization'])
     date_from = serializers.DateTimeField(required=False, allow_null=True)
     date_to = serializers.DateTimeField(required=False, allow_null=True)

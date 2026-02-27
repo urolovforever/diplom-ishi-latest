@@ -26,21 +26,44 @@ class Document(models.Model):
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='documents',
     )
-    confession = models.ForeignKey(
-        'confessions.Confession', on_delete=models.CASCADE,
+    organization = models.ForeignKey(
+        'confessions.Organization', on_delete=models.CASCADE,
         related_name='documents', null=True, blank=True,
     )
     file_size_mb = models.FloatField(null=True, blank=True)
     file_type = models.CharField(max_length=50, blank=True)
     is_encrypted = models.BooleanField(default=True)
     is_e2e_encrypted = models.BooleanField(default=False)
+    file_iv = models.CharField(max_length=256, blank=True, default='')
     security_level = models.CharField(max_length=20, choices=SECURITY_LEVELS, default='internal')
     category = models.CharField(max_length=20, choices=CATEGORIES, default='registration')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self):
         return self.title
+
+
+class DocumentShare(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='shares')
+    organization = models.ForeignKey(
+        'confessions.Organization', on_delete=models.CASCADE, related_name='shared_documents',
+    )
+    shared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='document_shares',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['document', 'organization']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.document.title} -> {self.organization.name}'
 
 
 class DocumentEncryptedKey(models.Model):

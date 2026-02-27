@@ -1,5 +1,9 @@
+import base64
+import io
 import uuid
 
+import qrcode
+from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import generics, status
@@ -8,9 +12,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .authentication import verify_totp
-from .models import CustomUser, PasswordResetToken, UserSession
-from .permissions import IsSuperAdmin
+from .authentication import get_totp_uri, verify_totp
+from .models import CustomUser, PasswordResetToken, Role, UserSession
+from .permissions import IsSuperAdmin, IsLeader, ROLE_CREATION_MAP, LEADER_ROLES
 from .security import SecurityManager
 from .serializers import (
     ChangePasswordSerializer,
@@ -20,6 +24,7 @@ from .serializers import (
     PasswordResetRequestSerializer,
     ProfileUpdateSerializer,
     PublicKeySerializer,
+    RoleSerializer,
     UserSerializer,
     Verify2FASerializer,
 )
@@ -153,6 +158,44 @@ class Verify2FAView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
+class TwoFASetupView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response(
+                {'detail': 'user_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {'detail': 'User not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not user.totp_secret:
+            return Response(
+                {'detail': '2FA is not configured.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        uri = get_totp_uri(user.totp_secret, user.email)
+
+        img = qrcode.make(uri, box_size=6, border=2)
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        return Response({
+            'qr_code': f'data:image/png;base64,{qr_base64}',
+            'secret': user.totp_secret,
+        })
+
+
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -172,8 +215,47 @@ class LogoutView(APIView):
 
 
 class UserListView(generics.ListCreateAPIView):
-    queryset = CustomUser.objects.select_related('role').all()
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsLeader]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = CustomUser.objects.select_related('role', 'confession').all()
+        role_name = user.role.name if user.role else None
+
+        if role_name == Role.SUPER_ADMIN:
+            return qs
+        elif role_name == Role.QOMITA_RAHBAR:
+            # See users in their qomita and all child organizations
+            if user.confession:
+                from confessions.models import Organization
+                org_ids = [user.confession.id]
+                # Add konfessiya children
+                konfessiya_ids = list(
+                    Organization.objects.filter(parent=user.confession).values_list('id', flat=True)
+                )
+                org_ids.extend(konfessiya_ids)
+                # Add diniy tashkilot children
+                dt_ids = list(
+                    Organization.objects.filter(parent__in=konfessiya_ids).values_list('id', flat=True)
+                )
+                org_ids.extend(dt_ids)
+                return qs.filter(confession_id__in=org_ids)
+            return qs.none()
+        elif role_name == Role.KONFESSIYA_RAHBARI:
+            if user.confession:
+                from confessions.models import Organization
+                org_ids = [user.confession.id]
+                dt_ids = list(
+                    Organization.objects.filter(parent=user.confession).values_list('id', flat=True)
+                )
+                org_ids.extend(dt_ids)
+                return qs.filter(confession_id__in=org_ids)
+            return qs.none()
+        elif role_name == Role.DT_RAHBAR:
+            if user.confession:
+                return qs.filter(confession=user.confession)
+            return qs.none()
+        return qs.none()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -182,10 +264,19 @@ class UserListView(generics.ListCreateAPIView):
 
 
 class UserDetailView(generics.RetrieveUpdateAPIView):
-    queryset = CustomUser.objects.select_related('role').all()
+    queryset = CustomUser.objects.select_related('role', 'confession').all()
     serializer_class = UserSerializer
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsLeader]
     lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        # Faqat super_admin va qomita_rahbar edit qila oladi
+        if request.user.role and request.user.role.name not in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
+            return Response(
+                {'detail': "Siz foydalanuvchini tahrirlash huquqiga ega emassiz."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().update(request, *args, **kwargs)
 
 
 class ChangePasswordView(APIView):
@@ -350,7 +441,7 @@ class UserPublicKeyView(APIView):
 
 
 class E2ERecipientsView(APIView):
-    """Get public keys of all users who should receive encrypted keys for a confession."""
+    """Get public keys of all users who should receive encrypted keys for a document."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -373,7 +464,7 @@ class E2ERecipientsView(APIView):
                 'public_key': admin.public_key,
             })
 
-        # Include confession leader of the organization
+        # Include leader of the organization
         if organization_id:
             try:
                 org = Organization.objects.select_related('leader').get(pk=organization_id)
@@ -381,7 +472,7 @@ class E2ERecipientsView(APIView):
                     recipients.append({
                         'user_id': str(org.leader.id),
                         'email': org.leader.email,
-                        'role': 'confession_leader',
+                        'role': org.leader.role.name if org.leader.role else 'unknown',
                         'public_key': org.leader.public_key,
                     })
             except Organization.DoesNotExist:
@@ -397,6 +488,20 @@ class E2ERecipientsView(APIView):
             })
 
         return Response(recipients)
+
+
+class RoleListView(generics.ListAPIView):
+    serializer_class = RoleSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role:
+            allowed_roles = ROLE_CREATION_MAP.get(user.role.name, [])
+            if allowed_roles:
+                return Role.objects.filter(name__in=allowed_roles)
+        return Role.objects.all()
 
 
 class IPRestrictionListCreateView(generics.ListCreateAPIView):
