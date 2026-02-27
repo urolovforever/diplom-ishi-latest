@@ -3,7 +3,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setSidebarOpen } from '../../store/uiSlice';
 import {
   LayoutDashboard,
-  BookOpen,
   FileText,
   Building2,
   Bell,
@@ -20,14 +19,13 @@ import { getInitials } from '../../utils/helpers';
 
 const navItems = [
   { path: '/', label: 'Bosh sahifa', icon: LayoutDashboard, roles: null },
-  { path: '/confessions', label: 'Konfessiyalar', icon: BookOpen, roles: null },
   { path: '/documents', label: 'Hujjatlar', icon: FileText, roles: null },
-  { path: '/organizations', label: 'Tashkilotlar', icon: Building2, roles: ['super_admin', 'qomita_rahbar'] },
+  { path: '/organizations', label: 'Tashkilotlar', icon: Building2, roles: ['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar'] },
   { path: '/notifications', label: 'Bildirishnomalar', icon: Bell, roles: null },
   { path: '/ai-dashboard', label: 'AI Xavfsizlik', icon: BrainCircuit, roles: ['super_admin', 'qomita_rahbar', 'qomita_xodimi'] },
   { path: '/reports', label: 'Hisobotlar', icon: BarChart3, roles: ['super_admin', 'qomita_rahbar', 'qomita_xodimi'] },
   { path: '/audit-log', label: 'Audit jurnali', icon: ScrollText, roles: ['super_admin', 'qomita_rahbar'] },
-  { path: '/users', label: 'Foydalanuvchilar', icon: Users, roles: ['super_admin'] },
+  { path: '/users', label: 'Foydalanuvchilar', icon: Users, roles: ['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar'] },
   { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: ['super_admin', 'qomita_xodimi'] },
   { path: '/profile', label: 'Profil', icon: User, roles: null },
 ];

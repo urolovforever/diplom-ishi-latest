@@ -6,6 +6,7 @@ app_name = 'documents'
 urlpatterns = [
     path('', views.DocumentListCreateView.as_view(), name='document-list'),
     path('<uuid:pk>/', views.DocumentDetailView.as_view(), name='document-detail'),
+    path('<uuid:pk>/share/', views.DocumentShareView.as_view(), name='document-share'),
     path('<uuid:pk>/download/', views.DocumentDownloadView.as_view(), name='document-download'),
     path('<uuid:doc_pk>/versions/', views.DocumentVersionListCreateView.as_view(), name='document-version-list'),
     path('<uuid:doc_pk>/versions/diff/', views.DocumentVersionDiffView.as_view(), name='document-version-diff'),

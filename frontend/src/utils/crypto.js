@@ -198,7 +198,24 @@ export async function storePrivateKey(privateKeyJwk, password) {
 }
 
 export async function loadPrivateKey(password) {
-  const stored = await idbGet('private_key');
+  let stored = await idbGet('private_key');
+
+  // Agar IndexedDB'da kalit yo'q bo'lsa, serverdan yuklab olishga urinish
+  if (!stored) {
+    try {
+      const { default: cryptoAPI } = await import('../api/cryptoAPI');
+      const response = await cryptoAPI.getMyKeys();
+      const serverKey = response.data?.encrypted_private_key;
+      if (serverKey) {
+        stored = typeof serverKey === 'string' ? JSON.parse(serverKey) : serverKey;
+        // Keyingi safar uchun IndexedDB'ga saqlash
+        await idbPut('private_key', stored);
+      }
+    } catch {
+      // Server xatosi — davom etish
+    }
+  }
+
   if (!stored) return null;
   const salt = base64ToBuffer(stored.salt);
   const derivedKey = await deriveKeyFromPassword(password, salt);

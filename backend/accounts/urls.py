@@ -7,6 +7,7 @@ app_name = 'accounts'
 urlpatterns = [
     path('login/', views.LoginView.as_view(), name='login'),
     path('verify-2fa/', views.Verify2FAView.as_view(), name='verify-2fa'),
+    path('2fa-setup/', views.TwoFASetupView.as_view(), name='2fa-setup'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('users/', views.UserListView.as_view(), name='user-list'),
@@ -19,6 +20,8 @@ urlpatterns = [
     path('e2e/keys/', views.PublicKeyView.as_view(), name='e2e-keys'),
     path('e2e/keys/<uuid:pk>/', views.UserPublicKeyView.as_view(), name='e2e-user-key'),
     path('e2e/recipients/', views.E2ERecipientsView.as_view(), name='e2e-recipients'),
+    # Roles
+    path('roles/', views.RoleListView.as_view(), name='role-list'),
     # IP Restriction
     path('ip-restrictions/', views.IPRestrictionListCreateView.as_view(), name='ip-restriction-list'),
     path('ip-restrictions/<uuid:pk>/', views.IPRestrictionDeleteView.as_view(), name='ip-restriction-delete'),

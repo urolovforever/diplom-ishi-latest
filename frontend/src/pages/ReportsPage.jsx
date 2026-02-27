@@ -82,7 +82,7 @@ function ReportsPage() {
             <select value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className="input-field">
               <option value="activity">Faollik hisoboti</option>
               <option value="security">Xavfsizlik hisoboti</option>
-              <option value="confession">Konfessiya hisoboti</option>
+              <option value="organization">Tashkilot hisoboti</option>
             </select>
           </div>
           <div>

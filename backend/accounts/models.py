@@ -12,8 +12,8 @@ class Role(models.Model):
     QOMITA_XODIMI = 'qomita_xodimi'
     KONFESSIYA_RAHBARI = 'konfessiya_rahbari'
     KONFESSIYA_XODIMI = 'konfessiya_xodimi'
-    ADLIYA_XODIMI = 'adliya_xodimi'
-    KENGASH_AZO = 'kengash_azo'
+    DT_RAHBAR = 'dt_rahbar'
+    DT_XODIMI = 'dt_xodimi'
 
     ROLE_CHOICES = [
         (SUPER_ADMIN, 'Super Admin'),
@@ -21,8 +21,8 @@ class Role(models.Model):
         (QOMITA_XODIMI, "Qo'mita Xodimi"),
         (KONFESSIYA_RAHBARI, 'Konfessiya Rahbari'),
         (KONFESSIYA_XODIMI, 'Konfessiya Xodimi'),
-        (ADLIYA_XODIMI, 'Adliya Xodimi'),
-        (KENGASH_AZO, "Kengash A'zosi"),
+        (DT_RAHBAR, 'Diniy Tashkilot Rahbari'),
+        (DT_XODIMI, 'Diniy Tashkilot Xodimi'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

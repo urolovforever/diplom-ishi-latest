@@ -25,15 +25,11 @@ ROLE_ENCODING = {
     'qomita_xodimi': 3,
     'konfessiya_rahbari': 4,
     'konfessiya_xodimi': 5,
-    'adliya_xodimi': 6,
-    'kengash_azo': 7,
+    'dt_rahbar': 6,
+    'dt_xodimi': 7,
 }
 
-# Confession type encoding
-CONFESSION_TYPE_ENCODING = {
-    'diniy': 1,
-    'fuqarolik': 2,
-}
+
 
 
 def extract_user_features(user, hours=1):
@@ -89,17 +85,13 @@ def extract_user_features(user, hours=1):
     if user.role:
         role_value = ROLE_ENCODING.get(user.role.name, 0)
 
-    # 8. Confession type (encoded)
-    confession_type = 0
+    # 8. Organization type (encoded)
+    org_type_value = 0
     if hasattr(user, 'confession') and user.confession:
-        from confessions.models import Confession
-        latest_confession = Confession.objects.filter(
-            organization=user.confession
-        ).order_by('-created_at').first()
-        if latest_confession and hasattr(latest_confession, 'confession_type'):
-            confession_type = CONFESSION_TYPE_ENCODING.get(
-                latest_confession.confession_type, 0
-            )
+        from confessions.models import Organization
+        org = user.confession
+        ORG_TYPE_ENCODING = {'qomita': 1, 'konfessiya': 2, 'diniy_tashkilot': 3}
+        org_type_value = ORG_TYPE_ENCODING.get(org.org_type, 0)
 
     # 9. Is anomaly indicator (historical anomaly rate for this user)
     from .models import AnomalyReport
@@ -118,7 +110,7 @@ def extract_user_features(user, hours=1):
         'download_mb': round(download_mb, 2),
         'own_section': own_section,
         'role': role_value,
-        'confession_type': confession_type,
+        'confession_type': org_type_value,
         'is_anomaly': is_anomaly,
     }
 

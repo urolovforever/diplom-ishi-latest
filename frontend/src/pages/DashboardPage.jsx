@@ -4,10 +4,9 @@ import { fetchDashboardStats } from '../store/confessionsSlice';
 import { usePermission } from '../hooks/usePermission';
 import StatCard from '../components/dashboard/StatCard';
 import ActivityChart from '../components/dashboard/ActivityChart';
-import ConfessionsPieChart from '../components/dashboard/ConfessionsPieChart';
 import RecentAlerts from '../components/dashboard/RecentAlerts';
 import RecentDocumentsTable from '../components/dashboard/RecentDocumentsTable';
-import { BookOpen, FileText, Bell, Building2, Users, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { FileText, Bell, Building2, Users, ShieldAlert, AlertTriangle } from 'lucide-react';
 
 const ROLE_LABELS = {
   super_admin: 'Super Admin',
@@ -15,8 +14,8 @@ const ROLE_LABELS = {
   qomita_xodimi: "Qo'mita Xodimi",
   konfessiya_rahbari: 'Konfessiya Rahbari',
   konfessiya_xodimi: 'Konfessiya Xodimi',
-  adliya_xodimi: 'Adliya Xodimi',
-  kengash_azo: "Kengash A'zosi",
+  dt_rahbar: 'DT Rahbari',
+  dt_xodimi: 'DT Xodimi',
 };
 
 const CATEGORY_LABELS = {
@@ -26,9 +25,10 @@ const CATEGORY_LABELS = {
   confidential: 'Maxfiy',
 };
 
-const TYPE_LABELS = {
-  diniy: 'Diniy',
-  fuqarolik: 'Fuqarolik',
+const ORG_TYPE_LABELS = {
+  qomita: "Qo'mita",
+  konfessiya: 'Konfessiya',
+  diniy_tashkilot: 'Diniy Tashkilot',
 };
 
 function DashboardPage() {
@@ -53,13 +53,7 @@ function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          title="Jami konfessiyalar"
-          value={stats?.confessions}
-          icon={BookOpen}
-          color="blue"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard
           title="Hujjatlar"
           value={stats?.documents}
@@ -115,27 +109,25 @@ function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <ActivityChart data={stats?.activity_data || []} />
-        <ConfessionsPieChart stats={stats} />
+        {/* Organization types breakdown */}
+        {isAdmin && stats?.org_types && Object.keys(stats.org_types).length > 0 && (
+          <div className="card p-5">
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Tashkilot turlari</h3>
+            <div className="space-y-2">
+              {Object.entries(stats.org_types).map(([type, count]) => (
+                <div key={type} className="flex justify-between items-center">
+                  <span className="text-sm text-text-secondary">{ORG_TYPE_LABELS[type] || type}</span>
+                  <span className="text-sm font-semibold text-text-primary">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Admin-only: Breakdown cards */}
       {isAdmin && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          {/* Confession types */}
-          {stats?.confession_types && Object.keys(stats.confession_types).length > 0 && (
-            <div className="card p-5">
-              <h3 className="text-sm font-semibold text-text-primary mb-3">Konfessiya turlari</h3>
-              <div className="space-y-2">
-                {Object.entries(stats.confession_types).map(([type, count]) => (
-                  <div key={type} className="flex justify-between items-center">
-                    <span className="text-sm text-text-secondary">{TYPE_LABELS[type] || type}</span>
-                    <span className="text-sm font-semibold text-text-primary">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {/* Document categories */}
           {stats?.document_categories && Object.keys(stats.document_categories).length > 0 && (
             <div className="card p-5">

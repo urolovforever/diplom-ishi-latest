@@ -2,6 +2,47 @@ from rest_framework.permissions import BasePermission
 from .models import Role
 
 
+# Role creation hierarchy map
+ROLE_CREATION_MAP = {
+    Role.SUPER_ADMIN: [
+        Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI,
+        Role.KONFESSIYA_RAHBARI, Role.KONFESSIYA_XODIMI,
+        Role.DT_RAHBAR, Role.DT_XODIMI,
+    ],
+    Role.QOMITA_RAHBAR: [
+        Role.QOMITA_XODIMI,
+        Role.KONFESSIYA_RAHBARI, Role.KONFESSIYA_XODIMI,
+        Role.DT_XODIMI,
+    ],
+    Role.KONFESSIYA_RAHBARI: [
+        Role.KONFESSIYA_XODIMI,
+        Role.DT_RAHBAR,
+        Role.DT_XODIMI,
+    ],
+    Role.DT_RAHBAR: [
+        Role.DT_XODIMI,
+    ],
+}
+
+# Rolga mos tashkilot turi
+ROLE_ORG_TYPE_MAP = {
+    Role.QOMITA_RAHBAR: 'qomita',
+    Role.QOMITA_XODIMI: 'qomita',
+    Role.KONFESSIYA_RAHBARI: 'konfessiya',
+    Role.KONFESSIYA_XODIMI: 'konfessiya',
+    Role.DT_RAHBAR: 'diniy_tashkilot',
+    Role.DT_XODIMI: 'diniy_tashkilot',
+}
+
+# Roles that can manage users
+LEADER_ROLES = [
+    Role.SUPER_ADMIN,
+    Role.QOMITA_RAHBAR,
+    Role.KONFESSIYA_RAHBARI,
+    Role.DT_RAHBAR,
+]
+
+
 class IsSuperAdmin(BasePermission):
     def has_permission(self, request, view):
         return (
@@ -60,19 +101,7 @@ class IsKonfessiyaXodimi(BasePermission):
         )
 
 
-class IsAdliyaXodimi(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.user.role
-            and request.user.role.name in [
-                Role.SUPER_ADMIN,
-                Role.ADLIYA_XODIMI,
-            ]
-        )
-
-
-class IsKengashAzo(BasePermission):
+class IsDTRahbar(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
@@ -80,16 +109,35 @@ class IsKengashAzo(BasePermission):
             and request.user.role.name in [
                 Role.SUPER_ADMIN,
                 Role.QOMITA_RAHBAR,
-                Role.KENGASH_AZO,
+                Role.KONFESSIYA_RAHBARI,
+                Role.DT_RAHBAR,
             ]
         )
 
 
-# Backward-compatible aliases for views that used old permission names
-IsConfessionLeader = IsKonfessiyaRahbari
-IsSecurityAuditor = IsQomitaRahbar
-IsPsychologist = IsKonfessiyaXodimi
-IsITAdmin = IsQomitaXodimi
+class IsDTXodimi(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and request.user.role
+            and request.user.role.name in [
+                Role.SUPER_ADMIN,
+                Role.QOMITA_RAHBAR,
+                Role.KONFESSIYA_RAHBARI,
+                Role.DT_RAHBAR,
+                Role.DT_XODIMI,
+            ]
+        )
+
+
+class IsLeader(BasePermission):
+    """Permission for any leader role (can manage users)."""
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and request.user.role
+            and request.user.role.name in LEADER_ROLES
+        )
 
 
 class HasRole(BasePermission):

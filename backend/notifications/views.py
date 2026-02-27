@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin, IsITAdmin
+from accounts.permissions import IsSuperAdmin, IsQomitaXodimi
 from .models import Notification, AlertConfig, TelegramConfig, AlertRule
 from .serializers import (
     NotificationSerializer, MarkReadSerializer,
@@ -73,7 +73,7 @@ class AlertConfigDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class AlertRuleListCreateView(generics.ListCreateAPIView):
     serializer_class = AlertRuleSerializer
-    permission_classes = [IsSuperAdmin | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
     queryset = AlertRule.objects.all()
 
     def perform_create(self, serializer):
@@ -82,7 +82,7 @@ class AlertRuleListCreateView(generics.ListCreateAPIView):
 
 class AlertRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AlertRuleSerializer
-    permission_classes = [IsSuperAdmin | IsITAdmin]
+    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
     queryset = AlertRule.objects.all()
     lookup_field = 'pk'
 

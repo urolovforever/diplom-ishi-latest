@@ -6,16 +6,8 @@ export const ROLES = {
   QOMITA_XODIMI: 'qomita_xodimi',
   KONFESSIYA_RAHBARI: 'konfessiya_rahbari',
   KONFESSIYA_XODIMI: 'konfessiya_xodimi',
-  ADLIYA_XODIMI: 'adliya_xodimi',
-  KENGASH_AZO: 'kengash_azo',
-};
-
-export const CONFESSION_STATUS = {
-  DRAFT: 'draft',
-  SUBMITTED: 'submitted',
-  UNDER_REVIEW: 'under_review',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
+  DT_RAHBAR: 'dt_rahbar',
+  DT_XODIMI: 'dt_xodimi',
 };
 
 export const SECURITY_LEVELS = {

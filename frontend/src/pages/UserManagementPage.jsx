@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import authAPI from '../api/authAPI';
+import confessionsAPI from '../api/confessionsAPI';
 import Modal from '../components/ui/Modal';
 import Badge from '../components/ui/Badge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -10,9 +11,21 @@ import { addToast } from '../store/uiSlice';
 import { required, email as emailValidator, passwordStrength } from '../utils/validation';
 import { UserPlus, Search } from 'lucide-react';
 import { getInitials } from '../utils/helpers';
+import { ROLES } from '../utils/constants';
+
+// Rolga mos tashkilot turini aniqlash
+const ROLE_ORG_TYPE_MAP = {
+  [ROLES.QOMITA_RAHBAR]: 'qomita',
+  [ROLES.QOMITA_XODIMI]: 'qomita',
+  [ROLES.KONFESSIYA_RAHBARI]: 'konfessiya',
+  [ROLES.KONFESSIYA_XODIMI]: 'konfessiya',
+  [ROLES.DT_RAHBAR]: 'diniy_tashkilot',
+  [ROLES.DT_XODIMI]: 'diniy_tashkilot',
+};
 
 function UserManagementPage() {
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const [users, setUsers] = useState([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -20,10 +33,11 @@ function UserManagementPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteForm, setInviteForm] = useState({
-    email: '', first_name: '', last_name: '', password: '', role_id: '',
+    email: '', first_name: '', last_name: '', password: '', role_id: '', confession_id: '',
   });
   const [inviteErrors, setInviteErrors] = useState({});
   const [roles, setRoles] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -42,12 +56,23 @@ function UserManagementPage() {
   }, [fetchUsers]);
 
   useEffect(() => {
-    const roleMap = {};
-    users.forEach((u) => {
-      if (u.role) roleMap[u.role.id] = u.role;
-    });
-    setRoles(Object.values(roleMap));
-  }, [users]);
+    authAPI.getRoles().then((res) => {
+      setRoles(res.data);
+    }).catch(() => {});
+    confessionsAPI.getOrganizations().then((res) => {
+      const orgs = res.data.results || res.data;
+      // Flatten if nested
+      const flat = [];
+      const flatten = (list) => {
+        list.forEach((o) => {
+          flat.push(o);
+          if (o.children) flatten(o.children);
+        });
+      };
+      flatten(orgs);
+      setOrganizations(flat);
+    }).catch(() => {});
+  }, []);
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -59,35 +84,50 @@ function UserManagementPage() {
     const pwErr = passwordStrength(inviteForm.password);
     if (pwErr) errs.password = pwErr;
     if (!inviteForm.role_id) errs.role_id = "Rol tanlang";
+    if (!inviteForm.confession_id) errs.confession_id = "Tashkilot tanlang";
     if (Object.keys(errs).length) {
       setInviteErrors(errs);
       return;
     }
     try {
       await authAPI.inviteUser(inviteForm);
-      dispatch(addToast({ type: 'success', message: "Foydalanuvchi muvaffaqiyatli taklif qilindi" }));
+      dispatch(addToast({ type: 'success', message: "Foydalanuvchi muvaffaqiyatli yaratildi" }));
       setShowInvite(false);
-      setInviteForm({ email: '', first_name: '', last_name: '', password: '', role_id: '' });
+      setInviteForm({ email: '', first_name: '', last_name: '', password: '', role_id: '', confession_id: '' });
       setInviteErrors({});
       fetchUsers();
     } catch (err) {
-      const detail = err.response?.data?.email?.[0] || "Taklif yuborishda xatolik";
+      const detail = err.response?.data?.email?.[0] || err.response?.data?.role_id?.[0] || "Yaratishda xatolik";
       dispatch(addToast({ type: 'error', message: detail }));
     }
   };
 
-  const handleToggleActive = async (user) => {
+  const handleToggleActive = async (targetUser) => {
     try {
-      await authAPI.updateUser(user.id, { is_active: !user.is_active });
+      await authAPI.updateUser(targetUser.id, { is_active: !targetUser.is_active });
       dispatch(addToast({
         type: 'success',
-        message: `Foydalanuvchi ${user.is_active ? 'o\'chirildi' : 'faollashtirildi'}`,
+        message: `Foydalanuvchi ${targetUser.is_active ? 'o\'chirildi' : 'faollashtirildi'}`,
       }));
       fetchUsers();
     } catch {
       dispatch(addToast({ type: 'error', message: "Foydalanuvchini yangilashda xatolik" }));
     }
   };
+
+  // Tanlangan rolga mos tashkilotlarni filtrlash
+  const selectedRole = roles.find((r) => r.id === inviteForm.role_id);
+  const filteredOrganizations = (() => {
+    if (!selectedRole) return organizations;
+    const expectedOrgType = ROLE_ORG_TYPE_MAP[selectedRole.name];
+    if (!expectedOrgType) return organizations;
+    let filtered = organizations.filter((org) => org.org_type === expectedOrgType);
+    // Konfessiya rahbari faqat o'z konfessiyasi ostidagi DT'larni ko'rsin
+    if (user?.role?.name === ROLES.KONFESSIYA_RAHBARI && expectedOrgType === 'diniy_tashkilot' && user.confession) {
+      filtered = filtered.filter((org) => org.parent === user.confession);
+    }
+    return filtered;
+  })();
 
   const filteredUsers = searchQuery
     ? users.filter((u) =>
@@ -107,7 +147,7 @@ function UserManagementPage() {
         </div>
         <button onClick={() => setShowInvite(true)} className="btn-primary flex items-center gap-2">
           <UserPlus size={18} />
-          Taklif qilish
+          Yaratish
         </button>
       </div>
 
@@ -138,6 +178,7 @@ function UserManagementPage() {
                   <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Foydalanuvchi</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Email</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Rol</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Tashkilot</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Holat</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
                 </tr>
@@ -159,18 +200,23 @@ function UserManagementPage() {
                       <td className="px-5 py-3">
                         <Badge variant="info">{u.role?.name || "Rol yo'q"}</Badge>
                       </td>
+                      <td className="px-5 py-3 text-text-secondary text-sm">
+                        {u.organization_name || '—'}
+                      </td>
                       <td className="px-5 py-3">
                         <Badge variant={u.is_active ? 'success' : 'danger'}>
                           {u.is_active ? 'Faol' : 'Nofaol'}
                         </Badge>
                       </td>
                       <td className="px-5 py-3">
-                        <button
-                          onClick={() => handleToggleActive(u)}
-                          className={`text-sm font-medium ${u.is_active ? 'text-danger hover:text-red-700' : 'text-success hover:text-emerald-700'}`}
-                        >
-                          {u.is_active ? "O'chirish" : "Faollashtirish"}
-                        </button>
+                        {['super_admin', 'qomita_rahbar'].includes(user?.role?.name) && (
+                          <button
+                            onClick={() => handleToggleActive(u)}
+                            className={`text-sm font-medium ${u.is_active ? 'text-danger hover:text-red-700' : 'text-success hover:text-emerald-700'}`}
+                          >
+                            {u.is_active ? "O'chirish" : "Faollashtirish"}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -182,7 +228,7 @@ function UserManagementPage() {
         </>
       )}
 
-      <Modal isOpen={showInvite} onClose={() => setShowInvite(false)} title="Foydalanuvchini taklif qilish">
+      <Modal isOpen={showInvite} onClose={() => setShowInvite(false)} title="Foydalanuvchi yaratish">
         <form onSubmit={handleInvite} className="space-y-3">
           <FormField label="Email" error={inviteErrors.email} id="invite-email">
             <input id="invite-email" type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} className="input-field" />
@@ -197,16 +243,31 @@ function UserManagementPage() {
             <input id="invite-password" type="password" value={inviteForm.password} onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })} className="input-field" />
           </FormField>
           <FormField label="Rol" error={inviteErrors.role_id} id="invite-role">
-            <select id="invite-role" value={inviteForm.role_id} onChange={(e) => setInviteForm({ ...inviteForm, role_id: e.target.value })} className="input-field">
+            <select id="invite-role" value={inviteForm.role_id} onChange={(e) => setInviteForm({ ...inviteForm, role_id: e.target.value, confession_id: '' })} className="input-field">
               <option value="">Rol tanlang...</option>
               {roles.map((role) => (
-                <option key={role.id} value={role.id}>{role.name}</option>
+                <option key={role.id} value={role.id}>{role.description || role.name}</option>
               ))}
             </select>
           </FormField>
+          <FormField label="Tashkilot" error={inviteErrors.confession_id} id="invite-org">
+            <select id="invite-org" value={inviteForm.confession_id} onChange={(e) => setInviteForm({ ...inviteForm, confession_id: e.target.value })} className="input-field" disabled={!inviteForm.role_id}>
+              <option value="">{inviteForm.role_id ? 'Tashkilot tanlang...' : 'Avval rol tanlang...'}</option>
+              {filteredOrganizations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name} ({org.org_type === 'qomita' ? "Qo'mita" : org.org_type === 'konfessiya' ? 'Konfessiya' : 'DT'})
+                </option>
+              ))}
+            </select>
+          </FormField>
+          {inviteForm.role_id && roles.find((r) => r.id === inviteForm.role_id && ['qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar'].includes(r.name)) && (
+            <p className="text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded">
+              Bu foydalanuvchi tanlangan tashkilot rahbari sifatida tayinlanadi
+            </p>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowInvite(false)} className="btn-secondary">Bekor qilish</button>
-            <button type="submit" className="btn-primary">Taklif qilish</button>
+            <button type="submit" className="btn-primary">Yaratish</button>
           </div>
         </form>
       </Modal>

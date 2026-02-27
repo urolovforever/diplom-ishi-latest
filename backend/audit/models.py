@@ -34,7 +34,7 @@ class Report(models.Model):
     REPORT_TYPES = [
         ('activity', 'Activity Report'),
         ('security', 'Security Report'),
-        ('confession', 'Confession Report'),
+        ('organization', 'Organization Report'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

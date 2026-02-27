@@ -96,6 +96,7 @@ function LoginPage() {
                 onSubmit={handleVerify2FA}
                 loading={loading}
                 onBack={() => setRequires2FA(false)}
+                userId={userId}
               />
             ) : (
               <LoginForm onSubmit={handleLogin} loading={loading} />

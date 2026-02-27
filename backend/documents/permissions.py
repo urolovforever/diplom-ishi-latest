@@ -14,8 +14,8 @@ ROLE_MAX_SECURITY_LEVEL = {
     Role.QOMITA_XODIMI: 'secret',
     Role.KONFESSIYA_RAHBARI: 'confidential',
     Role.KONFESSIYA_XODIMI: 'confidential',
-    Role.ADLIYA_XODIMI: 'confidential',
-    Role.KENGASH_AZO: 'internal',
+    Role.DT_RAHBAR: 'internal',
+    Role.DT_XODIMI: 'internal',
 }
 
 

@@ -13,9 +13,12 @@ class Command(BaseCommand):
             (Role.QOMITA_XODIMI, 'Qo\'mita xodimi - monitoring va audit'),
             (Role.KONFESSIYA_RAHBARI, 'Konfessiya rahbari - konfessiyalarni boshqarish'),
             (Role.KONFESSIYA_XODIMI, 'Konfessiya xodimi - oddiy kirish'),
-            (Role.ADLIYA_XODIMI, 'Adliya xodimi - huquqiy hujjatlar'),
-            (Role.KENGASH_AZO, 'Kengash a\'zosi - kengash materiallari'),
+            (Role.DT_RAHBAR, 'Diniy tashkilot rahbari - diniy tashkilotni boshqarish'),
+            (Role.DT_XODIMI, 'Diniy tashkilot xodimi - oddiy kirish'),
         ]
+
+        # Remove old roles that no longer exist
+        Role.objects.filter(name__in=['adliya_xodimi', 'kengash_azo']).delete()
 
         created_count = 0
         for name, description in roles:
