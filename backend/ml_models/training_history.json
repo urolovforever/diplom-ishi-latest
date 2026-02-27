@@ -11,14 +11,14 @@
     "download_mb",
     "own_section",
     "role",
-    "confession_type"
+    "entity_type"
   ],
   "dataset_size": 2994,
   "train_size": 2395,
   "test_size": 599,
   "metrics": {
-    "precision": 0.09598603839441536,
-    "recall": 0.9322033898305084,
-    "f1": 0.17405063291139242
+    "precision": 0.09363957597173145,
+    "recall": 0.8983050847457628,
+    "f1": 0.1696
   }
 }

@@ -2,8 +2,6 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/ap
 
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
-  QOMITA_RAHBAR: 'qomita_rahbar',
-  QOMITA_XODIMI: 'qomita_xodimi',
   KONFESSIYA_RAHBARI: 'konfessiya_rahbari',
   KONFESSIYA_XODIMI: 'konfessiya_xodimi',
   DT_RAHBAR: 'dt_rahbar',

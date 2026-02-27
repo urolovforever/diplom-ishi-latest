@@ -3,6 +3,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
 from accounts.models import CustomUser, Role
+from confessions.models import Confession, Organization
 from notifications.models import Notification, AlertConfig, AlertRule, TelegramConfig
 
 
@@ -10,13 +11,23 @@ class NotificationTestBase(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.super_admin_role = Role.objects.create(name=Role.SUPER_ADMIN)
-        self.member_role = Role.objects.create(name=Role.MEMBER)
-        self.it_admin_role = Role.objects.create(name=Role.IT_ADMIN)
+        self.konfessiya_rahbari_role = Role.objects.create(name=Role.KONFESSIYA_RAHBARI)
+        self.konfessiya_xodimi_role = Role.objects.create(name=Role.KONFESSIYA_XODIMI)
+        self.dt_rahbar_role = Role.objects.create(name=Role.DT_RAHBAR)
+        self.dt_xodimi_role = Role.objects.create(name=Role.DT_XODIMI)
 
-    def _create_and_login(self, email, role):
+        # Create confession + organization hierarchy
+        self.confession = Confession.objects.create(name='Test Confession')
+        self.org = Organization.objects.create(
+            name='Test Org', confession=self.confession,
+        )
+
+    def _create_and_login(self, email, role, confession=None, organization=None):
         user = CustomUser.objects.create_user(
             email=email, password='TestPass123!@#',
             first_name='Test', last_name='User', role=role,
+            confession=confession, organization=organization,
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': email, 'password': 'TestPass123!@#',
@@ -27,10 +38,14 @@ class NotificationTestBase(APITestCase):
 
 class NotificationVisibilityTest(NotificationTestBase):
     def test_user_sees_only_own_notifications(self):
-        user1 = self._create_and_login('u1@test.com', self.member_role)
+        user1 = self._create_and_login(
+            'u1@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         user2 = CustomUser.objects.create_user(
             email='u2@test.com', password='TestPass123!@#',
-            first_name='U2', last_name='T', role=self.member_role,
+            first_name='U2', last_name='T', role=self.dt_xodimi_role,
+            organization=self.org,
         )
         Notification.objects.create(
             recipient=user1, title='For me', message='m',
@@ -44,7 +59,10 @@ class NotificationVisibilityTest(NotificationTestBase):
         self.assertEqual(response.data['results'][0]['title'], 'For me')
 
     def test_user_can_delete_own_notification(self):
-        user = self._create_and_login('u@test.com', self.member_role)
+        user = self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         notif = Notification.objects.create(
             recipient=user, title='N', message='m',
         )
@@ -52,10 +70,14 @@ class NotificationVisibilityTest(NotificationTestBase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_user_cannot_delete_others_notification(self):
-        self._create_and_login('u1@test.com', self.member_role)
+        self._create_and_login(
+            'u1@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         user2 = CustomUser.objects.create_user(
             email='u2@test.com', password='TestPass123!@#',
-            first_name='U2', last_name='T', role=self.member_role,
+            first_name='U2', last_name='T', role=self.dt_xodimi_role,
+            organization=self.org,
         )
         notif = Notification.objects.create(
             recipient=user2, title='N', message='m',
@@ -66,7 +88,10 @@ class NotificationVisibilityTest(NotificationTestBase):
 
 class MarkReadTest(NotificationTestBase):
     def test_mark_specific_as_read(self):
-        user = self._create_and_login('u@test.com', self.member_role)
+        user = self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         n1 = Notification.objects.create(recipient=user, title='N1', message='m')
         n2 = Notification.objects.create(recipient=user, title='N2', message='m')
         response = self.client.post('/api/notifications/mark-read/', {
@@ -80,7 +105,10 @@ class MarkReadTest(NotificationTestBase):
         self.assertFalse(n2.is_read)
 
     def test_mark_all_as_read(self):
-        user = self._create_and_login('u@test.com', self.member_role)
+        user = self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         Notification.objects.create(recipient=user, title='N1', message='m')
         Notification.objects.create(recipient=user, title='N2', message='m')
         response = self.client.post('/api/notifications/mark-read/', {
@@ -90,7 +118,10 @@ class MarkReadTest(NotificationTestBase):
         self.assertEqual(response.data['marked_read'], 2)
 
     def test_unread_count(self):
-        user = self._create_and_login('u@test.com', self.member_role)
+        user = self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         Notification.objects.create(recipient=user, title='N1', message='m')
         Notification.objects.create(recipient=user, title='N2', message='m', is_read=True)
         response = self.client.get('/api/notifications/unread-count/')
@@ -106,8 +137,11 @@ class AlertConfigTest(NotificationTestBase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_member_cannot_create_alert_config(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_create_alert_config(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.post('/api/notifications/alert-configs/', {
             'name': 'Nope', 'threshold': 10,
         })
@@ -147,8 +181,12 @@ class AlertRuleTest(NotificationTestBase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_it_admin_can_create_alert_rule(self):
-        self._create_and_login('it@test.com', self.it_admin_role)
+    def test_konfessiya_xodimi_can_create_alert_rule(self):
+        """Konfessiya xodimi has access to alert rules (mapped from old it_admin role)."""
+        self._create_and_login(
+            'kx@test.com', self.konfessiya_xodimi_role,
+            confession=self.confession,
+        )
         response = self.client.post('/api/notifications/alert-rules/', {
             'name': 'Failed Logins',
             'condition_type': 'failed_logins',
@@ -157,8 +195,11 @@ class AlertRuleTest(NotificationTestBase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_member_cannot_create_alert_rule(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_create_alert_rule(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.post('/api/notifications/alert-rules/', {
             'name': 'Nope',
             'condition_type': 'anomaly_count',
@@ -188,12 +229,18 @@ class AlertRuleTest(NotificationTestBase):
 
 class TelegramConfigTest(NotificationTestBase):
     def test_get_telegram_config_not_configured(self):
-        self._create_and_login('u@test.com', self.member_role)
+        self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.get('/api/notifications/telegram-config/')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_telegram_config(self):
-        user = self._create_and_login('u@test.com', self.member_role)
+        user = self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.put('/api/notifications/telegram-config/', {
             'chat_id': '12345',
             'alert_types': ['anomaly', 'honeypot'],
@@ -202,7 +249,10 @@ class TelegramConfigTest(NotificationTestBase):
         self.assertEqual(TelegramConfig.objects.count(), 1)
 
     def test_update_telegram_config(self):
-        user = self._create_and_login('u@test.com', self.member_role)
+        user = self._create_and_login(
+            'u@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         TelegramConfig.objects.create(user=user, chat_id='111')
         response = self.client.put('/api/notifications/telegram-config/', {
             'chat_id': '222',

@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin, IsQomitaXodimi
+from accounts.permissions import IsSuperAdmin, IsKonfessiyaXodimi
+from audit.mixins import AuditMixin
 from .models import Notification, AlertConfig, TelegramConfig, AlertRule
 from .serializers import (
     NotificationSerializer, MarkReadSerializer,
@@ -55,34 +56,36 @@ class UnreadCountView(APIView):
         return Response({'unread_count': count})
 
 
-class AlertConfigListCreateView(generics.ListCreateAPIView):
+class AlertConfigListCreateView(AuditMixin, generics.ListCreateAPIView):
     serializer_class = AlertConfigSerializer
     permission_classes = [IsSuperAdmin]
     queryset = AlertConfig.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        instance = serializer.save(created_by=self.request.user)
+        self._create_audit_log('create', instance)
 
 
-class AlertConfigDetailView(generics.RetrieveUpdateDestroyAPIView):
+class AlertConfigDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AlertConfigSerializer
     permission_classes = [IsSuperAdmin]
     queryset = AlertConfig.objects.all()
     lookup_field = 'pk'
 
 
-class AlertRuleListCreateView(generics.ListCreateAPIView):
+class AlertRuleListCreateView(AuditMixin, generics.ListCreateAPIView):
     serializer_class = AlertRuleSerializer
-    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
+    permission_classes = [IsKonfessiyaXodimi]
     queryset = AlertRule.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        instance = serializer.save(created_by=self.request.user)
+        self._create_audit_log('create', instance)
 
 
-class AlertRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
+class AlertRuleDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AlertRuleSerializer
-    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
+    permission_classes = [IsKonfessiyaXodimi]
     queryset = AlertRule.objects.all()
     lookup_field = 'pk'
 

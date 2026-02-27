@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsSuperAdmin, IsQomitaRahbar
+from accounts.permissions import IsSuperAdmin, IsKonfessiyaRahbari
 from .models import AuditLog, Report
 from .reports import ReportGenerator
 from .serializers import AuditLogSerializer, ReportSerializer, ReportGenerateSerializer
@@ -12,7 +12,7 @@ from .serializers import AuditLogSerializer, ReportSerializer, ReportGenerateSer
 
 class AuditLogListView(generics.ListAPIView):
     serializer_class = AuditLogSerializer
-    permission_classes = [IsSuperAdmin | IsQomitaRahbar]
+    permission_classes = [IsKonfessiyaRahbari]
     filterset_fields = ['user', 'action', 'model_name']
 
     def get_queryset(self):
@@ -21,7 +21,7 @@ class AuditLogListView(generics.ListAPIView):
 
 class AuditLogExportCSVView(APIView):
     """Export audit logs as CSV file."""
-    permission_classes = [IsSuperAdmin | IsQomitaRahbar]
+    permission_classes = [IsSuperAdmin]
 
     def get(self, request):
         import csv
@@ -62,7 +62,7 @@ class AuditLogExportCSVView(APIView):
 
 
 class ReportListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsSuperAdmin | IsQomitaRahbar | IsQomitaRahbar]
+    permission_classes = [IsKonfessiyaRahbari]
     queryset = Report.objects.select_related('generated_by__role').all()
 
     def get_serializer_class(self):
@@ -103,7 +103,7 @@ class ReportListCreateView(generics.ListCreateAPIView):
 
 
 class ReportDownloadView(APIView):
-    permission_classes = [IsSuperAdmin | IsQomitaRahbar | IsQomitaRahbar]
+    permission_classes = [IsKonfessiyaRahbari]
 
     def get(self, request, pk):
         try:

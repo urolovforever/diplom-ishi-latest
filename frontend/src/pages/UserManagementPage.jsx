@@ -8,19 +8,17 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Pagination from '../components/ui/Pagination';
 import FormField from '../components/ui/FormField';
 import { addToast } from '../store/uiSlice';
-import { required, email as emailValidator, passwordStrength } from '../utils/validation';
+import { required, email as emailValidator } from '../utils/validation';
 import { UserPlus, Search } from 'lucide-react';
 import { getInitials } from '../utils/helpers';
 import { ROLES } from '../utils/constants';
 
-// Rolga mos tashkilot turini aniqlash
-const ROLE_ORG_TYPE_MAP = {
-  [ROLES.QOMITA_RAHBAR]: 'qomita',
-  [ROLES.QOMITA_XODIMI]: 'qomita',
-  [ROLES.KONFESSIYA_RAHBARI]: 'konfessiya',
-  [ROLES.KONFESSIYA_XODIMI]: 'konfessiya',
-  [ROLES.DT_RAHBAR]: 'diniy_tashkilot',
-  [ROLES.DT_XODIMI]: 'diniy_tashkilot',
+// Rolga mos entity turini aniqlash
+const ROLE_ENTITY_MAP = {
+  [ROLES.KONFESSIYA_RAHBARI]: 'confession',
+  [ROLES.KONFESSIYA_XODIMI]: 'confession',
+  [ROLES.DT_RAHBAR]: 'organization',
+  [ROLES.DT_XODIMI]: 'organization',
 };
 
 function UserManagementPage() {
@@ -33,10 +31,12 @@ function UserManagementPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteForm, setInviteForm] = useState({
-    email: '', first_name: '', last_name: '', password: '', role_id: '', confession_id: '',
+    email: '', first_name: '', last_name: '', role_id: '',
+    confession_id: '', organization_id: '',
   });
   const [inviteErrors, setInviteErrors] = useState({});
   const [roles, setRoles] = useState([]);
+  const [confessions, setConfessions] = useState([]);
   const [organizations, setOrganizations] = useState([]);
 
   const fetchUsers = useCallback(async () => {
@@ -59,18 +59,17 @@ function UserManagementPage() {
     authAPI.getRoles().then((res) => {
       setRoles(res.data);
     }).catch(() => {});
+
+    // Fetch confessions
+    confessionsAPI.getConfessions().then((res) => {
+      const list = res.data?.results || res.data || [];
+      setConfessions(list);
+    }).catch(() => {});
+
+    // Fetch organizations
     confessionsAPI.getOrganizations().then((res) => {
       const orgs = res.data.results || res.data;
-      // Flatten if nested
-      const flat = [];
-      const flatten = (list) => {
-        list.forEach((o) => {
-          flat.push(o);
-          if (o.children) flatten(o.children);
-        });
-      };
-      flatten(orgs);
-      setOrganizations(flat);
+      setOrganizations(orgs);
     }).catch(() => {});
   }, []);
 
@@ -81,19 +80,41 @@ function UserManagementPage() {
     if (emailValidator(inviteForm.email)) errs.email = emailValidator(inviteForm.email);
     if (required(inviteForm.first_name)) errs.first_name = 'Majburiy maydon';
     if (required(inviteForm.last_name)) errs.last_name = 'Majburiy maydon';
-    const pwErr = passwordStrength(inviteForm.password);
-    if (pwErr) errs.password = pwErr;
     if (!inviteForm.role_id) errs.role_id = "Rol tanlang";
-    if (!inviteForm.confession_id) errs.confession_id = "Tashkilot tanlang";
+
+    const selectedRole = roles.find((r) => r.id === inviteForm.role_id);
+    const entityType = selectedRole ? ROLE_ENTITY_MAP[selectedRole.name] : null;
+
+    const isKR = user?.role?.name === ROLES.KONFESSIYA_RAHBARI;
+    if (entityType === 'confession' && !isKR && !inviteForm.confession_id) {
+      errs.confession_id = "Konfessiya tanlang";
+    }
+    if (entityType === 'organization' && !inviteForm.organization_id) {
+      errs.organization_id = "Tashkilot tanlang";
+    }
+
     if (Object.keys(errs).length) {
       setInviteErrors(errs);
       return;
     }
+
     try {
-      await authAPI.inviteUser(inviteForm);
-      dispatch(addToast({ type: 'success', message: "Foydalanuvchi muvaffaqiyatli yaratildi" }));
+      const payload = {
+        email: inviteForm.email,
+        first_name: inviteForm.first_name,
+        last_name: inviteForm.last_name,
+        role_id: inviteForm.role_id,
+      };
+      if (entityType === 'confession') {
+        payload.confession_id = isKR ? user.confession : inviteForm.confession_id;
+      } else if (entityType === 'organization') {
+        payload.organization_id = inviteForm.organization_id;
+      }
+
+      await authAPI.inviteUser(payload);
+      dispatch(addToast({ type: 'success', message: "Foydalanuvchi yaratildi. Email yuborildi." }));
       setShowInvite(false);
-      setInviteForm({ email: '', first_name: '', last_name: '', password: '', role_id: '', confession_id: '' });
+      setInviteForm({ email: '', first_name: '', last_name: '', role_id: '', confession_id: '', organization_id: '' });
       setInviteErrors({});
       fetchUsers();
     } catch (err) {
@@ -115,18 +136,17 @@ function UserManagementPage() {
     }
   };
 
-  // Tanlangan rolga mos tashkilotlarni filtrlash
+  // Tanlangan rolga mos entity turini aniqlash
   const selectedRole = roles.find((r) => r.id === inviteForm.role_id);
+  const entityType = selectedRole ? ROLE_ENTITY_MAP[selectedRole.name] : null;
+  const isKonfessiyaRahbari = user?.role?.name === ROLES.KONFESSIYA_RAHBARI;
+
+  // Konfessiya rahbari faqat o'z konfessiyasi ostidagi tashkilotlarni ko'rsin
   const filteredOrganizations = (() => {
-    if (!selectedRole) return organizations;
-    const expectedOrgType = ROLE_ORG_TYPE_MAP[selectedRole.name];
-    if (!expectedOrgType) return organizations;
-    let filtered = organizations.filter((org) => org.org_type === expectedOrgType);
-    // Konfessiya rahbari faqat o'z konfessiyasi ostidagi DT'larni ko'rsin
-    if (user?.role?.name === ROLES.KONFESSIYA_RAHBARI && expectedOrgType === 'diniy_tashkilot' && user.confession) {
-      filtered = filtered.filter((org) => org.parent === user.confession);
+    if (user?.role?.name === ROLES.KONFESSIYA_RAHBARI && user.confession) {
+      return organizations.filter((org) => org.confession === user.confession || org.confession_name === user.organization_name);
     }
-    return filtered;
+    return organizations;
   })();
 
   const filteredUsers = searchQuery
@@ -209,7 +229,7 @@ function UserManagementPage() {
                         </Badge>
                       </td>
                       <td className="px-5 py-3">
-                        {['super_admin', 'qomita_rahbar'].includes(user?.role?.name) && (
+                        {user?.role?.name === 'super_admin' && (
                           <button
                             onClick={() => handleToggleActive(u)}
                             className={`text-sm font-medium ${u.is_active ? 'text-danger hover:text-red-700' : 'text-success hover:text-emerald-700'}`}
@@ -239,30 +259,59 @@ function UserManagementPage() {
           <FormField label="Familiya" error={inviteErrors.last_name} id="invite-last">
             <input id="invite-last" type="text" value={inviteForm.last_name} onChange={(e) => setInviteForm({ ...inviteForm, last_name: e.target.value })} className="input-field" />
           </FormField>
-          <FormField label="Parol" error={inviteErrors.password} id="invite-password">
-            <input id="invite-password" type="password" value={inviteForm.password} onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })} className="input-field" />
-          </FormField>
           <FormField label="Rol" error={inviteErrors.role_id} id="invite-role">
-            <select id="invite-role" value={inviteForm.role_id} onChange={(e) => setInviteForm({ ...inviteForm, role_id: e.target.value, confession_id: '' })} className="input-field">
+            <select
+              id="invite-role"
+              value={inviteForm.role_id}
+              onChange={(e) => setInviteForm({ ...inviteForm, role_id: e.target.value, confession_id: '', organization_id: '' })}
+              className="input-field"
+            >
               <option value="">Rol tanlang...</option>
               {roles.map((role) => (
                 <option key={role.id} value={role.id}>{role.description || role.name}</option>
               ))}
             </select>
           </FormField>
-          <FormField label="Tashkilot" error={inviteErrors.confession_id} id="invite-org">
-            <select id="invite-org" value={inviteForm.confession_id} onChange={(e) => setInviteForm({ ...inviteForm, confession_id: e.target.value })} className="input-field" disabled={!inviteForm.role_id}>
-              <option value="">{inviteForm.role_id ? 'Tashkilot tanlang...' : 'Avval rol tanlang...'}</option>
-              {filteredOrganizations.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name} ({org.org_type === 'qomita' ? "Qo'mita" : org.org_type === 'konfessiya' ? 'Konfessiya' : 'DT'})
-                </option>
-              ))}
-            </select>
-          </FormField>
-          {inviteForm.role_id && roles.find((r) => r.id === inviteForm.role_id && ['qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar'].includes(r.name)) && (
+
+          {/* Confession dropdown for confession-level roles (yashirish: konfessiya_rahbari uchun) */}
+          {entityType === 'confession' && !isKonfessiyaRahbari && (
+            <FormField label="Konfessiya" error={inviteErrors.confession_id} id="invite-confession">
+              <select
+                id="invite-confession"
+                value={inviteForm.confession_id}
+                onChange={(e) => setInviteForm({ ...inviteForm, confession_id: e.target.value })}
+                className="input-field"
+              >
+                <option value="">Konfessiya tanlang...</option>
+                {confessions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </FormField>
+          )}
+
+          {/* Organization dropdown for org-level roles */}
+          {entityType === 'organization' && (
+            <FormField label="Tashkilot" error={inviteErrors.organization_id} id="invite-org">
+              <select
+                id="invite-org"
+                value={inviteForm.organization_id}
+                onChange={(e) => setInviteForm({ ...inviteForm, organization_id: e.target.value })}
+                className="input-field"
+              >
+                <option value="">Tashkilot tanlang...</option>
+                {filteredOrganizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({org.confession_name || 'N/A'})
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
+
+          {inviteForm.role_id && selectedRole && ['konfessiya_rahbari', 'dt_rahbar'].includes(selectedRole.name) && (
             <p className="text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded">
-              Bu foydalanuvchi tanlangan tashkilot rahbari sifatida tayinlanadi
+              Bu foydalanuvchi tanlangan {entityType === 'confession' ? 'konfessiya' : 'tashkilot'} rahbari sifatida tayinlanadi
             </p>
           )}
           <div className="flex justify-end gap-3 pt-2">

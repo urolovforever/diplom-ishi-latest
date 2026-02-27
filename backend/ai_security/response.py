@@ -52,7 +52,7 @@ class AnomalyResponseHandler:
         from notifications.models import Notification
 
         admins = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI],
+            role__name__in=[Role.SUPER_ADMIN],
             is_active=True,
         )
 
@@ -69,7 +69,7 @@ class AnomalyResponseHandler:
                     f'User {user.email} anomaly score: {score:.4f}. '
                     f'Top features: {feature_summary}'
                 ),
-                notification_type='anomaly',
+                notification_type='alert',
             )
 
         # TZ: Email alert to admins
@@ -88,19 +88,3 @@ class AnomalyResponseHandler:
         except Exception as e:
             logger.error('Failed to send email alert: %s', e)
 
-        # Telegram alert
-        try:
-            from django.conf import settings
-            if settings.TELEGRAM_BOT_TOKEN:
-                from notifications.telegram import TelegramBot
-                bot = TelegramBot()
-                chat_id = settings.TELEGRAM_DEFAULT_CHAT_ID
-                if chat_id:
-                    bot.send_alert(
-                        chat_id,
-                        f'AI Anomaly: {severity.upper()}',
-                        f'User: {user.email}\nScore: {score:.4f}\nFeatures: {feature_summary}',
-                        severity,
-                    )
-        except Exception as e:
-            logger.error('Failed to send Telegram alert: %s', e)

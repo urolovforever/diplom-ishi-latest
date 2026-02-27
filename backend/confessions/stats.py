@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from accounts.models import CustomUser, Role
 from ai_security.models import AnomalyReport, ActivityLog
-from confessions.models import Organization
+from confessions.models import Confession, Organization
 from documents.models import Document, DocumentAccessLog
 from notifications.models import Notification
 
@@ -18,7 +18,7 @@ class DashboardStatsView(APIView):
 
     def get(self, request):
         user = request.user
-        is_admin = user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]
+        is_admin = user.role and user.role.name == Role.SUPER_ADMIN
 
         if is_admin:
             documents_count = Document.objects.count()
@@ -35,11 +35,13 @@ class DashboardStatsView(APIView):
             'organizations': organizations_count,
         }
 
-        # Organization type breakdown
+        # Confessions breakdown
         if is_admin:
-            org_types = Organization.objects.values('org_type').annotate(count=Count('id'))
-            stats['org_types'] = {
-                item['org_type']: item['count'] for item in org_types
+            confessions = Confession.objects.annotate(
+                org_count=Count('organizations')
+            ).values('name', 'org_count')
+            stats['confessions'] = {
+                item['name']: item['org_count'] for item in confessions
             }
 
         # --- Enhanced stats for admin dashboard ---

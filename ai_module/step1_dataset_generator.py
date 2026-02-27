@@ -2,7 +2,8 @@
 Step 1: Generate synthetic activity log dataset for AI model training.
 Creates 2994 records simulating normal and anomalous user behavior.
 TZ spec: 9 parameters (failed_logins, docs_accessed, session_duration_min,
-day_of_week, download_mb, own_section, role, confession_type, is_anomaly).
+day_of_week, download_mb, own_section, role, entity_type, is_anomaly).
+Entity types: confession (1), organization (2).
 """
 import csv
 import random
@@ -17,18 +18,16 @@ USERS = [f'user_{i}@scp.local' for i in range(1, 51)]
 # TZ roles encoded
 ROLES = {
     'super_admin': 1,
-    'qomita_rahbar': 2,
-    'qomita_xodimi': 3,
-    'konfessiya_rahbari': 4,
-    'konfessiya_xodimi': 5,
-    'dt_rahbar': 6,
-    'dt_xodimi': 7,
+    'konfessiya_rahbari': 2,
+    'konfessiya_xodimi': 3,
+    'dt_rahbar': 4,
+    'dt_xodimi': 5,
 }
 
-# TZ confession types
-CONFESSION_TYPES = {
-    'diniy': 1,
-    'fuqarolik': 2,
+# Entity types (confession or organization)
+ENTITY_TYPES = {
+    'confession': 1,
+    'organization': 2,
 }
 
 
@@ -43,7 +42,7 @@ def generate_normal_record():
         'download_mb': round(random.uniform(0, 50), 2),
         'own_section': round(random.uniform(0.8, 1.0), 2),  # Mostly own section
         'role': random.choice(list(ROLES.values())),
-        'confession_type': random.choice(list(CONFESSION_TYPES.values())),
+        'entity_type': random.choice(list(ENTITY_TYPES.values())),
         'is_anomaly': 0,
     }
 
@@ -89,7 +88,7 @@ def main():
     fieldnames = [
         'user', 'failed_logins', 'docs_accessed', 'session_duration_min',
         'day_of_week', 'download_mb', 'own_section', 'role',
-        'confession_type', 'is_anomaly',
+        'entity_type', 'is_anomaly',
     ]
 
     with open(OUTPUT_FILE, 'w', newline='') as f:

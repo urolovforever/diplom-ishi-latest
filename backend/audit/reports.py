@@ -74,23 +74,25 @@ class ReportGenerator:
 
     @staticmethod
     def organization_report(date_from=None, date_to=None):
-        from confessions.models import Organization
+        from confessions.models import Confession, Organization
 
-        qs = Organization.objects.all()
+        org_qs = Organization.objects.select_related('confession').all()
         if date_from:
-            qs = qs.filter(created_at__gte=date_from)
+            org_qs = org_qs.filter(created_at__gte=date_from)
         if date_to:
-            qs = qs.filter(created_at__lte=date_to)
+            org_qs = org_qs.filter(created_at__lte=date_to)
 
-        by_type = {}
-        for org in qs:
-            by_type[org.org_type] = by_type.get(org.org_type, 0) + 1
+        by_confession = {}
+        for org in org_qs:
+            conf_name = org.confession.name if org.confession else 'N/A'
+            by_confession[conf_name] = by_confession.get(conf_name, 0) + 1
 
         return {
             'title': 'Organization Report',
-            'total_organizations': qs.count(),
-            'by_type': by_type,
-            'active_count': qs.filter(is_active=True).count(),
+            'total_confessions': Confession.objects.count(),
+            'total_organizations': org_qs.count(),
+            'by_confession': by_confession,
+            'active_count': org_qs.filter(is_active=True).count(),
             'period': {
                 'from': str(date_from) if date_from else 'All time',
                 'to': str(date_to) if date_to else 'Now',

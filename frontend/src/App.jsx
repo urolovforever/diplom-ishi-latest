@@ -11,8 +11,6 @@ import OrganizationsPage from './pages/OrganizationsPage';
 import PasswordResetRequestPage from './pages/PasswordResetRequestPage';
 import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
 import AIDashboardPage from './pages/AIDashboardPage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
 import AuditLogPage from './pages/AuditLogPage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -40,7 +38,7 @@ function App() {
         <Route
           path="organizations"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'konfessiya_rahbari', 'dt_rahbar']}>
               <OrganizationsPage />
             </RoleBasedRoute>
           }
@@ -50,7 +48,7 @@ function App() {
         <Route
           path="users"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'konfessiya_rahbari', 'dt_rahbar']}>
               <UserManagementPage />
             </RoleBasedRoute>
           }
@@ -58,7 +56,7 @@ function App() {
         <Route
           path="users/:id"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'konfessiya_rahbari', 'dt_rahbar']}>
+            <RoleBasedRoute allowedRoles={['super_admin', 'konfessiya_rahbari', 'dt_rahbar']}>
               <UserDetailPage />
             </RoleBasedRoute>
           }
@@ -66,32 +64,16 @@ function App() {
         <Route
           path="ai-dashboard"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'qomita_xodimi']}>
+            <RoleBasedRoute allowedRoles={['super_admin']}>
               <AIDashboardPage />
-            </RoleBasedRoute>
-          }
-        />
-        <Route
-          path="reports"
-          element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar', 'qomita_xodimi']}>
-              <ReportsPage />
             </RoleBasedRoute>
           }
         />
         <Route
           path="audit-log"
           element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_rahbar']}>
+            <RoleBasedRoute allowedRoles={['super_admin']}>
               <AuditLogPage />
-            </RoleBasedRoute>
-          }
-        />
-        <Route
-          path="settings"
-          element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'qomita_xodimi']}>
-              <SettingsPage />
             </RoleBasedRoute>
           }
         />

@@ -20,7 +20,9 @@ def train_isolation_forest():
 
     for user in users:
         features = extract_user_features(user, hours=24)
-        feature_matrix.append(features_to_vector(features))
+        vector = features_to_vector(features)
+        if not all(v == 0 for v in vector):
+            feature_matrix.append(vector)
 
     if len(feature_matrix) < 10:
         logger.info('Not enough data to train (%d users). Skipping.', len(feature_matrix))
@@ -64,7 +66,6 @@ def scan_recent_activity():
         logger.warning('Failed to load model from %s', config.model_file_path)
         return
 
-    threshold = config.threshold
     users = CustomUser.objects.filter(is_active=True)
     anomalies_found = 0
 
@@ -75,34 +76,47 @@ def scan_recent_activity():
         if all(v == 0 for v in vector):
             continue
 
-        score = engine.predict(vector)
+        # Get normalized score (0-1, higher = more anomalous)
+        normalized_score = engine.predict_normalized(vector)
 
-        if score < threshold:
+        # Check against 0.4 threshold (warning level)
+        if normalized_score >= 0.4:
             anomalies_found += 1
-            severity = 'critical' if score < threshold * 2 else 'high' if score < threshold * 1.5 else 'medium'
 
+            if normalized_score >= 0.7:
+                severity = 'critical'
+            elif normalized_score >= 0.55:
+                severity = 'high'
+            else:
+                severity = 'medium'
+
+            # Skip if already reported within 1 hour
             recent_report = AnomalyReport.objects.filter(
                 user=user,
                 detected_at__gte=timezone.now() - timedelta(hours=1),
             ).exists()
 
             if not recent_report:
+                # Get feature explanations
+                try:
+                    explanation = engine.explain_features(vector)
+                except Exception:
+                    explanation = {}
+
                 AnomalyReport.objects.create(
                     title=f'Anomalous behavior detected: {user.email}',
-                    description=f'Anomaly score: {score:.4f} (threshold: {threshold}). '
+                    description=f'Anomaly score: {normalized_score:.4f}. '
                                 f'Features: {features}',
                     severity=severity,
                     user=user,
-                    anomaly_score=score,
-                    features=features,
+                    anomaly_score=normalized_score,
+                    features={**features, '_explanation': explanation},
                 )
-                logger.warning('Anomaly detected for %s (score: %.4f)', user.email, score)
+                logger.warning('Anomaly detected for %s (score: %.4f, severity: %s)',
+                               user.email, normalized_score, severity)
 
-                # Trigger anomaly response (session blocking for critical, alerts for all)
                 try:
                     from .response import AnomalyResponseHandler
-                    # Convert IF score to 0-1 scale (lower IF score = higher anomaly)
-                    normalized_score = max(0.0, min(1.0, -score))
                     AnomalyResponseHandler.handle_anomaly(normalized_score, user, features)
                 except Exception as e:
                     logger.error('Failed to handle anomaly response: %s', e)

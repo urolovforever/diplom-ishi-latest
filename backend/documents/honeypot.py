@@ -43,7 +43,7 @@ class HoneypotManager:
         from accounts.models import CustomUser, Role
 
         admins = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.SECURITY_AUDITOR, Role.IT_ADMIN],
+            role__name__in=[Role.SUPER_ADMIN],
             is_active=True,
         )
         for admin in admins:
@@ -63,11 +63,3 @@ class HoneypotManager:
             user=user,
         )
 
-        # Try sending telegram alert
-        try:
-            from notifications.tasks import send_telegram_alert
-            send_telegram_alert.delay(
-                f'HONEYPOT ALERT: {honeypot.title} accessed by {user.email} from {ip_address}'
-            )
-        except Exception:
-            pass

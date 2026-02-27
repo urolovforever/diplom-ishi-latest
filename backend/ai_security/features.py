@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from .models import ActivityLog
 
-# TZ: 9 behavioral parameters for anomaly detection
+# TZ: 8 behavioral features for anomaly detection (is_anomaly is label, not feature)
 FEATURE_NAMES = [
     'failed_logins',
     'docs_accessed',
@@ -14,22 +14,17 @@ FEATURE_NAMES = [
     'download_mb',
     'own_section',
     'role',
-    'confession_type',
-    'is_anomaly',
+    'entity_type',
 ]
 
 # Role encoding for ML model
 ROLE_ENCODING = {
     'super_admin': 1,
-    'qomita_rahbar': 2,
-    'qomita_xodimi': 3,
-    'konfessiya_rahbari': 4,
-    'konfessiya_xodimi': 5,
-    'dt_rahbar': 6,
-    'dt_xodimi': 7,
+    'konfessiya_rahbari': 2,
+    'konfessiya_xodimi': 3,
+    'dt_rahbar': 4,
+    'dt_xodimi': 5,
 }
-
-
 
 
 def extract_user_features(user, hours=1):
@@ -70,9 +65,10 @@ def extract_user_features(user, hours=1):
 
     # 6. Own section access (1 = accessing own org data, 0 = accessing other org data)
     own_section = 1.0
-    if hasattr(user, 'confession') and user.confession:
+    user_org = user.organization or user.effective_confession
+    if user_org:
         other_org_access = logs.exclude(
-            request_path__contains=str(user.confession.id)
+            request_path__contains=str(user_org.id)
         ).filter(
             request_path__contains='/confessions/'
         ).count()
@@ -85,22 +81,12 @@ def extract_user_features(user, hours=1):
     if user.role:
         role_value = ROLE_ENCODING.get(user.role.name, 0)
 
-    # 8. Organization type (encoded)
-    org_type_value = 0
-    if hasattr(user, 'confession') and user.confession:
-        from confessions.models import Organization
-        org = user.confession
-        ORG_TYPE_ENCODING = {'qomita': 1, 'konfessiya': 2, 'diniy_tashkilot': 3}
-        org_type_value = ORG_TYPE_ENCODING.get(org.org_type, 0)
-
-    # 9. Is anomaly indicator (historical anomaly rate for this user)
-    from .models import AnomalyReport
-    recent_anomalies = AnomalyReport.objects.filter(
-        user=user,
-        detected_at__gte=timezone.now() - timedelta(days=7),
-        is_false_positive=False,
-    ).count()
-    is_anomaly = min(1.0, recent_anomalies / 5.0)  # Normalize to 0-1
+    # 8. Entity type (confession or organization)
+    entity_type_value = 0
+    if user.organization:
+        entity_type_value = 2  # organization
+    elif user.confession:
+        entity_type_value = 1  # confession
 
     return {
         'failed_logins': failed_logins,
@@ -110,8 +96,7 @@ def extract_user_features(user, hours=1):
         'download_mb': round(download_mb, 2),
         'own_section': own_section,
         'role': role_value,
-        'confession_type': org_type_value,
-        'is_anomaly': is_anomaly,
+        'entity_type': entity_type_value,
     }
 
 

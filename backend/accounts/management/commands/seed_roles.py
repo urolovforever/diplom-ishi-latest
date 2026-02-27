@@ -9,8 +9,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         roles = [
             (Role.SUPER_ADMIN, 'Tizimga to\'liq kirish huquqi'),
-            (Role.QOMITA_RAHBAR, 'Qo\'mita rahbari - yuqori darajali ruxsatlar'),
-            (Role.QOMITA_XODIMI, 'Qo\'mita xodimi - monitoring va audit'),
             (Role.KONFESSIYA_RAHBARI, 'Konfessiya rahbari - konfessiyalarni boshqarish'),
             (Role.KONFESSIYA_XODIMI, 'Konfessiya xodimi - oddiy kirish'),
             (Role.DT_RAHBAR, 'Diniy tashkilot rahbari - diniy tashkilotni boshqarish'),
@@ -18,7 +16,9 @@ class Command(BaseCommand):
         ]
 
         # Remove old roles that no longer exist
-        Role.objects.filter(name__in=['adliya_xodimi', 'kengash_azo']).delete()
+        Role.objects.filter(
+            name__in=['adliya_xodimi', 'kengash_azo', 'qomita_rahbar', 'qomita_xodimi']
+        ).delete()
 
         created_count = 0
         for name, description in roles:

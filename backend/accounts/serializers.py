@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import CustomUser, Role
 from .validators import validate_password_strength
-from .permissions import ROLE_CREATION_MAP, ROLE_ORG_TYPE_MAP
+from .permissions import ROLE_CREATION_MAP, ROLE_ENTITY_MAP
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'role_id', 'is_active', 'is_2fa_enabled',
-            'has_public_key', 'confession', 'organization_name',
+            'has_public_key', 'confession', 'organization', 'organization_name',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -35,6 +35,8 @@ class UserSerializer(serializers.ModelSerializer):
         return bool(obj.public_key)
 
     def get_organization_name(self, obj):
+        if obj.organization:
+            return obj.organization.name
         if obj.confession:
             return obj.confession.name
         return None
@@ -55,17 +57,13 @@ class LoginSerializer(serializers.Serializer):
 
 
 class InviteSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
     role_id = serializers.UUIDField()
     confession_id = serializers.UUIDField(required=False, allow_null=True)
+    organization_id = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'first_name', 'last_name', 'password', 'role_id', 'confession_id']
-
-    def validate_password(self, value):
-        validate_password_strength(value)
-        return value
+        fields = ['email', 'first_name', 'last_name', 'role_id', 'confession_id', 'organization_id']
 
     def validate_role_id(self, value):
         if not Role.objects.filter(id=value).exists():
@@ -83,30 +81,50 @@ class InviteSerializer(serializers.ModelSerializer):
                     {'role_id': "Siz bu rolda foydalanuvchi yarata olmaysiz."}
                 )
 
-            # Tashkilot turi rolga mos kelishini tekshirish
-            confession_id = data.get('confession_id')
-            if confession_id:
-                from confessions.models import Organization
-                try:
-                    org = Organization.objects.get(id=confession_id)
-                except Organization.DoesNotExist:
+            # Determine entity type for the target role
+            entity_type = ROLE_ENTITY_MAP.get(target_role.name)
+
+            if entity_type == 'confession':
+                confession_id = data.get('confession_id')
+
+                # Konfessiya rahbari uchun avtomatik o'z konfessiyasini tayinlash
+                if not confession_id and creator_role == Role.KONFESSIYA_RAHBARI and request.user.confession_id:
+                    data['confession_id'] = request.user.confession_id
+                    confession_id = request.user.confession_id
+
+                if not confession_id:
                     raise serializers.ValidationError(
-                        {'confession_id': "Tashkilot topilmadi."}
+                        {'confession_id': "Bu rol uchun konfessiya tanlash majburiy."}
+                    )
+                from confessions.models import Confession
+                try:
+                    Confession.objects.get(id=confession_id)
+                except Confession.DoesNotExist:
+                    raise serializers.ValidationError(
+                        {'confession_id': "Konfessiya topilmadi."}
                     )
 
-                expected_org_type = ROLE_ORG_TYPE_MAP.get(target_role.name)
-                if expected_org_type and org.org_type != expected_org_type:
+            elif entity_type == 'organization':
+                organization_id = data.get('organization_id')
+                if not organization_id:
                     raise serializers.ValidationError(
-                        {'confession_id': "Tanlangan tashkilot turi bu rolga mos kelmaydi."}
+                        {'organization_id': "Bu rol uchun tashkilot tanlash majburiy."}
+                    )
+                from confessions.models import Organization
+                try:
+                    org = Organization.objects.get(id=organization_id)
+                except Organization.DoesNotExist:
+                    raise serializers.ValidationError(
+                        {'organization_id': "Tashkilot topilmadi."}
                     )
 
                 # Konfessiya rahbari faqat o'z konfessiyasi ostidagi DT'larga rahbar tayinlay oladi
                 if (creator_role == Role.KONFESSIYA_RAHBARI
                         and target_role.name == Role.DT_RAHBAR
                         and request.user.confession):
-                    if org.parent_id != request.user.confession_id:
+                    if org.confession_id != request.user.confession_id:
                         raise serializers.ValidationError(
-                            {'confession_id': "Siz faqat o'z konfessiyangizga tegishli tashkilotlarga rahbar tayinlay olasiz."}
+                            {'organization_id': "Siz faqat o'z konfessiyangizga tegishli tashkilotlarga rahbar tayinlay olasiz."}
                         )
 
         return data
@@ -114,23 +132,32 @@ class InviteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         role_id = validated_data.pop('role_id')
         confession_id = validated_data.pop('confession_id', None)
+        organization_id = validated_data.pop('organization_id', None)
         role = Role.objects.get(id=role_id)
+
+        entity_type = ROLE_ENTITY_MAP.get(role.name)
 
         request = self.context.get('request')
         user = CustomUser.objects.create_user(
             email=validated_data['email'],
-            password=validated_data['password'],
+            password=None,
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             role=role,
-            confession_id=confession_id,
+            confession_id=confession_id if entity_type == 'confession' else None,
+            organization_id=organization_id if entity_type == 'organization' else None,
             created_by=request.user if request else None,
         )
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
 
-        # Rahbar rolida user yaratilsa, avtomatik shu tashkilot rahbari qilinadi
-        if confession_id and role.name in [Role.QOMITA_RAHBAR, Role.KONFESSIYA_RAHBARI, Role.DT_RAHBAR]:
+        # Rahbar rolida user yaratilsa, avtomatik shu tashkilot/konfessiya rahbari qilinadi
+        if role.name == Role.KONFESSIYA_RAHBARI and confession_id:
+            from confessions.models import Confession
+            Confession.objects.filter(id=confession_id).update(leader=user)
+        elif role.name == Role.DT_RAHBAR and organization_id:
             from confessions.models import Organization
-            Organization.objects.filter(id=confession_id).update(leader=user)
+            Organization.objects.filter(id=organization_id).update(leader=user)
 
         return user
 

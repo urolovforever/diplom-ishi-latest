@@ -10,8 +10,6 @@ import { FileText, Bell, Building2, Users, ShieldAlert, AlertTriangle } from 'lu
 
 const ROLE_LABELS = {
   super_admin: 'Super Admin',
-  qomita_rahbar: "Qo'mita Rahbari",
-  qomita_xodimi: "Qo'mita Xodimi",
   konfessiya_rahbari: 'Konfessiya Rahbari',
   konfessiya_xodimi: 'Konfessiya Xodimi',
   dt_rahbar: 'DT Rahbari',
@@ -25,12 +23,6 @@ const CATEGORY_LABELS = {
   confidential: 'Maxfiy',
 };
 
-const ORG_TYPE_LABELS = {
-  qomita: "Qo'mita",
-  konfessiya: 'Konfessiya',
-  diniy_tashkilot: 'Diniy Tashkilot',
-};
-
 function DashboardPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -41,7 +33,7 @@ function DashboardPage() {
     dispatch(fetchDashboardStats());
   }, [dispatch]);
 
-  const isAdmin = user?.role?.name === 'super_admin' || user?.role?.name === 'qomita_rahbar';
+  const isAdmin = user?.role?.name === 'super_admin';
 
   return (
     <div>
@@ -109,15 +101,15 @@ function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <ActivityChart data={stats?.activity_data || []} />
-        {/* Organization types breakdown */}
-        {isAdmin && stats?.org_types && Object.keys(stats.org_types).length > 0 && (
+        {/* Confessions breakdown */}
+        {isAdmin && stats?.confessions && Object.keys(stats.confessions).length > 0 && (
           <div className="card p-5">
-            <h3 className="text-sm font-semibold text-text-primary mb-3">Tashkilot turlari</h3>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Konfessiyalar</h3>
             <div className="space-y-2">
-              {Object.entries(stats.org_types).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center">
-                  <span className="text-sm text-text-secondary">{ORG_TYPE_LABELS[type] || type}</span>
-                  <span className="text-sm font-semibold text-text-primary">{count}</span>
+              {Object.entries(stats.confessions).map(([name, count]) => (
+                <div key={name} className="flex justify-between items-center">
+                  <span className="text-sm text-text-secondary">{name}</span>
+                  <span className="text-sm font-semibold text-text-primary">{count} tashkilot</span>
                 </div>
               ))}
             </div>
