@@ -38,10 +38,10 @@ class NotificationService:
 
     @classmethod
     def notify_admins(cls, title, message, notification_type='alert'):
-        """Send notification to all admin users (Super Admin + Qomita Rahbar)."""
+        """Send notification to all admin users (Super Admin)."""
         from accounts.models import CustomUser, Role
         admins = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.QOMITA_RAHBAR],
+            role__name__in=[Role.SUPER_ADMIN],
             is_active=True,
         )
         notifications = []
@@ -51,10 +51,10 @@ class NotificationService:
 
     @classmethod
     def notify_security_team(cls, title, message, notification_type='alert'):
-        """Send notification to security team (Admin + Security Auditor + IT Admin)."""
+        """Send notification to security team (Super Admin)."""
         from accounts.models import CustomUser, Role
         team = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.SECURITY_AUDITOR, Role.IT_ADMIN],
+            role__name__in=[Role.SUPER_ADMIN],
             is_active=True,
         )
         notifications = []

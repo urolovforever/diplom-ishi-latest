@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import Role
-from accounts.permissions import IsQomitaRahbar, IsQomitaXodimi, IsSuperAdmin
+from accounts.permissions import IsSuperAdmin
 from audit.mixins import AuditMixin
 from .encryption import encrypt_file, decrypt_file
 from .honeypot import HoneypotManager
@@ -45,7 +45,7 @@ def _check_download_limit(user):
         from accounts.models import CustomUser
 
         admins = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.QOMITA_RAHBAR],
+            role__name__in=[Role.SUPER_ADMIN],
             is_active=True,
         )
         for admin in admins:
@@ -74,17 +74,26 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
         qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
             'versions', 'encrypted_keys__user', 'shares__organization',
         ).all()
-        if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI]:
+        if user.role and user.role.name == Role.SUPER_ADMIN:
             return filter_by_security_level(qs, user)
         if user.role and user.role.name == Role.KONFESSIYA_RAHBARI:
             q = Q(uploaded_by=user) | Q(organization__leader=user)
             if user.confession:
-                q |= Q(shares__organization=user.confession)
+                # See docs shared with any org in their confession
+                org_ids = Organization.objects.filter(
+                    confession=user.confession
+                ).values_list('id', flat=True)
+                q |= Q(shares__organization_id__in=org_ids)
             qs = qs.filter(q).distinct()
             return filter_by_security_level(qs, user)
         q = Q(uploaded_by=user)
-        if user.confession:
-            q |= Q(shares__organization=user.confession)
+        if user.organization:
+            q |= Q(shares__organization=user.organization)
+        elif user.confession:
+            org_ids = Organization.objects.filter(
+                confession=user.confession
+            ).values_list('id', flat=True)
+            q |= Q(shares__organization_id__in=org_ids)
         return filter_by_security_level(qs.filter(q).distinct(), user)
 
     def get_serializer_class(self):
@@ -116,24 +125,24 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
             created_by=self.request.user,
         )
 
-        # Create shares and send notifications
-        shared_org_ids = getattr(instance, '_shared_org_ids', [])
+        # Notify members of uploader's organization/confession
         user = self.request.user
-        for org_id in shared_org_ids:
-            try:
-                org = Organization.objects.get(pk=org_id)
-                DocumentShare.objects.create(
-                    document=instance, organization=org, shared_by=user,
-                )
-                for member in org.members.filter(is_active=True):
-                    NotificationService.send_in_app(
-                        recipient=member,
-                        title='Yangi hujjat ulashildi',
-                        message=f'"{instance.title}" hujjati {org.name} bilan ulashildi. Yuboruvchi: {user.get_full_name() or user.email}',
-                        notification_type='info',
-                    )
-            except Organization.DoesNotExist:
-                continue
+        from accounts.models import CustomUser
+        recipients = CustomUser.objects.none()
+
+        if user.organization:
+            recipients = user.organization.members.filter(is_active=True)
+        elif user.confession:
+            recipients = user.confession.members.filter(is_active=True)
+
+        sender_name = user.get_full_name() or user.email
+        for member in recipients.exclude(id=user.id):
+            NotificationService.send_in_app(
+                recipient=member,
+                title='Yangi hujjat yuklandi',
+                message=f'"{instance.title}" hujjati yuklandi. Yuboruvchi: {sender_name}',
+                notification_type='info',
+            )
 
         self._create_audit_log('create', instance)
         return instance
@@ -149,17 +158,25 @@ class DocumentDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
         qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
             'versions', 'encrypted_keys__user', 'shares__organization',
         ).all()
-        if user.role and user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI]:
+        if user.role and user.role.name == Role.SUPER_ADMIN:
             return filter_by_security_level(qs, user)
         if user.role and user.role.name == Role.KONFESSIYA_RAHBARI:
             q = Q(uploaded_by=user) | Q(organization__leader=user)
             if user.confession:
-                q |= Q(shares__organization=user.confession)
+                org_ids = Organization.objects.filter(
+                    confession=user.confession
+                ).values_list('id', flat=True)
+                q |= Q(shares__organization_id__in=org_ids)
             qs = qs.filter(q).distinct()
             return filter_by_security_level(qs, user)
         q = Q(uploaded_by=user)
-        if user.confession:
-            q |= Q(shares__organization=user.confession)
+        if user.organization:
+            q |= Q(shares__organization=user.organization)
+        elif user.confession:
+            org_ids = Organization.objects.filter(
+                confession=user.confession
+            ).values_list('id', flat=True)
+            q |= Q(shares__organization_id__in=org_ids)
         return filter_by_security_level(qs.filter(q).distinct(), user)
 
     def get_serializer_class(self):
@@ -192,7 +209,7 @@ class DocumentShareView(APIView):
         user = request.user
         # Only owner or admin can share
         if document.uploaded_by != user and (
-            not user.role or user.role.name not in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]
+            not user.role or user.role.name != Role.SUPER_ADMIN
         ):
             return Response({'detail': 'Ruxsat berilmagan.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -349,7 +366,7 @@ class DocumentVersionRollbackView(APIView):
         # Only owner or admins can rollback
         user = request.user
         if document.uploaded_by != user and (
-            not user.role or user.role.name not in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]
+            not user.role or user.role.name != Role.SUPER_ADMIN
         ):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -392,7 +409,7 @@ class DocumentVersionRollbackView(APIView):
 
 class DocumentAccessLogListView(generics.ListAPIView):
     serializer_class = DocumentAccessLogSerializer
-    permission_classes = [IsSuperAdmin | IsQomitaRahbar]
+    permission_classes = [IsSuperAdmin]
     filterset_fields = ['document', 'user', 'action']
 
     def get_queryset(self):
@@ -413,7 +430,7 @@ class DocumentAccessLogByDocView(generics.ListAPIView):
 
 class HoneypotFileListCreateView(generics.ListCreateAPIView):
     serializer_class = HoneypotFileSerializer
-    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
+    permission_classes = [IsSuperAdmin]
     queryset = HoneypotFile.objects.select_related('created_by__role', 'last_accessed_by__role').all()
 
     def perform_create(self, serializer):
@@ -422,7 +439,7 @@ class HoneypotFileListCreateView(generics.ListCreateAPIView):
 
 class HoneypotFileDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = HoneypotFileSerializer
-    permission_classes = [IsSuperAdmin | IsQomitaXodimi]
+    permission_classes = [IsSuperAdmin]
     queryset = HoneypotFile.objects.select_related('created_by__role', 'last_accessed_by__role').all()
     lookup_field = 'pk'
 

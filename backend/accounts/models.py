@@ -8,8 +8,6 @@ from django.utils import timezone
 
 class Role(models.Model):
     SUPER_ADMIN = 'super_admin'
-    QOMITA_RAHBAR = 'qomita_rahbar'
-    QOMITA_XODIMI = 'qomita_xodimi'
     KONFESSIYA_RAHBARI = 'konfessiya_rahbari'
     KONFESSIYA_XODIMI = 'konfessiya_xodimi'
     DT_RAHBAR = 'dt_rahbar'
@@ -17,8 +15,6 @@ class Role(models.Model):
 
     ROLE_CHOICES = [
         (SUPER_ADMIN, 'Super Admin'),
-        (QOMITA_RAHBAR, "Qo'mita Rahbari"),
-        (QOMITA_XODIMI, "Qo'mita Xodimi"),
         (KONFESSIYA_RAHBARI, 'Konfessiya Rahbari'),
         (KONFESSIYA_XODIMI, 'Konfessiya Xodimi'),
         (DT_RAHBAR, 'Diniy Tashkilot Rahbari'),
@@ -80,8 +76,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     failed_login_count = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
 
-    # TZ: User's confession (organization) and who created the user
+    # TZ: User's confession and organization
     confession = models.ForeignKey(
+        'confessions.Confession', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='members',
+    )
+    organization = models.ForeignKey(
         'confessions.Organization', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='members',
     )
@@ -107,6 +107,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def get_full_name(self):
         return f'{self.first_name} {self.last_name}'.strip()
+
+    @property
+    def effective_confession(self):
+        """Return the confession from either the direct FK or via organization."""
+        if self.confession:
+            return self.confession
+        if self.organization:
+            return self.organization.confession
+        return None
 
     @property
     def is_locked(self):

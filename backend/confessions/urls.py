@@ -5,6 +5,8 @@ from .stats import DashboardStatsView
 app_name = 'confessions'
 
 urlpatterns = [
+    path('confessions/', views.ConfessionListCreateView.as_view(), name='confession-list'),
+    path('confessions/<uuid:pk>/', views.ConfessionDetailView.as_view(), name='confession-detail'),
     path('organizations/', views.OrganizationListCreateView.as_view(), name='organization-list'),
     path('organizations/all/', views.OrganizationAllListView.as_view(), name='organization-all'),
     path('organizations/<uuid:pk>/', views.OrganizationDetailView.as_view(), name='organization-detail'),

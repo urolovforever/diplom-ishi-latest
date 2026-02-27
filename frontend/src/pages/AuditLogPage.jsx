@@ -9,7 +9,7 @@ function AuditLogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [count, setCount] = useState(0);
   const [filters, setFilters] = useState({ action: '', model_name: '' });
 
   const fetchLogs = async () => {
@@ -20,8 +20,7 @@ function AuditLogPage() {
       if (filters.model_name) params.model_name = filters.model_name;
       const response = await api.get('/audit/logs/', { params });
       setLogs(response.data.results || []);
-      const count = response.data.count || 0;
-      setTotalPages(Math.ceil(count / 20) || 1);
+      setCount(response.data.count || 0);
     } catch {
       setError("Audit jurnalini yuklashda xatolik.");
     } finally {
@@ -56,10 +55,10 @@ function AuditLogPage() {
   };
 
   const actionConfig = {
-    create: 'badge-success',
-    delete: 'badge-danger',
-    update: 'badge-warning',
-    read: 'badge-info',
+    create: { class: 'badge-success', label: 'Yaratish' },
+    delete: { class: 'badge-danger', label: "O'chirish" },
+    update: { class: 'badge-warning', label: 'Yangilash' },
+    read: { class: 'badge-info', label: "O'qish" },
   };
 
   return (
@@ -129,7 +128,7 @@ function AuditLogPage() {
                       <td className="px-4 py-3 text-text-secondary">{new Date(log.created_at).toLocaleString()}</td>
                       <td className="px-4 py-3 font-medium">{log.user?.email || 'Tizim'}</td>
                       <td className="px-4 py-3">
-                        <span className={actionConfig[log.action] || 'badge-neutral'}>{log.action}</span>
+                        <span className={actionConfig[log.action]?.class || 'badge-neutral'}>{actionConfig[log.action]?.label || log.action}</span>
                       </td>
                       <td className="px-4 py-3 text-text-secondary">{log.model_name}</td>
                       <td className="px-4 py-3 font-mono text-xs text-text-secondary">{log.object_id?.slice(0, 8)}...</td>
@@ -147,11 +146,7 @@ function AuditLogPage() {
               </table>
             </div>
           </div>
-          {totalPages > 1 && (
-            <div className="mt-4">
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
-            </div>
-          )}
+          <Pagination count={count} currentPage={page} onPageChange={setPage} />
         </>
       )}
     </div>

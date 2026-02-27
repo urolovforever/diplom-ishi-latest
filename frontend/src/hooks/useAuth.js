@@ -8,8 +8,6 @@ export function useAuth() {
     user,
     isAuthenticated: !!token,
     isSuperAdmin: user?.role?.name === ROLES.SUPER_ADMIN,
-    isQomitaRahbar: user?.role?.name === ROLES.QOMITA_RAHBAR,
-    isQomitaXodimi: user?.role?.name === ROLES.QOMITA_XODIMI,
     isKonfessiyaRahbari: user?.role?.name === ROLES.KONFESSIYA_RAHBARI,
     isKonfessiyaXodimi: user?.role?.name === ROLES.KONFESSIYA_XODIMI,
     isDTRahbar: user?.role?.name === ROLES.DT_RAHBAR,

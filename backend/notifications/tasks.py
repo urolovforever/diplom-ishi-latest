@@ -51,17 +51,17 @@ def send_password_reset_email(recipient_email, reset_token):
 
 
 @shared_task
-def send_welcome_email(recipient_email, first_name):
-    """Send a welcome email to a newly created user."""
+def send_welcome_email(recipient_email, first_name, token):
+    """Send a welcome email with a set-password link to a newly created user."""
     try:
-        login_url = f'{settings.FRONTEND_URL}/login'
+        set_password_url = f'{settings.FRONTEND_URL}/password-reset/confirm?token={token}'
         html_content = render_to_string('emails/welcome.html', {
             'first_name': first_name,
-            'login_url': login_url,
+            'set_password_url': set_password_url,
         })
         send_mail(
             subject='Welcome to Secure Confession Platform',
-            message=f'Welcome {first_name}! Log in at {login_url}',
+            message=f'Welcome {first_name}! Set your password at {set_password_url}',
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[recipient_email],
             html_message=html_content,

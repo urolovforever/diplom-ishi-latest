@@ -82,7 +82,7 @@ function AIDashboardPage() {
   // Build anomaly types data
   const typeMap = {};
   stats?.recent_anomalies?.forEach((a) => {
-    const type = a.anomaly_type || a.severity || 'other';
+    const type = a.severity || 'other';
     typeMap[type] = (typeMap[type] || 0) + 1;
   });
   const typesData = Object.entries(typeMap).map(([type, count]) => ({ type, name: type, count }));
@@ -192,8 +192,10 @@ function AIDashboardPage() {
       {selectedAnomaly && (
         <ExplainPanel
           anomaly={selectedAnomaly}
-          features={selectedAnomaly.feature_importance || selectedAnomaly.explanation || {}}
+          features={selectedAnomaly.features?._explanation || selectedAnomaly.features || {}}
           onClose={() => setSelectedAnomaly(null)}
+          onResolve={(id) => handleReview(id, false)}
+          onMarkFalsePositive={(id) => handleReview(id, true)}
         />
       )}
     </div>

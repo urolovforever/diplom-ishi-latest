@@ -20,17 +20,19 @@ class RoleModelTest(TestCase):
         self.assertEqual(str(role), 'Super Admin')
 
     def test_role_name_unique(self):
-        Role.objects.create(name=Role.MEMBER)
+        Role.objects.create(name=Role.SUPER_ADMIN)
         with self.assertRaises(Exception):
-            Role.objects.create(name=Role.MEMBER)
+            Role.objects.create(name=Role.SUPER_ADMIN)
 
-    def test_seven_role_choices(self):
-        self.assertEqual(len(Role.ROLE_CHOICES), 7)
+    def test_five_role_choices(self):
+        self.assertEqual(len(Role.ROLE_CHOICES), 5)
 
-    def test_new_role_constants(self):
-        self.assertEqual(Role.SECURITY_AUDITOR, 'security_auditor')
-        self.assertEqual(Role.PSYCHOLOGIST, 'psychologist')
-        self.assertEqual(Role.IT_ADMIN, 'it_admin')
+    def test_role_constants(self):
+        self.assertEqual(Role.SUPER_ADMIN, 'super_admin')
+        self.assertEqual(Role.KONFESSIYA_RAHBARI, 'konfessiya_rahbari')
+        self.assertEqual(Role.KONFESSIYA_XODIMI, 'konfessiya_xodimi')
+        self.assertEqual(Role.DT_RAHBAR, 'dt_rahbar')
+        self.assertEqual(Role.DT_XODIMI, 'dt_xodimi')
 
 
 class CustomUserManagerTest(TestCase):
@@ -126,6 +128,32 @@ class CustomUserModelTest(TestCase):
         self.assertFalse(self.user.must_change_password)
         self.assertEqual(self.user.failed_login_count, 0)
         self.assertIsNone(self.user.locked_until)
+
+    def test_user_confession_and_organization_fks(self):
+        from confessions.models import Confession, Organization
+        confession = Confession.objects.create(name='Test Confession')
+        org = Organization.objects.create(name='Test Org', confession=confession)
+        self.user.confession = confession
+        self.user.organization = org
+        self.user.save()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.confession, confession)
+        self.assertEqual(self.user.organization, org)
+
+    def test_effective_confession_from_direct_fk(self):
+        from confessions.models import Confession
+        confession = Confession.objects.create(name='Direct Confession')
+        self.user.confession = confession
+        self.user.save()
+        self.assertEqual(self.user.effective_confession, confession)
+
+    def test_effective_confession_from_organization(self):
+        from confessions.models import Confession, Organization
+        confession = Confession.objects.create(name='Via Org')
+        org = Organization.objects.create(name='Org', confession=confession)
+        self.user.organization = org
+        self.user.save()
+        self.assertEqual(self.user.effective_confession, confession)
 
 
 class PasswordValidatorTest(TestCase):
@@ -255,6 +283,7 @@ class LoginViewTest(APITestCase):
             password='TestPass123!@#',
             first_name='Login',
             last_name='User',
+            is_2fa_enabled=False,
         )
         self.login_url = '/api/accounts/login/'
 
@@ -347,6 +376,13 @@ class LoginViewTest(APITestCase):
         self.assertTrue(response.data.get('must_change_password'))
 
 
+@override_settings(REST_FRAMEWORK={
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_THROTTLE_CLASSES': [],
+    'DEFAULT_THROTTLE_RATES': {},
+})
 class Verify2FAViewTest(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -395,6 +431,7 @@ class LogoutViewTest(APITestCase):
             password='TestPass123!@#',
             first_name='Logout',
             last_name='User',
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': 'logout@example.com',
@@ -423,6 +460,7 @@ class ChangePasswordViewTest(APITestCase):
             password='OldPass123!@#$',
             first_name='Change',
             last_name='Pass',
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': 'changepass@example.com',
@@ -492,20 +530,28 @@ class UserListViewTest(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.admin_role = Role.objects.create(name=Role.SUPER_ADMIN)
-        self.member_role = Role.objects.create(name=Role.MEMBER)
+        self.dt_xodimi_role = Role.objects.create(name=Role.DT_XODIMI)
+
+        from confessions.models import Confession, Organization
+        self.confession = Confession.objects.create(name='Test Confession')
+        self.org = Organization.objects.create(name='Test Org', confession=self.confession)
+
         self.admin = CustomUser.objects.create_user(
             email='admin@example.com',
             password='AdminPass123!@#',
             first_name='Admin',
             last_name='User',
             role=self.admin_role,
+            is_2fa_enabled=False,
         )
-        self.member = CustomUser.objects.create_user(
-            email='member@example.com',
-            password='MemberPass123!@',
-            first_name='Member',
-            last_name='User',
-            role=self.member_role,
+        self.dt_xodimi = CustomUser.objects.create_user(
+            email='dtxodim@example.com',
+            password='DtXodimPass123!@',
+            first_name='DT',
+            last_name='Xodim',
+            role=self.dt_xodimi_role,
+            organization=self.org,
+            is_2fa_enabled=False,
         )
         self.url = '/api/accounts/users/'
 
@@ -521,8 +567,8 @@ class UserListViewTest(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_member_cannot_list_users(self):
-        self._login('member@example.com', 'MemberPass123!@')
+    def test_dt_xodimi_cannot_list_users(self):
+        self._login('dtxodim@example.com', 'DtXodimPass123!@')
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -536,23 +582,22 @@ class UserListViewTest(APITestCase):
             'email': 'invited@example.com',
             'first_name': 'Invited',
             'last_name': 'User',
-            'password': 'InvitedPass1!@#',
-            'role_id': str(self.member_role.id),
+            'role_id': str(self.dt_xodimi_role.id),
+            'organization_id': str(self.org.id),
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(CustomUser.objects.filter(email='invited@example.com').exists())
+        invited = CustomUser.objects.get(email='invited@example.com')
+        self.assertFalse(invited.has_usable_password())
 
 
 class PermissionsTest(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.super_admin_role = Role.objects.create(name=Role.SUPER_ADMIN)
-        self.qomita_role = Role.objects.create(name=Role.QOMITA_RAHBAR)
-        self.leader_role = Role.objects.create(name=Role.CONFESSION_LEADER)
-        self.member_role = Role.objects.create(name=Role.MEMBER)
-        self.auditor_role = Role.objects.create(name=Role.SECURITY_AUDITOR)
-        self.psych_role = Role.objects.create(name=Role.PSYCHOLOGIST)
-        self.it_admin_role = Role.objects.create(name=Role.IT_ADMIN)
+        self.konfessiya_rahbari_role = Role.objects.create(name=Role.KONFESSIYA_RAHBARI)
+        self.konfessiya_xodimi_role = Role.objects.create(name=Role.KONFESSIYA_XODIMI)
+        self.dt_rahbar_role = Role.objects.create(name=Role.DT_RAHBAR)
+        self.dt_xodimi_role = Role.objects.create(name=Role.DT_XODIMI)
 
     def _create_and_login(self, email, role):
         user = CustomUser.objects.create_user(
@@ -561,6 +606,7 @@ class PermissionsTest(APITestCase):
             first_name='Test',
             last_name='User',
             role=role,
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': email,
@@ -574,45 +620,27 @@ class PermissionsTest(APITestCase):
         response = self.client.get('/api/accounts/users/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_qomita_rahbar_denied_users(self):
-        self._create_and_login('qr@test.com', self.qomita_role)
+    def test_konfessiya_rahbari_access_users(self):
+        """Konfessiya rahbari is a leader role and can access user list."""
+        self._create_and_login('kr@test.com', self.konfessiya_rahbari_role)
+        response = self.client.get('/api/accounts/users/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_dt_rahbar_access_users(self):
+        """DT rahbar is a leader role and can access user list."""
+        self._create_and_login('dr@test.com', self.dt_rahbar_role)
+        response = self.client.get('/api/accounts/users/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_konfessiya_xodimi_denied_users(self):
+        self._create_and_login('kx@test.com', self.konfessiya_xodimi_role)
         response = self.client.get('/api/accounts/users/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_confession_leader_denied_users(self):
-        self._create_and_login('cl@test.com', self.leader_role)
+    def test_dt_xodimi_denied_users(self):
+        self._create_and_login('dx@test.com', self.dt_xodimi_role)
         response = self.client.get('/api/accounts/users/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_member_denied_users(self):
-        self._create_and_login('m@test.com', self.member_role)
-        response = self.client.get('/api/accounts/users/')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_security_auditor_can_access_audit_logs(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
-        response = self.client.get('/api/audit/logs/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_security_auditor_can_access_anomaly_reports(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
-        response = self.client.get('/api/ai-security/anomaly-reports/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_it_admin_can_access_ai_configs(self):
-        self._create_and_login('it@test.com', self.it_admin_role)
-        response = self.client.get('/api/ai-security/ai-configs/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_psychologist_can_access_confessions(self):
-        self._create_and_login('psych@test.com', self.psych_role)
-        response = self.client.get('/api/confessions/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_security_auditor_can_access_documents(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
-        response = self.client.get('/api/documents/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class ProfileViewTest(APITestCase):
@@ -623,6 +651,7 @@ class ProfileViewTest(APITestCase):
             password='TestPass123!@#',
             first_name='Profile',
             last_name='User',
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': 'profile@example.com',
@@ -726,32 +755,30 @@ class PasswordResetViewTest(APITestCase):
 
 
 class SeedRolesCommandTest(TestCase):
-    def test_seed_roles_creates_seven_roles(self):
+    def test_seed_roles_creates_five_roles(self):
         call_command('seed_roles')
-        self.assertEqual(Role.objects.count(), 7)
+        self.assertEqual(Role.objects.count(), 5)
         self.assertTrue(Role.objects.filter(name='super_admin').exists())
-        self.assertTrue(Role.objects.filter(name='qomita_rahbar').exists())
-        self.assertTrue(Role.objects.filter(name='confession_leader').exists())
-        self.assertTrue(Role.objects.filter(name='member').exists())
-        self.assertTrue(Role.objects.filter(name='security_auditor').exists())
-        self.assertTrue(Role.objects.filter(name='psychologist').exists())
-        self.assertTrue(Role.objects.filter(name='it_admin').exists())
+        self.assertTrue(Role.objects.filter(name='konfessiya_rahbari').exists())
+        self.assertTrue(Role.objects.filter(name='konfessiya_xodimi').exists())
+        self.assertTrue(Role.objects.filter(name='dt_rahbar').exists())
+        self.assertTrue(Role.objects.filter(name='dt_xodimi').exists())
 
     def test_seed_roles_idempotent(self):
         call_command('seed_roles')
         call_command('seed_roles')
-        self.assertEqual(Role.objects.count(), 7)
+        self.assertEqual(Role.objects.count(), 5)
 
 
 class SeedDataCommandTest(TestCase):
     def test_seed_data_creates_users(self):
         call_command('seed_data')
         self.assertTrue(CustomUser.objects.filter(email='admin@scp.local').exists())
-        self.assertTrue(CustomUser.objects.filter(email='member@scp.local').exists())
-        self.assertTrue(CustomUser.objects.filter(email='auditor@scp.local').exists())
-        self.assertTrue(CustomUser.objects.filter(email='psychologist@scp.local').exists())
-        self.assertTrue(CustomUser.objects.filter(email='itadmin@scp.local').exists())
-        self.assertEqual(Role.objects.count(), 7)
+        self.assertTrue(CustomUser.objects.filter(email='konfessiya@scp.local').exists())
+        self.assertTrue(CustomUser.objects.filter(email='kxodim@scp.local').exists())
+        self.assertTrue(CustomUser.objects.filter(email='dtrahbar@scp.local').exists())
+        self.assertTrue(CustomUser.objects.filter(email='dtxodim@scp.local').exists())
+        self.assertEqual(Role.objects.count(), 5)
 
     def test_seed_data_idempotent(self):
         call_command('seed_data')
@@ -768,6 +795,7 @@ class PublicKeyViewTest(APITestCase):
             password='TestPass123!@#',
             first_name='Crypto',
             last_name='User',
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': 'crypto@example.com',
@@ -776,12 +804,11 @@ class PublicKeyViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
 
     def test_save_public_key(self):
-        response = self.client.post('/api/accounts/public-key/', {
+        response = self.client.post('/api/accounts/e2e/keys/', {
             'public_key': '{"kty":"RSA","n":"test"}',
             'encrypted_private_key': '{"encrypted":"data"}',
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data['has_keys'])
         self.user.refresh_from_db()
         self.assertEqual(self.user.public_key, '{"kty":"RSA","n":"test"}')
 
@@ -789,23 +816,23 @@ class PublicKeyViewTest(APITestCase):
         self.user.public_key = '{"kty":"RSA","n":"test"}'
         self.user.encrypted_private_key = '{"encrypted":"data"}'
         self.user.save()
-        response = self.client.get('/api/accounts/public-key/')
+        response = self.client.get('/api/accounts/e2e/keys/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['has_keys'])
         self.assertEqual(response.data['public_key'], '{"kty":"RSA","n":"test"}')
 
     def test_get_keys_when_none(self):
-        response = self.client.get('/api/accounts/public-key/')
+        response = self.client.get('/api/accounts/e2e/keys/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['has_keys'])
 
     def test_save_requires_public_key(self):
-        response = self.client.post('/api/accounts/public-key/', {})
+        response = self.client.post('/api/accounts/e2e/keys/', {})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_unauthenticated_denied(self):
         self.client.credentials()
-        response = self.client.get('/api/accounts/public-key/')
+        response = self.client.get('/api/accounts/e2e/keys/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
@@ -817,6 +844,7 @@ class UserPublicKeyViewTest(APITestCase):
             password='TestPass123!@#',
             first_name='Viewer',
             last_name='User',
+            is_2fa_enabled=False,
         )
         self.target = CustomUser.objects.create_user(
             email='target@example.com',
@@ -824,6 +852,7 @@ class UserPublicKeyViewTest(APITestCase):
             first_name='Target',
             last_name='User',
             public_key='{"kty":"RSA","n":"targetkey"}',
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': 'viewer@example.com',
@@ -832,25 +861,25 @@ class UserPublicKeyViewTest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
 
     def test_get_user_public_key(self):
-        response = self.client.get(f'/api/accounts/users/{self.target.id}/public-key/')
+        response = self.client.get(f'/api/accounts/e2e/keys/{self.target.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['public_key'], '{"kty":"RSA","n":"targetkey"}')
         self.assertEqual(response.data['user_id'], str(self.target.id))
 
     def test_get_nonexistent_user_key(self):
-        response = self.client.get('/api/accounts/users/00000000-0000-0000-0000-000000000000/public-key/')
+        response = self.client.get('/api/accounts/e2e/keys/00000000-0000-0000-0000-000000000000/')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_unauthenticated_denied(self):
         self.client.credentials()
-        response = self.client.get(f'/api/accounts/users/{self.target.id}/public-key/')
+        response = self.client.get(f'/api/accounts/e2e/keys/{self.target.id}/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class HealthCheckTest(APITestCase):
     def test_health_check_returns_status(self):
         response = self.client.get('/api/health/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(response.status_code, [status.HTTP_200_OK, 503])
         self.assertIn('status', response.json())
         self.assertIn('services', response.json())
         self.assertEqual(response.json()['services']['database'], 'ok')

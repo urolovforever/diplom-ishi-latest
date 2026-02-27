@@ -18,8 +18,8 @@ function KeySetup({ children, onComplete }) {
 
   useEffect(() => {
     if (token) {
-      dispatch(checkKeyStatus()).then(() => setChecked(true));
-      hasStoredPrivateKey().then(setHasLocalKey);
+      dispatch(checkKeyStatus()).then(() => setChecked(true)).catch(() => setChecked(true));
+      hasStoredPrivateKey().then(setHasLocalKey).catch(() => {});
     }
   }, [dispatch, token]);
 

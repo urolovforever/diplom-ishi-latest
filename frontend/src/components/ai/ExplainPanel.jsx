@@ -1,17 +1,27 @@
-import { X, User, AlertTriangle, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { X, User, ShieldCheck, ShieldAlert } from 'lucide-react';
 
-function ExplainPanel({ anomaly, features = {}, onClose }) {
-  const entries = Object.entries(features).sort(
-    ([, a], [, b]) => {
+function ExplainPanel({ anomaly, features = {}, onClose, onResolve, onMarkFalsePositive }) {
+  const entries = Object.entries(features)
+    .filter(([key]) => !key.startsWith('_'))
+    .sort(([, a], [, b]) => {
       const aVal = typeof a === 'object' ? Math.abs(a.contribution || 0) : Math.abs(a || 0);
       const bVal = typeof b === 'object' ? Math.abs(b.contribution || 0) : Math.abs(b || 0);
       return bVal - aVal;
-    }
-  );
+    });
 
   const score = anomaly?.anomaly_score || 0;
   const scoreColor = score > 0.7 ? 'text-danger' : score > 0.4 ? 'text-warning' : 'text-success';
   const ScoreIcon = score > 0.7 ? ShieldAlert : ShieldCheck;
+
+  const handleResolve = () => {
+    if (onResolve && anomaly?.id) onResolve(anomaly.id);
+    onClose();
+  };
+
+  const handleFalsePositive = () => {
+    if (onMarkFalsePositive && anomaly?.id) onMarkFalsePositive(anomaly.id);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -85,21 +95,26 @@ function ExplainPanel({ anomaly, features = {}, onClose }) {
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={onClose}
-              className="btn-primary flex-1 flex items-center justify-center gap-2"
-            >
-              <ShieldCheck size={18} />
-              Hal qilish
-            </button>
-            <button
-              onClick={onClose}
-              className="btn-secondary flex-1"
-            >
-              Yolg'on ijobiy
-            </button>
-          </div>
+          {anomaly && !anomaly.is_resolved && (
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleResolve}
+                className="btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                <ShieldCheck size={18} />
+                Hal qilish
+              </button>
+              <button
+                onClick={handleFalsePositive}
+                className="btn-secondary flex-1"
+              >
+                Yolg'on ijobiy
+              </button>
+            </div>
+          )}
+          {anomaly?.is_resolved && (
+            <p className="text-sm text-success text-center font-medium">Bu anomaliya allaqachon hal qilingan</p>
+          )}
         </div>
       </div>
     </div>

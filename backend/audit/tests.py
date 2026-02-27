@@ -2,6 +2,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
 from accounts.models import CustomUser, Role
+from confessions.models import Confession, Organization
 from audit.models import AuditLog, Report
 from audit.reports import ReportGenerator
 
@@ -10,14 +11,23 @@ class AuditTestBase(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.super_admin_role = Role.objects.create(name=Role.SUPER_ADMIN)
-        self.qomita_role = Role.objects.create(name=Role.QOMITA_RAHBAR)
-        self.member_role = Role.objects.create(name=Role.MEMBER)
-        self.auditor_role = Role.objects.create(name=Role.SECURITY_AUDITOR)
+        self.konfessiya_rahbari_role = Role.objects.create(name=Role.KONFESSIYA_RAHBARI)
+        self.konfessiya_xodimi_role = Role.objects.create(name=Role.KONFESSIYA_XODIMI)
+        self.dt_rahbar_role = Role.objects.create(name=Role.DT_RAHBAR)
+        self.dt_xodimi_role = Role.objects.create(name=Role.DT_XODIMI)
 
-    def _create_and_login(self, email, role):
+        # Create confession + organization hierarchy
+        self.confession = Confession.objects.create(name='Test Confession')
+        self.org = Organization.objects.create(
+            name='Test Org', confession=self.confession,
+        )
+
+    def _create_and_login(self, email, role, confession=None, organization=None):
         user = CustomUser.objects.create_user(
             email=email, password='TestPass123!@#',
             first_name='Test', last_name='User', role=role,
+            confession=confession, organization=organization,
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': email, 'password': 'TestPass123!@#',
@@ -35,18 +45,27 @@ class AuditLogPermissionTest(AuditTestBase):
         response = self.client.get('/api/audit/logs/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_security_auditor_can_list_audit_logs(self):
-        user = self._create_and_login('aud@test.com', self.auditor_role)
+    def test_konfessiya_rahbari_can_list_audit_logs(self):
+        self._create_and_login(
+            'kr@test.com', self.konfessiya_rahbari_role,
+            confession=self.confession,
+        )
         response = self.client.get('/api/audit/logs/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_qomita_cannot_list_audit_logs(self):
-        self._create_and_login('qr@test.com', self.qomita_role)
+    def test_dt_xodimi_cannot_list_audit_logs(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.get('/api/audit/logs/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_member_cannot_list_audit_logs(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_konfessiya_xodimi_cannot_list_audit_logs(self):
+        self._create_and_login(
+            'kx@test.com', self.konfessiya_xodimi_role,
+            confession=self.confession,
+        )
         response = self.client.get('/api/audit/logs/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -93,7 +112,8 @@ class AuditMixinTest(AuditTestBase):
         self._create_and_login('sa@test.com', self.super_admin_role)
         initial_count = AuditLog.objects.count()
         self.client.post('/api/confessions/organizations/', {
-            'name': 'Test Org',
+            'name': 'Test Org 2',
+            'confession': str(self.confession.id),
         })
         self.assertEqual(AuditLog.objects.count(), initial_count + 1)
         log = AuditLog.objects.order_by('-created_at').first()
@@ -102,8 +122,9 @@ class AuditMixinTest(AuditTestBase):
 
     def test_organization_update_creates_audit_log(self):
         self._create_and_login('sa@test.com', self.super_admin_role)
-        from confessions.models import Organization
-        org = Organization.objects.create(name='Org')
+        org = Organization.objects.create(
+            name='Org to Update', confession=self.confession,
+        )
         initial_count = AuditLog.objects.count()
         self.client.patch(f'/api/confessions/organizations/{org.id}/', {
             'name': 'Updated',
@@ -112,8 +133,9 @@ class AuditMixinTest(AuditTestBase):
 
     def test_organization_delete_creates_audit_log(self):
         self._create_and_login('sa@test.com', self.super_admin_role)
-        from confessions.models import Organization
-        org = Organization.objects.create(name='To Delete')
+        org = Organization.objects.create(
+            name='To Delete', confession=self.confession,
+        )
         initial_count = AuditLog.objects.count()
         self.client.delete(f'/api/confessions/organizations/{org.id}/')
         self.assertGreater(AuditLog.objects.count(), initial_count)
@@ -134,11 +156,11 @@ class ReportGeneratorTest(AuditTestBase):
         self.assertIn('total_anomalies', data)
         self.assertIn('failed_login_attempts', data)
 
-    def test_confession_report(self):
-        data = ReportGenerator.confession_report()
-        self.assertEqual(data['title'], 'Confession Report')
-        self.assertIn('total_confessions', data)
-        self.assertIn('by_status', data)
+    def test_organization_report(self):
+        data = ReportGenerator.organization_report()
+        self.assertEqual(data['title'], 'Organization Report')
+        self.assertIn('total_organizations', data)
+        self.assertIn('active_count', data)
 
     def test_export_pdf(self):
         data = ReportGenerator.activity_report()
@@ -163,15 +185,21 @@ class ReportViewTest(AuditTestBase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['report_type'], 'activity')
 
-    def test_auditor_can_generate_report(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
+    def test_konfessiya_rahbari_can_generate_report(self):
+        self._create_and_login(
+            'kr@test.com', self.konfessiya_rahbari_role,
+            confession=self.confession,
+        )
         response = self.client.post('/api/audit/reports/', {
             'report_type': 'security',
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_member_cannot_generate_report(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_generate_report(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.post('/api/audit/reports/', {
             'report_type': 'activity',
         })
@@ -208,7 +236,7 @@ class ReportViewTest(AuditTestBase):
 
     def test_generate_all_report_types(self):
         self._create_and_login('sa@test.com', self.super_admin_role)
-        for report_type in ['activity', 'security', 'confession']:
+        for report_type in ['activity', 'security', 'organization']:
             response = self.client.post('/api/audit/reports/', {
                 'report_type': report_type,
             })

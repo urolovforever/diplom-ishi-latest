@@ -5,14 +5,8 @@ from .models import Role
 # Role creation hierarchy map
 ROLE_CREATION_MAP = {
     Role.SUPER_ADMIN: [
-        Role.QOMITA_RAHBAR, Role.QOMITA_XODIMI,
         Role.KONFESSIYA_RAHBARI, Role.KONFESSIYA_XODIMI,
         Role.DT_RAHBAR, Role.DT_XODIMI,
-    ],
-    Role.QOMITA_RAHBAR: [
-        Role.QOMITA_XODIMI,
-        Role.KONFESSIYA_RAHBARI, Role.KONFESSIYA_XODIMI,
-        Role.DT_XODIMI,
     ],
     Role.KONFESSIYA_RAHBARI: [
         Role.KONFESSIYA_XODIMI,
@@ -24,20 +18,17 @@ ROLE_CREATION_MAP = {
     ],
 }
 
-# Rolga mos tashkilot turi
-ROLE_ORG_TYPE_MAP = {
-    Role.QOMITA_RAHBAR: 'qomita',
-    Role.QOMITA_XODIMI: 'qomita',
-    Role.KONFESSIYA_RAHBARI: 'konfessiya',
-    Role.KONFESSIYA_XODIMI: 'konfessiya',
-    Role.DT_RAHBAR: 'diniy_tashkilot',
-    Role.DT_XODIMI: 'diniy_tashkilot',
+# Rolga mos entity turi
+ROLE_ENTITY_MAP = {
+    Role.KONFESSIYA_RAHBARI: 'confession',
+    Role.KONFESSIYA_XODIMI: 'confession',
+    Role.DT_RAHBAR: 'organization',
+    Role.DT_XODIMI: 'organization',
 }
 
 # Roles that can manage users
 LEADER_ROLES = [
     Role.SUPER_ADMIN,
-    Role.QOMITA_RAHBAR,
     Role.KONFESSIYA_RAHBARI,
     Role.DT_RAHBAR,
 ]
@@ -52,28 +43,6 @@ class IsSuperAdmin(BasePermission):
         )
 
 
-class IsQomitaRahbar(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.user.role
-            and request.user.role.name in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]
-        )
-
-
-class IsQomitaXodimi(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.user.role
-            and request.user.role.name in [
-                Role.SUPER_ADMIN,
-                Role.QOMITA_RAHBAR,
-                Role.QOMITA_XODIMI,
-            ]
-        )
-
-
 class IsKonfessiyaRahbari(BasePermission):
     def has_permission(self, request, view):
         return (
@@ -81,7 +50,6 @@ class IsKonfessiyaRahbari(BasePermission):
             and request.user.role
             and request.user.role.name in [
                 Role.SUPER_ADMIN,
-                Role.QOMITA_RAHBAR,
                 Role.KONFESSIYA_RAHBARI,
             ]
         )
@@ -94,7 +62,6 @@ class IsKonfessiyaXodimi(BasePermission):
             and request.user.role
             and request.user.role.name in [
                 Role.SUPER_ADMIN,
-                Role.QOMITA_RAHBAR,
                 Role.KONFESSIYA_RAHBARI,
                 Role.KONFESSIYA_XODIMI,
             ]
@@ -108,7 +75,6 @@ class IsDTRahbar(BasePermission):
             and request.user.role
             and request.user.role.name in [
                 Role.SUPER_ADMIN,
-                Role.QOMITA_RAHBAR,
                 Role.KONFESSIYA_RAHBARI,
                 Role.DT_RAHBAR,
             ]
@@ -122,7 +88,6 @@ class IsDTXodimi(BasePermission):
             and request.user.role
             and request.user.role.name in [
                 Role.SUPER_ADMIN,
-                Role.QOMITA_RAHBAR,
                 Role.KONFESSIYA_RAHBARI,
                 Role.DT_RAHBAR,
                 Role.DT_XODIMI,

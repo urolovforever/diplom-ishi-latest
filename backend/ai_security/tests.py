@@ -7,6 +7,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
 from accounts.models import CustomUser, Role
+from confessions.models import Confession, Organization
 from ai_security.models import ActivityLog, AnomalyReport, AIModelConfig
 from ai_security.features import extract_user_features, features_to_vector, FEATURE_NAMES
 from ai_security.engine import IsolationForestEngine
@@ -16,16 +17,23 @@ class AISecurityTestBase(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.super_admin_role = Role.objects.create(name=Role.SUPER_ADMIN)
-        self.qomita_role = Role.objects.create(name=Role.QOMITA_RAHBAR)
-        self.leader_role = Role.objects.create(name=Role.CONFESSION_LEADER)
-        self.member_role = Role.objects.create(name=Role.MEMBER)
-        self.auditor_role = Role.objects.create(name=Role.SECURITY_AUDITOR)
-        self.it_admin_role = Role.objects.create(name=Role.IT_ADMIN)
+        self.konfessiya_rahbari_role = Role.objects.create(name=Role.KONFESSIYA_RAHBARI)
+        self.konfessiya_xodimi_role = Role.objects.create(name=Role.KONFESSIYA_XODIMI)
+        self.dt_rahbar_role = Role.objects.create(name=Role.DT_RAHBAR)
+        self.dt_xodimi_role = Role.objects.create(name=Role.DT_XODIMI)
 
-    def _create_and_login(self, email, role):
+        # Create confession + organization hierarchy
+        self.confession = Confession.objects.create(name='Test Confession')
+        self.org = Organization.objects.create(
+            name='Test Org', confession=self.confession,
+        )
+
+    def _create_and_login(self, email, role, confession=None, organization=None):
         user = CustomUser.objects.create_user(
             email=email, password='TestPass123!@#',
             first_name='Test', last_name='User', role=role,
+            confession=confession, organization=organization,
+            is_2fa_enabled=False,
         )
         response = self.client.post('/api/accounts/login/', {
             'email': email, 'password': 'TestPass123!@#',
@@ -43,16 +51,16 @@ class FeatureExtractionTest(TestCase):
 
     def test_extract_features_no_logs(self):
         features = extract_user_features(self.user)
-        self.assertEqual(features['request_count_per_hour'], 0)
-        self.assertEqual(features['unique_endpoints'], 0)
-        self.assertEqual(features['error_rate'], 0.0)
+        self.assertEqual(features['failed_logins'], 0)
+        self.assertEqual(features['docs_accessed'], 0)
+        self.assertEqual(features['download_mb'], 0.0)
 
     def test_extract_features_with_logs(self):
         for i in range(10):
             ActivityLog.objects.create(
                 user=self.user,
-                action=f'GET /api/test/{i}/',
-                request_path=f'/api/test/{i}/',
+                action=f'GET /api/documents/{i}/',
+                request_path=f'/api/documents/{i}/',
                 request_method='GET',
                 response_status=200,
             )
@@ -65,17 +73,21 @@ class FeatureExtractionTest(TestCase):
         )
 
         features = extract_user_features(self.user)
-        self.assertEqual(features['request_count_per_hour'], 11)
-        self.assertEqual(features['unique_endpoints'], 11)
-        self.assertAlmostEqual(features['error_rate'], 1 / 11, places=2)
+        self.assertEqual(features['docs_accessed'], 10)
+        self.assertIsInstance(features['session_duration_min'], float)
+        self.assertIsInstance(features['own_section'], float)
 
     def test_features_to_vector(self):
         features = {
-            'request_count_per_hour': 10,
-            'unique_endpoints': 5,
-            'time_of_day': 14,
-            'error_rate': 0.1,
-            'avg_payload_size': 256.0,
+            'failed_logins': 10,
+            'docs_accessed': 5,
+            'session_duration_min': 14.0,
+            'day_of_week': 2,
+            'download_mb': 0.1,
+            'own_section': 1.0,
+            'role': 3,
+            'entity_type': 2,
+            'is_anomaly': 0.0,
         }
         vector = features_to_vector(features)
         self.assertEqual(len(vector), len(FEATURE_NAMES))
@@ -169,8 +181,11 @@ class IsolationForestEngineTest(TestCase):
 
 
 class ActivityLogTest(AISecurityTestBase):
-    def test_qomita_can_list_activity_logs(self):
-        user = self._create_and_login('qr@test.com', self.qomita_role)
+    def test_konfessiya_rahbari_can_list_activity_logs(self):
+        user = self._create_and_login(
+            'kr@test.com', self.konfessiya_rahbari_role,
+            confession=self.confession,
+        )
         ActivityLog.objects.create(
             user=user, action='GET /api/test/', resource='/api/test/',
         )
@@ -182,18 +197,19 @@ class ActivityLogTest(AISecurityTestBase):
         response = self.client.get('/api/ai-security/activity-logs/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_security_auditor_can_list_activity_logs(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
-        response = self.client.get('/api/ai-security/activity-logs/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_member_cannot_list_activity_logs(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_list_activity_logs(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.get('/api/ai-security/activity-logs/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_leader_cannot_list_activity_logs(self):
-        self._create_and_login('cl@test.com', self.leader_role)
+    def test_dt_rahbar_cannot_list_activity_logs(self):
+        self._create_and_login(
+            'dr@test.com', self.dt_rahbar_role,
+            organization=self.org,
+        )
         response = self.client.get('/api/ai-security/activity-logs/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -205,7 +221,10 @@ class ActivityLogTest(AISecurityTestBase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_search_activity_logs(self):
-        user = self._create_and_login('qr@test.com', self.qomita_role)
+        user = self._create_and_login(
+            'kr@test.com', self.konfessiya_rahbari_role,
+            confession=self.confession,
+        )
         ActivityLog.objects.create(user=user, action='GET /api/test/', resource='/api/test/')
         ActivityLog.objects.create(user=user, action='POST /api/other/', resource='/api/other/')
         response = self.client.get('/api/ai-security/activity-logs/?search=test')
@@ -221,8 +240,11 @@ class AnomalyReportTest(AISecurityTestBase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_member_cannot_create_anomaly_report(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_create_anomaly_report(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.post('/api/ai-security/anomaly-reports/', {
             'title': 'Nope', 'description': 'No', 'severity': 'low',
         })
@@ -233,8 +255,11 @@ class AnomalyReportTest(AISecurityTestBase):
         response = self.client.get('/api/ai-security/anomaly-reports/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_security_auditor_can_list_anomaly_reports(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
+    def test_konfessiya_rahbari_can_list_anomaly_reports(self):
+        self._create_and_login(
+            'kr@test.com', self.konfessiya_rahbari_role,
+            confession=self.confession,
+        )
         response = self.client.get('/api/ai-security/anomaly-reports/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -294,15 +319,22 @@ class AIModelConfigTest(AISecurityTestBase):
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_it_admin_can_create_config(self):
-        self._create_and_login('it@test.com', self.it_admin_role)
+    def test_konfessiya_xodimi_can_create_config(self):
+        """Konfessiya xodimi has access to AI configs (mapped from old it_admin role)."""
+        self._create_and_login(
+            'kx@test.com', self.konfessiya_xodimi_role,
+            confession=self.confession,
+        )
         response = self.client.post('/api/ai-security/ai-configs/', {
             'name': 'Config', 'model_type': 'anomaly_detection',
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_member_cannot_create_config(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_create_config(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.post('/api/ai-security/ai-configs/', {
             'name': 'Nope', 'model_type': 'test',
         })
@@ -339,13 +371,19 @@ class DashboardViewTest(AISecurityTestBase):
         self.assertIn('total_anomalies', response.data)
         self.assertIn('unreviewed_count', response.data)
 
-    def test_auditor_can_access_dashboard(self):
-        self._create_and_login('aud@test.com', self.auditor_role)
+    def test_konfessiya_rahbari_can_access_dashboard(self):
+        self._create_and_login(
+            'kr@test.com', self.konfessiya_rahbari_role,
+            confession=self.confession,
+        )
         response = self.client.get('/api/ai-security/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_member_cannot_access_dashboard(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_access_dashboard(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.get('/api/ai-security/dashboard/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -358,8 +396,11 @@ class ManualScanViewTest(AISecurityTestBase):
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         mock_delay.assert_called_once()
 
-    def test_member_cannot_trigger_scan(self):
-        self._create_and_login('m@test.com', self.member_role)
+    def test_dt_xodimi_cannot_trigger_scan(self):
+        self._create_and_login(
+            'dx@test.com', self.dt_xodimi_role,
+            organization=self.org,
+        )
         response = self.client.post('/api/ai-security/scan/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -377,7 +418,7 @@ class ScanTaskTest(TestCase):
             action='old', request_path='/old',
         )
         ActivityLog.objects.filter(pk=old_log.pk).update(
-            created_at=timezone.now() - timedelta(days=100)
+            created_at=timezone.now() - timedelta(days=731)
         )
         recent_log = ActivityLog.objects.create(
             action='recent', request_path='/recent',

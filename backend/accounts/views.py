@@ -14,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .authentication import get_totp_uri, verify_totp
 from .models import CustomUser, PasswordResetToken, Role, UserSession
+from audit.mixins import AuditMixin
 from .permissions import IsSuperAdmin, IsLeader, ROLE_CREATION_MAP, LEADER_ROLES
 from .security import SecurityManager
 from .serializers import (
@@ -214,46 +215,29 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
-class UserListView(generics.ListCreateAPIView):
+class UserListView(AuditMixin, generics.ListCreateAPIView):
     permission_classes = [IsLeader]
 
     def get_queryset(self):
         user = self.request.user
-        qs = CustomUser.objects.select_related('role', 'confession').all()
+        qs = CustomUser.objects.select_related('role', 'confession', 'organization').all()
         role_name = user.role.name if user.role else None
 
         if role_name == Role.SUPER_ADMIN:
             return qs
-        elif role_name == Role.QOMITA_RAHBAR:
-            # See users in their qomita and all child organizations
-            if user.confession:
-                from confessions.models import Organization
-                org_ids = [user.confession.id]
-                # Add konfessiya children
-                konfessiya_ids = list(
-                    Organization.objects.filter(parent=user.confession).values_list('id', flat=True)
-                )
-                org_ids.extend(konfessiya_ids)
-                # Add diniy tashkilot children
-                dt_ids = list(
-                    Organization.objects.filter(parent__in=konfessiya_ids).values_list('id', flat=True)
-                )
-                org_ids.extend(dt_ids)
-                return qs.filter(confession_id__in=org_ids)
-            return qs.none()
         elif role_name == Role.KONFESSIYA_RAHBARI:
             if user.confession:
                 from confessions.models import Organization
-                org_ids = [user.confession.id]
-                dt_ids = list(
-                    Organization.objects.filter(parent=user.confession).values_list('id', flat=True)
+                org_ids = list(
+                    Organization.objects.filter(confession=user.confession).values_list('id', flat=True)
                 )
-                org_ids.extend(dt_ids)
-                return qs.filter(confession_id__in=org_ids)
+                return qs.filter(
+                    Q(confession=user.confession) | Q(organization_id__in=org_ids)
+                )
             return qs.none()
         elif role_name == Role.DT_RAHBAR:
-            if user.confession:
-                return qs.filter(confession=user.confession)
+            if user.organization:
+                return qs.filter(organization=user.organization)
             return qs.none()
         return qs.none()
 
@@ -263,15 +247,15 @@ class UserListView(generics.ListCreateAPIView):
         return UserSerializer
 
 
-class UserDetailView(generics.RetrieveUpdateAPIView):
-    queryset = CustomUser.objects.select_related('role', 'confession').all()
+class UserDetailView(AuditMixin, generics.RetrieveUpdateAPIView):
+    queryset = CustomUser.objects.select_related('role', 'confession', 'organization').all()
     serializer_class = UserSerializer
     permission_classes = [IsLeader]
     lookup_field = 'pk'
 
     def update(self, request, *args, **kwargs):
-        # Faqat super_admin va qomita_rahbar edit qila oladi
-        if request.user.role and request.user.role.name not in [Role.SUPER_ADMIN, Role.QOMITA_RAHBAR]:
+        # Faqat super_admin edit qila oladi
+        if request.user.role and request.user.role.name != Role.SUPER_ADMIN:
             return Response(
                 {'detail': "Siz foydalanuvchini tahrirlash huquqiga ega emassiz."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -449,9 +433,9 @@ class E2ERecipientsView(APIView):
         from confessions.models import Organization
 
         recipients = []
-        # Always include super_admins and qomita_rahbars
+        # Always include super_admins
         admins = CustomUser.objects.filter(
-            role__name__in=['super_admin', 'qomita_rahbar'],
+            role__name__in=['super_admin'],
             is_active=True,
             public_key__isnull=False,
         ).exclude(public_key='')
@@ -504,7 +488,7 @@ class RoleListView(generics.ListAPIView):
         return Role.objects.all()
 
 
-class IPRestrictionListCreateView(generics.ListCreateAPIView):
+class IPRestrictionListCreateView(AuditMixin, generics.ListCreateAPIView):
     """Manage IP whitelist/blacklist entries."""
     permission_classes = [IsSuperAdmin]
 
@@ -517,10 +501,11 @@ class IPRestrictionListCreateView(generics.ListCreateAPIView):
         return IPRestrictionSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        instance = serializer.save(created_by=self.request.user)
+        self._create_audit_log('create', instance)
 
 
-class IPRestrictionDeleteView(generics.DestroyAPIView):
+class IPRestrictionDeleteView(AuditMixin, generics.DestroyAPIView):
     """Delete an IP restriction entry."""
     permission_classes = [IsSuperAdmin]
     lookup_field = 'pk'

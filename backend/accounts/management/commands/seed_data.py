@@ -2,37 +2,32 @@ from django.core.management.base import BaseCommand
 from django.core.management import call_command
 
 from accounts.models import CustomUser, Role
-from confessions.models import Organization
+from confessions.models import Confession, Organization
 
 
 class Command(BaseCommand):
-    help = 'Seed database with test users, organizations, and sample data'
+    help = 'Seed database with test users, confessions, organizations, and sample data'
 
     def handle(self, *args, **options):
         # Ensure roles exist
         call_command('seed_roles')
 
-        # --- Create hierarchical organizations ---
-        qomita, _ = Organization.objects.get_or_create(
-            name="Din ishlari bo'yicha Qo'mita",
-            defaults={'org_type': 'qomita', 'description': "O'zbekiston Respublikasi Din ishlari bo'yicha Qo'mita"},
-        )
-        self.stdout.write(f"  Qo'mita: {qomita.name}")
-
-        konfessiya_data = [
+        # --- Create confessions ---
+        confession_data = [
             ("Islom konfessiyasi", "O'zbekiston Islom diniy tashkilotlari"),
             ("Xristian konfessiyasi", "O'zbekistondagi Xristian diniy tashkilotlar"),
             ("Yahudiy konfessiyasi", "O'zbekistondagi Yahudiy diniy tashkilotlar"),
         ]
         konfessiyalar = []
-        for name, desc in konfessiya_data:
-            k, _ = Organization.objects.get_or_create(
+        for name, desc in confession_data:
+            k, _ = Confession.objects.get_or_create(
                 name=name,
-                defaults={'org_type': 'konfessiya', 'parent': qomita, 'description': desc},
+                defaults={'description': desc},
             )
             konfessiyalar.append(k)
             self.stdout.write(f"  Konfessiya: {k.name}")
 
+        # --- Create organizations (diniy tashkilotlar) ---
         dt_data = [
             (konfessiyalar[0], [
                 ("Toshkent Jome masjidi", "Toshkent shahridagi Jome masjid"),
@@ -47,14 +42,14 @@ class Command(BaseCommand):
             ]),
         ]
         diniy_tashkilotlar = []
-        for parent_k, dts in dt_data:
+        for confession, dts in dt_data:
             for name, desc in dts:
                 dt, _ = Organization.objects.get_or_create(
                     name=name,
-                    defaults={'org_type': 'diniy_tashkilot', 'parent': parent_k, 'description': desc},
+                    defaults={'confession': confession, 'description': desc},
                 )
                 diniy_tashkilotlar.append(dt)
-                self.stdout.write(f"  DT: {dt.name} (parent: {parent_k.name})")
+                self.stdout.write(f"  DT: {dt.name} (confession: {confession.name})")
 
         # --- Create test users ---
         test_users = [
@@ -65,23 +60,8 @@ class Command(BaseCommand):
                 'password': 'AdminPass123!',
                 'role_name': Role.SUPER_ADMIN,
                 'is_staff': True,
-                'confession': qomita,
-            },
-            {
-                'email': 'rahbar@scp.local',
-                'first_name': 'Qomita',
-                'last_name': 'Rahbar',
-                'password': 'AdminPass123!',
-                'role_name': Role.QOMITA_RAHBAR,
-                'confession': qomita,
-            },
-            {
-                'email': 'xodim@scp.local',
-                'first_name': 'Qomita',
-                'last_name': 'Xodimi',
-                'password': 'AdminPass123!',
-                'role_name': Role.QOMITA_XODIMI,
-                'confession': qomita,
+                'confession': None,
+                'organization': None,
             },
             {
                 'email': 'konfessiya@scp.local',
@@ -90,6 +70,7 @@ class Command(BaseCommand):
                 'password': 'AdminPass123!',
                 'role_name': Role.KONFESSIYA_RAHBARI,
                 'confession': konfessiyalar[0],
+                'organization': None,
             },
             {
                 'email': 'kxodim@scp.local',
@@ -98,6 +79,7 @@ class Command(BaseCommand):
                 'password': 'AdminPass123!',
                 'role_name': Role.KONFESSIYA_XODIMI,
                 'confession': konfessiyalar[0],
+                'organization': None,
             },
             {
                 'email': 'dtrahbar@scp.local',
@@ -105,7 +87,8 @@ class Command(BaseCommand):
                 'last_name': 'Rahbar',
                 'password': 'AdminPass123!',
                 'role_name': Role.DT_RAHBAR,
-                'confession': diniy_tashkilotlar[0],
+                'confession': None,
+                'organization': diniy_tashkilotlar[0],
             },
             {
                 'email': 'dtxodim@scp.local',
@@ -113,7 +96,8 @@ class Command(BaseCommand):
                 'last_name': 'Xodim',
                 'password': 'AdminPass123!',
                 'role_name': Role.DT_XODIMI,
-                'confession': diniy_tashkilotlar[0],
+                'confession': None,
+                'organization': diniy_tashkilotlar[0],
             },
         ]
 
@@ -135,12 +119,8 @@ class Command(BaseCommand):
             created_count += 1
             self.stdout.write(f"  Created user: {user.email} ({role_name})")
 
-        # Assign leaders to organizations
+        # Assign leaders to confessions and organizations
         try:
-            qomita_rahbar = CustomUser.objects.get(email='rahbar@scp.local')
-            qomita.leader = qomita_rahbar
-            qomita.save(update_fields=['leader'])
-
             konfessiya_rahbar = CustomUser.objects.get(email='konfessiya@scp.local')
             konfessiyalar[0].leader = konfessiya_rahbar
             konfessiyalar[0].save(update_fields=['leader'])

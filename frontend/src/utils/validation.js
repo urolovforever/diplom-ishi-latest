@@ -24,8 +24,6 @@ export const passwordStrength = (value) => {
 
 export const ROLE_LABELS = {
   super_admin: 'Super Admin',
-  qomita_rahbar: "Qo'mita Rahbari",
-  qomita_xodimi: "Qo'mita Xodimi",
   konfessiya_rahbari: 'Konfessiya Rahbari',
   konfessiya_xodimi: 'Konfessiya Xodimi',
   dt_rahbar: 'DT Rahbari',

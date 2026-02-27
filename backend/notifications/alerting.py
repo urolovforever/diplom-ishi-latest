@@ -82,7 +82,7 @@ class AlertEngine:
         """Send in-app notifications to admins."""
         from accounts.models import CustomUser, Role
         admins = CustomUser.objects.filter(
-            role__name__in=[Role.SUPER_ADMIN, Role.SECURITY_AUDITOR, Role.IT_ADMIN],
+            role__name__in=[Role.SUPER_ADMIN],
             is_active=True,
         )
         for admin in admins:
@@ -99,7 +99,7 @@ class AlertEngine:
             from .tasks import send_notification_email
             from accounts.models import CustomUser, Role
             admins = CustomUser.objects.filter(
-                role__name__in=[Role.SUPER_ADMIN, Role.SECURITY_AUDITOR],
+                role__name__in=[Role.SUPER_ADMIN],
                 is_active=True,
             )
             for admin in admins:

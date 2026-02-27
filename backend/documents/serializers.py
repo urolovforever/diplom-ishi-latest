@@ -10,7 +10,7 @@ from .utils import validate_document_file
 class OrganizationMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'org_type']
+        fields = ['id', 'name']
 
 
 class DocumentShareSerializer(serializers.ModelSerializer):
