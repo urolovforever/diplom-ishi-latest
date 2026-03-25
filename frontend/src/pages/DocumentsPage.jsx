@@ -472,6 +472,7 @@ function DocumentsPage() {
           ))}
         </div>
       ) : (
+        <>
         {/* Mobile card view */}
         <div className="space-y-3 md:hidden">
           {currentDocs.map((doc) => (
@@ -628,6 +629,7 @@ function DocumentsPage() {
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* Decrypt Password Modal */}
