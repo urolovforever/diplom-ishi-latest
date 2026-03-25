@@ -1,3 +1,4 @@
+from accounts.security import get_client_ip
 from .models import AuditLog
 
 
@@ -25,5 +26,5 @@ class AuditMixin:
             action=action,
             model_name=instance.__class__.__name__,
             object_id=str(instance.pk),
-            ip_address=request.META.get('REMOTE_ADDR'),
+            ip_address=get_client_ip(request),
         )

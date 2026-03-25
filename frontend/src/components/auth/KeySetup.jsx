@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkKeyStatus, uploadPublicKey } from '../../store/cryptoSlice';
-import { generateKeyPair, storePrivateKey, hasStoredPrivateKey } from '../../utils/crypto';
+import { generateKeyPair, storePrivateKey } from '../../utils/crypto';
+import PasswordInput from '../ui/PasswordInput';
 import { Shield, Key } from 'lucide-react';
 
 function KeySetup({ children, onComplete }) {
@@ -13,13 +14,11 @@ function KeySetup({ children, onComplete }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [hasLocalKey, setHasLocalKey] = useState(false);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     if (token) {
       dispatch(checkKeyStatus()).then(() => setChecked(true)).catch(() => setChecked(true));
-      hasStoredPrivateKey().then(setHasLocalKey).catch(() => {});
     }
   }, [dispatch, token]);
 
@@ -34,14 +33,30 @@ function KeySetup({ children, onComplete }) {
     );
   }
 
-  if ((keyPairGenerated && hasLocalKey) || success) {
+  if (keyPairGenerated || success) {
     return children || null;
   }
 
   const handleGenerate = async () => {
     setError(null);
-    if (!password || password.length < 8) {
-      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
+    if (!password || password.length < 12) {
+      setError("Parol kamida 12 ta belgidan iborat bo'lishi kerak.");
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError("Parolda kamida 1 ta katta harf bo'lishi kerak.");
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setError("Parolda kamida 1 ta kichik harf bo'lishi kerak.");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setError("Parolda kamida 1 ta raqam bo'lishi kerak.");
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setError("Parolda kamida 1 ta maxsus belgi bo'lishi kerak (!@#$%^&*).");
       return;
     }
     if (password !== confirmPassword) {
@@ -61,7 +76,6 @@ function KeySetup({ children, onComplete }) {
         })
       ).unwrap();
 
-      setHasLocalKey(true);
       setSuccess(true);
       onComplete?.();
     } catch (err) {
@@ -90,18 +104,15 @@ function KeySetup({ children, onComplete }) {
         )}
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">
-              Shifrlash paroli
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Kamida 8 ta belgi"
-              className="input-field"
-            />
-          </div>
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            label="Shifrlash paroli"
+            id="encryption-password"
+            placeholder="Kamida 12 ta belgi"
+            showGenerator={true}
+            showRequirements={true}
+          />
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1.5">

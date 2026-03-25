@@ -22,7 +22,16 @@ urlpatterns = [
     path('e2e/recipients/', views.E2ERecipientsView.as_view(), name='e2e-recipients'),
     # Roles
     path('roles/', views.RoleListView.as_view(), name='role-list'),
+    # Sessions
+    path('sessions/', views.SessionListView.as_view(), name='session-list'),
+    path('sessions/<uuid:pk>/', views.SessionRevokeView.as_view(), name='session-revoke'),
+    path('sessions/revoke-all/', views.SessionRevokeAllView.as_view(), name='session-revoke-all'),
+    # Session termination (for session limit flow)
+    path('session-termination/request/', views.SessionTerminationRequestView.as_view(), name='session-termination-request'),
+    path('session-termination/confirm/', views.SessionTerminationConfirmView.as_view(), name='session-termination-confirm'),
     # IP Restriction
     path('ip-restrictions/', views.IPRestrictionListCreateView.as_view(), name='ip-restriction-list'),
     path('ip-restrictions/<uuid:pk>/', views.IPRestrictionDeleteView.as_view(), name='ip-restriction-delete'),
+    # Admin Dashboard
+    path('admin/dashboard/', views.AdminDashboardView.as_view(), name='admin-dashboard'),
 ]

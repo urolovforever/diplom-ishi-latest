@@ -17,6 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     has_public_key = serializers.SerializerMethodField()
     organization_name = serializers.SerializerMethodField()
+    confession_name = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
@@ -24,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'role_id', 'is_active', 'is_2fa_enabled',
             'has_public_key', 'confession', 'organization', 'organization_name',
-            'created_at', 'updated_at',
+            'confession_name', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -37,6 +38,13 @@ class UserSerializer(serializers.ModelSerializer):
     def get_organization_name(self, obj):
         if obj.organization:
             return obj.organization.name
+        if obj.confession:
+            return obj.confession.name
+        return None
+
+    def get_confession_name(self, obj):
+        if obj.organization and obj.organization.confession:
+            return obj.organization.confession.name
         if obj.confession:
             return obj.confession.name
         return None
@@ -204,6 +212,116 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 class PublicKeySerializer(serializers.Serializer):
     public_key = serializers.CharField()
     encrypted_private_key = serializers.CharField(required=False)
+
+
+# Common Samsung model codes to friendly names
+DEVICE_MODEL_MAP = {
+    'SM-A256B': 'Samsung Galaxy A25',
+    'SM-A256E': 'Samsung Galaxy A25',
+    'SM-A346B': 'Samsung Galaxy A34',
+    'SM-A346E': 'Samsung Galaxy A34',
+    'SM-A546B': 'Samsung Galaxy A54',
+    'SM-A546E': 'Samsung Galaxy A54',
+    'SM-S911B': 'Samsung Galaxy S23',
+    'SM-S916B': 'Samsung Galaxy S23+',
+    'SM-S918B': 'Samsung Galaxy S23 Ultra',
+    'SM-S921B': 'Samsung Galaxy S24',
+    'SM-S926B': 'Samsung Galaxy S24+',
+    'SM-S928B': 'Samsung Galaxy S24 Ultra',
+    'SM-A155F': 'Samsung Galaxy A15',
+    'SM-A156B': 'Samsung Galaxy A15 5G',
+    'SM-A556B': 'Samsung Galaxy A55',
+    'SM-G991B': 'Samsung Galaxy S21',
+    'SM-G996B': 'Samsung Galaxy S21+',
+    'SM-G998B': 'Samsung Galaxy S21 Ultra',
+    'SM-A525F': 'Samsung Galaxy A52',
+    'SM-A536B': 'Samsung Galaxy A53',
+    'SM-M146B': 'Samsung Galaxy M14',
+    'SM-M346B': 'Samsung Galaxy M34',
+}
+
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    is_current = serializers.SerializerMethodField()
+    device = serializers.SerializerMethodField()
+
+    class Meta:
+        from .models import UserSession
+        model = UserSession
+        fields = ['id', 'ip_address', 'user_agent', 'device', 'is_current', 'is_active', 'last_activity', 'created_at']
+        read_only_fields = fields
+
+    def get_is_current(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return False
+        current_token = request.META.get('HTTP_AUTHORIZATION', '').replace('Bearer ', '')
+        # Compare by checking if the session's refresh token generated the current access token
+        return str(obj.id) == self.context.get('current_session_id')
+
+    def get_device(self, obj):
+        import re
+        ua = obj.user_agent or ''
+        if 'Mobile' in ua or 'Android' in ua or 'iPhone' in ua:
+            device_type = 'mobile'
+        elif 'Tablet' in ua or 'iPad' in ua:
+            device_type = 'tablet'
+        else:
+            device_type = 'desktop'
+
+        # Extract browser
+        browser = 'Noma\'lum'
+        if 'Firefox' in ua:
+            browser = 'Firefox'
+        elif 'Edg' in ua:
+            browser = 'Edge'
+        elif 'Chrome' in ua:
+            browser = 'Chrome'
+        elif 'Safari' in ua:
+            browser = 'Safari'
+
+        # Extract OS (Android/iOS must come before Linux — Android UA contains "Linux")
+        os_name = ''
+        if 'Android' in ua:
+            os_name = 'Android'
+        elif 'iPhone' in ua or 'iPad' in ua:
+            os_name = 'iOS'
+        elif 'Windows' in ua:
+            os_name = 'Windows'
+        elif 'Mac OS' in ua:
+            os_name = 'macOS'
+        elif 'Linux' in ua:
+            os_name = 'Linux'
+
+        # Extract device model
+        model = ''
+        if 'Android' in ua:
+            # UA format: "Linux; Android 14; SM-A256B" or "Linux; Android 14; Samsung Galaxy A25"
+            m = re.search(r'Android\s[\d.]+;\s*([^)]+)', ua)
+            if m:
+                raw = m.group(1).strip().rstrip(')')
+                # Remove "Build/..." suffix
+                raw = re.sub(r'\s*Build/.*', '', raw)
+                model = DEVICE_MODEL_MAP.get(raw.upper(), raw)
+                # Chrome 110+ uses "K" as privacy placeholder — ignore it
+                if len(model) <= 1:
+                    model = ''
+        elif 'iPhone' in ua:
+            model = 'iPhone'
+        elif 'iPad' in ua:
+            model = 'iPad'
+
+        return {'type': device_type, 'browser': browser, 'os': os_name, 'model': model}
+
+
+class SessionTerminationRequestSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    session_id = serializers.UUIDField()
+
+
+class SessionTerminationConfirmSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    code = serializers.CharField(max_length=6, min_length=6)
 
 
 class IPRestrictionSerializer(serializers.ModelSerializer):

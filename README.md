@@ -1,20 +1,33 @@
-# Secure Confession Platform
+# Emanat — Xavfsiz Hujjat Boshqaruv Platformasi
 
-Diniy konfessiyalar uchun xavfsiz ma'lumotlar almashish platformasi — sun'iy intellekt (Isolation Forest) asosida anomaliya aniqlash tizimi bilan.
+Diniy konfessiyalar va tashkilotlar uchun xavfsiz hujjatlar almashish platformasi — sun'iy intellekt (Isolation Forest) asosida anomaliya aniqlash tizimi bilan.
+
+**Production:** [https://emanat.systems](https://emanat.systems)
 
 ## Texnologiyalar
 
 - **Backend:** Django 4.2, Django REST Framework, PostgreSQL 15, Celery + Redis
 - **Frontend:** React 18, Redux Toolkit, Tailwind CSS, Vite, Recharts
-- **AI:** scikit-learn (Isolation Forest), numpy, joblib
-- **Infrastructure:** Docker Compose (7 services), Nginx, Gunicorn
+- **AI/ML:** scikit-learn (Isolation Forest), NumPy, joblib — 15 ta xulq-atvor ko'rsatkichlari asosida anomaliya aniqlash
+- **Infratuzilma:** Docker Compose (8 servis), Nginx, Gunicorn, Let's Encrypt SSL
+
+## Asosiy imkoniyatlar
+
+- **Rolga asoslangan kirish nazorati (RBAC)** — 7 ta rol, ierarxik ruxsatlar
+- **Hujjat shifrlash** — fayl darajasida shifrlash, E2E encryption
+- **AI anomaliya aniqlash** — Isolation Forest modeli, real-time monitoring
+- **Ikki bosqichli autentifikatsiya (2FA)** — TOTP asosida
+- **Audit logging** — barcha foydalanuvchi harakatlari kuzatiladi
+- **Honeypot fayllar** — ruxsatsiz kirishni aniqlash
+- **Hujjat versiyalash** — o'zgarishlar tarixi saqlanadi
+- **Bildirishnomalar** — email va Telegram integratsiya
 
 ## Tez boshlash
 
 ```bash
 # 1. Reponi klonlash
-git clone <repo-url>
-cd secure-confession-platform
+git clone git@github.com:urolovforever/diplom-ishi-latest.git
+cd diplom-ishi-latest
 
 # 2. .env faylini yaratish
 cp .env.example .env
@@ -31,17 +44,35 @@ docker compose exec backend python manage.py seed_data
 # http://localhost
 ```
 
+## Production deploy
+
+```bash
+# Serverga deploy qilish (emanat.systems)
+ssh emanat "bash /opt/emanat/deploy.sh"
+```
+
 ## Rollar
 
 | Rol | Tavsif |
 |-----|--------|
 | Super Admin | Tizim boshqaruvi, barcha ruxsatlar |
-| Qo'mita Rahbari | Konfessiyalar nazorati |
-| Konfessiya Rahbari | O'z tashkiloti ma'lumotlari |
-| A'zo (Member) | Oddiy foydalanuvchi |
+| Konfessiya Rahbari | Konfessiyalar nazorati |
+| Konfessiya Xodimi | Konfessiya bo'yicha xodim |
+| DT Rahbar | Diniy tashkilot rahbari |
+| DT Xodimi | Diniy tashkilot xodimi |
 | Security Auditor | Xavfsizlik tekshiruvi, audit loglar |
 | Psixolog | Konfessiyalarni o'qish (faqat) |
-| IT Admin | Texnik sozlamalar, AI konfiguratsiya |
+
+## API endpointlar
+
+| Endpoint | Tavsif |
+|----------|--------|
+| `/api/accounts/` | Foydalanuvchilar, autentifikatsiya, rollar |
+| `/api/confessions/` | Konfessiya va tashkilotlar |
+| `/api/documents/` | Hujjatlar CRUD, ulashish, kirish loglari |
+| `/api/notifications/` | Bildirishnomalar va ogohlantirishlar |
+| `/api/ai-security/` | AI anomaliya, faoliyat loglari |
+| `/api/audit/` | Audit loglar va hisobotlar |
 
 ## Testlar
 
@@ -51,10 +82,11 @@ docker compose exec backend python manage.py test --verbosity=2
 
 ## Loyiha strukturasi
 
-Batafsil loyiha strukturasini `PROJECT_STRUCTURE.txt` da ko'ring.
-
-## Hujjatlar
-
-- [API Documentation](docs/API_DOCUMENTATION.md)
-- [O'rnatish yo'riqnomasi](docs/INSTALL.md)
-- [Foydalanuvchi qo'llanmasi](docs/USER_GUIDE.md)
+```
+├── backend/          # Django API
+├── frontend/         # React SPA
+├── ai_module/        # AI model training
+├── docker/           # Nginx, PostgreSQL konfiguratsiyalari
+├── docker-compose.yml        # Development
+└── docker-compose.prod.yml   # Production
+```

@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import authAPI from '../api/authAPI';
-import cryptoAPI from '../api/cryptoAPI';
 import FormField from '../components/ui/FormField';
 import Skeleton from '../components/ui/Skeleton';
 import { addToast } from '../store/uiSlice';
-import { passwordStrength, required } from '../utils/validation';
-import { loadPrivateKey, storePrivateKey, hasStoredPrivateKey } from '../utils/crypto';
-import { User, Lock, Save } from 'lucide-react';
+import { required } from '../utils/validation';
+import { User, Save } from 'lucide-react';
 import { getInitials } from '../utils/helpers';
 
 function ProfilePage() {
@@ -17,9 +15,6 @@ function ProfilePage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [errors, setErrors] = useState({});
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordErrors, setPasswordErrors] = useState({});
 
   useEffect(() => {
     authAPI.getProfile().then((res) => {
@@ -49,44 +44,6 @@ function ProfilePage() {
     }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    const errs = {};
-    if (required(oldPassword)) errs.old_password = required(oldPassword);
-    const pwErr = passwordStrength(newPassword);
-    if (pwErr) errs.new_password = pwErr;
-    if (Object.keys(errs).length) { setPasswordErrors(errs); return; }
-    try {
-      await authAPI.changePassword({ old_password: oldPassword, new_password: newPassword });
-
-      // Re-encrypt private key with new password
-      const hasKey = await hasStoredPrivateKey();
-      if (hasKey) {
-        try {
-          const privateKeyJwk = await loadPrivateKey(oldPassword);
-          if (privateKeyJwk) {
-            const newEncryptedData = await storePrivateKey(privateKeyJwk, newPassword);
-            // Update server backup with new encrypted private key
-            await cryptoAPI.savePublicKey({
-              public_key: profile?.public_key || (await cryptoAPI.getMyKeys()).data.public_key,
-              encrypted_private_key: JSON.stringify(newEncryptedData),
-            });
-          }
-        } catch {
-          dispatch(addToast({ type: 'warning', message: "Shifrlash kaliti yangilanmadi. Eski parolni eslab qoling." }));
-        }
-      }
-
-      setOldPassword('');
-      setNewPassword('');
-      setPasswordErrors({});
-      dispatch(addToast({ type: 'success', message: "Parol o'zgartirildi" }));
-    } catch (err) {
-      const detail = err.response?.data?.old_password?.[0] || "Parolni o'zgartirishda xatolik";
-      dispatch(addToast({ type: 'error', message: detail }));
-    }
-  };
-
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -108,7 +65,7 @@ function ProfilePage() {
 
       {/* Profile header card */}
       <div className="card p-6 mb-6">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 mb-6 text-center sm:text-left">
           <div className="w-16 h-16 bg-primary-light/10 rounded-full flex items-center justify-center text-xl font-bold text-primary-light">
             {initials || 'U'}
           </div>
@@ -137,25 +94,6 @@ function ProfilePage() {
           <button type="submit" className="btn-primary flex items-center gap-2">
             <Save size={16} />
             Saqlash
-          </button>
-        </form>
-      </div>
-
-      <div className="card p-6">
-        <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-          <Lock size={16} className="text-primary-light" />
-          Parolni o'zgartirish
-        </h3>
-        <form onSubmit={handleChangePassword} className="space-y-3">
-          <FormField label="Joriy parol" error={passwordErrors.old_password} id="old_password">
-            <input id="old_password" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="input-field" />
-          </FormField>
-          <FormField label="Yangi parol" error={passwordErrors.new_password} id="new_password">
-            <input id="new_password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input-field" />
-          </FormField>
-          <button type="submit" className="btn-primary flex items-center gap-2">
-            <Lock size={16} />
-            Parolni o'zgartirish
           </button>
         </form>
       </div>

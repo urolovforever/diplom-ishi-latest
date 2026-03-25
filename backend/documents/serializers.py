@@ -19,7 +19,7 @@ class DocumentShareSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DocumentShare
-        fields = ['id', 'organization', 'shared_by', 'created_at']
+        fields = ['id', 'organization', 'shared_by', 'is_read', 'created_at']
         read_only_fields = fields
 
 
@@ -46,13 +46,14 @@ class DocumentListSerializer(serializers.ModelSerializer):
     encrypted_keys = DocumentEncryptedKeyReadSerializer(many=True, read_only=True)
     is_e2e_encrypted = serializers.SerializerMethodField()
     shares = DocumentShareSerializer(many=True, read_only=True)
+    is_new = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
         fields = [
             'id', 'title', 'description', 'file', 'uploaded_by',
             'organization', 'is_encrypted', 'is_e2e_encrypted', 'file_iv', 'security_level', 'category',
-            'encrypted_keys', 'latest_version', 'shares', 'created_at', 'updated_at',
+            'encrypted_keys', 'latest_version', 'shares', 'is_new', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'uploaded_by', 'created_at', 'updated_at']
 
@@ -64,6 +65,16 @@ class DocumentListSerializer(serializers.ModelSerializer):
 
     def get_is_e2e_encrypted(self, obj):
         return obj.encrypted_keys.exists()
+
+    def get_is_new(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user:
+            return False
+        user = request.user
+        org = user.organization
+        if not org:
+            return False
+        return obj.shares.filter(organization=org, is_read=False).exists()
 
 
 class DocumentWriteSerializer(serializers.ModelSerializer):

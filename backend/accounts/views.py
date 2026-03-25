@@ -3,7 +3,7 @@ import io
 import uuid
 
 import qrcode
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import generics, status
@@ -13,10 +13,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .authentication import get_totp_uri, verify_totp
-from .models import CustomUser, PasswordResetToken, Role, UserSession
+from .models import CustomUser, PasswordResetToken, Role, SessionTerminationCode, UserSession
 from audit.mixins import AuditMixin
 from .permissions import IsSuperAdmin, IsLeader, ROLE_CREATION_MAP, LEADER_ROLES
-from .security import SecurityManager
+from .security import SecurityManager, get_client_ip
 from .serializers import (
     ChangePasswordSerializer,
     InviteSerializer,
@@ -26,10 +26,13 @@ from .serializers import (
     ProfileUpdateSerializer,
     PublicKeySerializer,
     RoleSerializer,
+    SessionTerminationConfirmSerializer,
+    SessionTerminationRequestSerializer,
     UserSerializer,
+    UserSessionSerializer,
     Verify2FASerializer,
 )
-from notifications.tasks import send_password_reset_email
+from notifications.tasks import send_password_reset_email, send_session_termination_code
 
 
 class LoginView(APIView):
@@ -38,7 +41,7 @@ class LoginView(APIView):
     def post(self, request):
         email = request.data.get('email', '')
         password = request.data.get('password', '')
-        ip_address = request.META.get('REMOTE_ADDR')
+        ip_address = get_client_ip(request)
         user_agent = request.META.get('HTTP_USER_AGENT', '')
 
         # Check if user exists and is locked
@@ -73,7 +76,21 @@ class LoginView(APIView):
                 'requires_2fa': True,
                 'user_id': str(user.id),
                 'twofa_method': user.twofa_method or 'totp',
+                'is_2fa_confirmed': user.is_2fa_confirmed,
             }, status=status.HTTP_200_OK)
+
+        # Check session limit before issuing tokens
+        is_over_limit, active_sessions = SecurityManager.check_session_limit(user)
+        if is_over_limit:
+            SecurityManager.record_login_attempt(email, ip_address, user_agent, True, user)
+            return Response({
+                'session_limit_reached': True,
+                'user_id': str(user.id),
+                'active_sessions': UserSessionSerializer(
+                    active_sessions, many=True,
+                    context={'request': request},
+                ).data,
+            }, status=status.HTTP_409_CONFLICT)
 
         SecurityManager.record_login_attempt(email, ip_address, user_agent, True, user)
 
@@ -89,13 +106,21 @@ class LoginView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     def _issue_tokens(self, user, request):
+        ip = get_client_ip(request)
+        ua = request.META.get('HTTP_USER_AGENT', '')
+
+        # Deactivate old sessions from the same device (IP + User-Agent)
+        UserSession.objects.filter(
+            user=user, is_active=True, ip_address=ip, user_agent=ua,
+        ).update(is_active=False)
+
         refresh = RefreshToken.for_user(user)
         UserSession.objects.create(
             user=user,
             refresh_token=str(refresh),
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            expires_at=timezone.now() + timedelta(days=1),
+            ip_address=ip,
+            user_agent=ua,
+            expires_at=timezone.now() + timedelta(days=30),
         )
         SecurityManager.enforce_session_limit(user)
         return {
@@ -134,9 +159,33 @@ class Verify2FAView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        ip_address = request.META.get('REMOTE_ADDR')
+        # Mark 2FA as confirmed on first successful verification
+        if not user.is_2fa_confirmed:
+            user.is_2fa_confirmed = True
+            user.save(update_fields=['is_2fa_confirmed'])
+
+        ip_address = get_client_ip(request)
         user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        # Check session limit before issuing tokens
+        is_over_limit, active_sessions = SecurityManager.check_session_limit(user)
+        if is_over_limit:
+            SecurityManager.record_login_attempt(user.email, ip_address, user_agent, True, user)
+            return Response({
+                'session_limit_reached': True,
+                'user_id': str(user.id),
+                'active_sessions': UserSessionSerializer(
+                    active_sessions, many=True,
+                    context={'request': request},
+                ).data,
+            }, status=status.HTTP_409_CONFLICT)
+
         SecurityManager.record_login_attempt(user.email, ip_address, user_agent, True, user)
+
+        # Deactivate old sessions from the same device
+        UserSession.objects.filter(
+            user=user, is_active=True, ip_address=ip_address, user_agent=user_agent,
+        ).update(is_active=False)
 
         refresh = RefreshToken.for_user(user)
         UserSession.objects.create(
@@ -144,7 +193,7 @@ class Verify2FAView(APIView):
             refresh_token=str(refresh),
             ip_address=ip_address,
             user_agent=user_agent,
-            expires_at=timezone.now() + timedelta(days=1),
+            expires_at=timezone.now() + timedelta(days=30),
         )
         SecurityManager.enforce_session_limit(user)
 
@@ -170,19 +219,23 @@ class TwoFASetupView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Use consistent error response to prevent user enumeration
+        generic_error = Response(
+            {'detail': '2FA setup is not available.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
         try:
             user = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
-            return Response(
-                {'detail': 'User not found.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return generic_error
 
         if not user.totp_secret:
-            return Response(
-                {'detail': '2FA is not configured.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return generic_error
+
+        # QR code only available during first-time setup
+        if user.is_2fa_confirmed:
+            return generic_error
 
         uri = get_totp_uri(user.totp_secret, user.email)
 
@@ -201,17 +254,18 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        try:
-            refresh_token = request.data.get('refresh')
-            if refresh_token:
+        refresh_token = request.data.get('refresh')
+        if refresh_token:
+            # Always deactivate the session, regardless of token blacklist result
+            UserSession.objects.filter(
+                user=request.user,
+                refresh_token=refresh_token,
+            ).update(is_active=False)
+            try:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-                UserSession.objects.filter(
-                    user=request.user,
-                    refresh_token=refresh_token,
-                ).update(is_active=False)
-        except Exception:
-            pass
+            except Exception:
+                pass
         return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
@@ -351,7 +405,8 @@ class PasswordResetConfirmView(APIView):
         user.save(update_fields=['password', 'password_changed_at', 'must_change_password'])
 
         reset_token.is_used = True
-        reset_token.save(update_fields=['is_used'])
+        reset_token.confirmed_at = timezone.now()
+        reset_token.save(update_fields=['is_used', 'confirmed_at'])
 
         return Response(
             {'detail': 'Password has been reset successfully.'},
@@ -505,6 +560,213 @@ class IPRestrictionListCreateView(AuditMixin, generics.ListCreateAPIView):
         self._create_audit_log('create', instance)
 
 
+class SessionListView(APIView):
+    """List current user's active sessions."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Show only active sessions
+        sessions = UserSession.objects.filter(
+            user=request.user,
+            is_active=True,
+        ).order_by('-created_at')
+
+        # Find current session by matching IP + user_agent
+        current_session_id = None
+        ip = get_client_ip(request)
+        ua = request.META.get('HTTP_USER_AGENT', '')
+        current = sessions.filter(
+            ip_address=ip, user_agent=ua, is_active=True,
+        ).order_by('-last_activity').first()
+        if current:
+            current_session_id = str(current.id)
+
+        serializer = UserSessionSerializer(
+            sessions, many=True,
+            context={'request': request, 'current_session_id': current_session_id},
+        )
+        return Response(serializer.data)
+
+
+class SessionRevokeView(APIView):
+    """Revoke (deactivate) a specific session."""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            session = UserSession.objects.get(
+                id=pk, user=request.user, is_active=True,
+            )
+        except UserSession.DoesNotExist:
+            return Response(
+                {'detail': 'Sessiya topilmadi.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        session.is_active = False
+        session.save(update_fields=['is_active'])
+
+        # Blacklist the refresh token
+        try:
+            token = RefreshToken(session.refresh_token)
+            token.blacklist()
+        except Exception:
+            pass
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SessionRevokeAllView(APIView):
+    """Revoke all sessions except current one."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        ip = get_client_ip(request)
+        ua = request.META.get('HTTP_USER_AGENT', '')
+
+        sessions = UserSession.objects.filter(
+            user=request.user, is_active=True,
+        )
+
+        # Try to find current session
+        current = sessions.filter(ip_address=ip, user_agent=ua).order_by('-last_activity').first()
+
+        others = sessions.exclude(id=current.id) if current else sessions
+        for session in others:
+            session.is_active = False
+            session.save(update_fields=['is_active'])
+            try:
+                token = RefreshToken(session.refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+
+        count = others.count()
+        return Response({'detail': f'{count} ta sessiya tugatildi.'})
+
+
+class SessionTerminationRequestView(APIView):
+    """Request a session termination code. Sends 6-digit code to user's email."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        import random
+
+        serializer = SessionTerminationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_id = serializer.validated_data['user_id']
+        session_id = serializer.validated_data['session_id']
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {'detail': 'Foydalanuvchi topilmadi.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            session = UserSession.objects.get(id=session_id, user=user, is_active=True)
+        except UserSession.DoesNotExist:
+            return Response(
+                {'detail': 'Sessiya topilmadi.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Invalidate previous unused codes for this user
+        SessionTerminationCode.objects.filter(
+            user=user, is_used=False,
+        ).update(is_used=True)
+
+        # Generate 6-digit code
+        code = f'{random.randint(0, 999999):06d}'
+
+        SessionTerminationCode.objects.create(
+            user=user,
+            code=code,
+            session_to_terminate=session,
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+        )
+
+        send_session_termination_code.delay(user.email, code)
+
+        return Response(
+            {'detail': 'Tasdiqlash kodi emailga yuborildi.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SessionTerminationConfirmView(APIView):
+    """Confirm session termination with email code. Terminates old session, creates new one."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SessionTerminationConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_id = serializer.validated_data['user_id']
+        code = serializer.validated_data['code']
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {'detail': 'Foydalanuvchi topilmadi.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Find valid code
+        try:
+            termination_code = SessionTerminationCode.objects.filter(
+                user=user, code=code, is_used=False,
+            ).latest('created_at')
+        except SessionTerminationCode.DoesNotExist:
+            return Response(
+                {'detail': 'Noto\'g\'ri kod.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not termination_code.is_valid:
+            return Response(
+                {'detail': 'Kod muddati tugagan. Qayta urinib ko\'ring.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Terminate the selected session
+        session = termination_code.session_to_terminate
+        if session.is_active:
+            session.is_active = False
+            session.save(update_fields=['is_active'])
+            try:
+                token = RefreshToken(session.refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+
+        # Mark code as used
+        termination_code.is_used = True
+        termination_code.save(update_fields=['is_used'])
+
+        # Create new session using stored request context
+        refresh = RefreshToken.for_user(user)
+        UserSession.objects.create(
+            user=user,
+            refresh_token=str(refresh),
+            ip_address=termination_code.ip_address,
+            user_agent=termination_code.user_agent,
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        SecurityManager.enforce_session_limit(user)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data,
+        }, status=status.HTTP_200_OK)
+
+
 class IPRestrictionDeleteView(AuditMixin, generics.DestroyAPIView):
     """Delete an IP restriction entry."""
     permission_classes = [IsSuperAdmin]
@@ -513,3 +775,199 @@ class IPRestrictionDeleteView(AuditMixin, generics.DestroyAPIView):
     def get_queryset(self):
         from .models import IPRestriction
         return IPRestriction.objects.all()
+
+
+class AdminDashboardView(APIView):
+    """Aggregated admin dashboard data for super_admin."""
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        now = timezone.now()
+        last_30min = now - timedelta(minutes=30)
+        last_24h = now - timedelta(hours=24)
+
+        data = {
+            **self._get_active_users(last_30min),
+            **self._get_recent_logins(last_24h),
+            'security_status': self._get_security_status(),
+            'ip_restrictions': self._get_ip_restrictions(),
+            'top_users': self._get_top_users(last_24h),
+            'document_stats': self._get_document_stats(),
+        }
+
+        return Response(data)
+
+    def _get_active_users(self, since):
+        sessions = UserSession.objects.filter(
+            is_active=True,
+            last_activity__gte=since,
+        ).select_related('user', 'user__role')
+
+        active_users = []
+        for s in sessions:
+            active_users.append({
+                'id': str(s.user.id),
+                'email': s.user.email,
+                'full_name': s.user.get_full_name(),
+                'role': s.user.role.name if s.user.role else None,
+                'ip_address': s.ip_address,
+                'user_agent': s.user_agent,
+                'last_activity': s.last_activity,
+            })
+
+        return {
+            'active_users': active_users,
+            'active_users_count': len(active_users),
+        }
+
+    def _get_recent_logins(self, since):
+        from .models import LoginAttempt
+
+        recent = LoginAttempt.objects.order_by('-created_at')[:50]
+        recent_logins = []
+        for la in recent:
+            recent_logins.append({
+                'email': la.email,
+                'ip_address': la.ip_address,
+                'user_agent': la.user_agent,
+                'success': la.success,
+                'created_at': la.created_at,
+            })
+
+        logins_24h = LoginAttempt.objects.filter(created_at__gte=since)
+        failed = logins_24h.filter(success=False).count()
+        successful = logins_24h.filter(success=True).count()
+
+        return {
+            'recent_logins': recent_logins,
+            'failed_logins_24h': failed,
+            'successful_logins_24h': successful,
+        }
+
+    def _get_security_status(self):
+        users = CustomUser.objects.filter(is_active=True)
+        total = users.count()
+        twofa_enabled = users.filter(is_2fa_enabled=True, is_2fa_confirmed=True).count()
+        locked = users.filter(locked_until__gt=timezone.now()).count()
+
+        password_expiry_days = 90
+        expired_date = timezone.now() - timedelta(days=password_expiry_days)
+        password_expired = users.filter(
+            Q(password_changed_at__lt=expired_date) | Q(password_changed_at__isnull=True)
+        ).count()
+
+        e2e_keys = users.exclude(Q(public_key__isnull=True) | Q(public_key='')).count()
+
+        return {
+            'total_users': total,
+            'users_2fa_enabled': twofa_enabled,
+            'users_2fa_disabled': total - twofa_enabled,
+            'users_password_expired': password_expired,
+            'users_locked': locked,
+            'e2e_keys_setup': e2e_keys,
+        }
+
+    def _get_ip_restrictions(self):
+        from .models import IPRestriction
+
+        restrictions = IPRestriction.objects.select_related('created_by').all()
+        result = []
+        for r in restrictions:
+            result.append({
+                'id': str(r.id),
+                'ip_address': r.ip_address,
+                'list_type': r.list_type,
+                'reason': r.reason,
+                'is_active': r.is_active,
+                'created_by_email': r.created_by.email if r.created_by else None,
+                'created_at': r.created_at,
+            })
+        return result
+
+    def _get_top_users(self, since):
+        from ai_security.models import ActivityLog
+        from documents.models import DocumentAccessLog
+
+        top = (
+            ActivityLog.objects.filter(created_at__gte=since, user__isnull=False)
+            .values('user__id', 'user__email', 'user__first_name', 'user__last_name', 'user__role__name')
+            .annotate(requests_count=Count('id'))
+            .order_by('-requests_count')[:10]
+        )
+
+        result = []
+        for entry in top:
+            user_id = entry['user__id']
+            docs_downloaded = DocumentAccessLog.objects.filter(
+                user_id=user_id,
+                action='download',
+                created_at__gte=since,
+            ).count()
+            errors_count = ActivityLog.objects.filter(
+                user_id=user_id,
+                response_status__gte=400,
+                created_at__gte=since,
+            ).count()
+
+            full_name = f"{entry['user__first_name']} {entry['user__last_name']}".strip()
+            result.append({
+                'email': entry['user__email'],
+                'full_name': full_name,
+                'role': entry['user__role__name'],
+                'requests_count': entry['requests_count'],
+                'docs_downloaded': docs_downloaded,
+                'errors_count': errors_count,
+            })
+
+        return result
+
+    def _get_document_stats(self):
+        from documents.models import Document, DocumentAccessLog
+
+        total = Document.objects.count()
+
+        by_level = Document.objects.values('security_level').annotate(c=Count('id'))
+        by_security_level = {item['security_level']: item['c'] for item in by_level}
+        for lvl in ['public', 'internal', 'confidential', 'secret']:
+            by_security_level.setdefault(lvl, 0)
+
+        e2e_count = Document.objects.filter(is_e2e_encrypted=True).count()
+
+        most_accessed = (
+            DocumentAccessLog.objects
+            .values('document__id', 'document__title', 'document__security_level')
+            .annotate(access_count=Count('id'))
+            .order_by('-access_count')[:10]
+        )
+        most_accessed_list = [
+            {
+                'title': item['document__title'],
+                'access_count': item['access_count'],
+                'security_level': item['document__security_level'],
+            }
+            for item in most_accessed
+        ]
+
+        recent_downloads = (
+            DocumentAccessLog.objects
+            .filter(action='download')
+            .select_related('document', 'user')
+            .order_by('-created_at')[:10]
+        )
+        recent_downloads_list = [
+            {
+                'document_title': dl.document.title,
+                'user_email': dl.user.email if dl.user else None,
+                'created_at': dl.created_at,
+                'ip_address': dl.ip_address,
+            }
+            for dl in recent_downloads
+        ]
+
+        return {
+            'total_documents': total,
+            'by_security_level': by_security_level,
+            'e2e_encrypted_count': e2e_count,
+            'most_accessed': most_accessed_list,
+            'recent_downloads': recent_downloads_list,
+        }

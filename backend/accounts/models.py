@@ -62,6 +62,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_2fa_enabled = models.BooleanField(default=True)
+    is_2fa_confirmed = models.BooleanField(default=False)
     totp_secret = models.CharField(max_length=64, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
     twofa_method = models.CharField(
@@ -176,6 +177,7 @@ class PasswordResetToken(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='password_reset_tokens')
     token = models.CharField(max_length=255, unique=True)
     is_used = models.BooleanField(default=False)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
@@ -197,6 +199,37 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f'{self.user.email} - {self.token[:8]}...'
+
+
+class SessionTerminationCode(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='session_termination_codes')
+    code = models.CharField(max_length=6)
+    session_to_terminate = models.ForeignKey(UserSession, on_delete=models.CASCADE)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.is_used and not self.is_expired
+
+    def __str__(self):
+        return f'{self.user.email} - {self.code}'
 
 
 class IPRestriction(models.Model):

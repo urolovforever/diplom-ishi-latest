@@ -1,7 +1,7 @@
 """
 Step 2: Train and evaluate Isolation Forest model for anomaly detection.
 Reads dataset from step1, trains model, evaluates metrics, saves results.
-TZ spec: 9 parameters with max_samples=256.
+15 features with max_samples=256.
 """
 import csv
 import json
@@ -21,11 +21,11 @@ SCALER_FILE = os.path.join(MODEL_DIR, 'scaler.joblib')
 HISTORY_FILE = os.path.join(MODEL_DIR, 'training_history.json')
 RESULTS_FILE = 'dataset_with_predictions.csv'
 
-# TZ: 8 feature columns (is_anomaly is the label, not a feature for training)
 FEATURE_COLUMNS = [
-    'failed_logins', 'docs_accessed', 'session_duration_min',
-    'day_of_week', 'download_mb', 'own_section', 'role',
-    'entity_type',
+    'failed_logins', 'requests_count', 'docs_accessed', 'docs_downloaded',
+    'hour_of_day', 'error_rate', 'unique_endpoints', 'session_duration_min',
+    'sensitive_docs_accessed', 'distinct_ips', 'share_actions', 'admin_actions',
+    'password_reset_delay_min', 'e2e_key_failures', 'repeated_doc_downloads',
 ]
 
 
@@ -54,7 +54,7 @@ def train_model(X_train):
     """Train Isolation Forest model with TZ parameters."""
     model = IsolationForest(
         n_estimators=200,
-        contamination=0.1,
+        contamination=0.05,
         max_samples=256,  # TZ requirement
         random_state=42,
         n_jobs=-1,
@@ -63,10 +63,9 @@ def train_model(X_train):
     return model
 
 
-def evaluate_model(model, scaler, X_test, y_test):
-    """Evaluate model and print metrics."""
-    X_scaled = scaler.transform(X_test)
-    predictions = model.predict(X_scaled)
+def evaluate_model(model, X_test_scaled, y_test):
+    """Evaluate model and print metrics. X_test_scaled must already be scaled."""
+    predictions = model.predict(X_test_scaled)
     # IsolationForest: 1 = normal, -1 = anomaly
     y_pred = [1 if p == -1 else 0 for p in predictions]
 
@@ -114,23 +113,24 @@ def main():
     print(f'Features shape: {X.shape}')
     print(f'Anomalies: {sum(y)} ({sum(y)/len(y)*100:.1f}%)')
 
-    # Scale features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    # Split data
+    # Split data BEFORE scaling to prevent data leakage
     X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.2, random_state=42, stratify=y,
+        X, y, test_size=0.2, random_state=42, stratify=y,
     )
+
+    # Scale features: fit on training data only, then transform test data
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
     print(f'\nTraining set: {len(X_train)}, Test set: {len(X_test)}')
 
     # Train
     print('Training Isolation Forest...')
-    model = train_model(X_train)
+    model = train_model(X_train_scaled)
 
-    # Evaluate
-    metrics = evaluate_model(model, scaler, X_test, y_test)
+    # Evaluate (X_test_scaled is already scaled, no double-scaling)
+    metrics = evaluate_model(model, X_test_scaled, y_test)
 
     # Save model and scaler
     os.makedirs(MODEL_DIR, exist_ok=True)
@@ -143,7 +143,7 @@ def main():
     history = {
         'model_type': 'IsolationForest',
         'n_estimators': 200,
-        'contamination': 0.1,
+        'contamination': 0.05,
         'max_samples': 256,
         'features': FEATURE_COLUMNS,
         'dataset_size': len(data),

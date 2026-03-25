@@ -61,6 +61,18 @@ export const fetchAccessLogs = createAsyncThunk(
   }
 );
 
+export const markDocumentsRead = createAsyncThunk(
+  'documents/markDocumentsRead',
+  async (data, { rejectWithValue }) => {
+    try {
+      await documentsAPI.markDocumentsRead(data);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.detail || 'Failed to mark read');
+    }
+  }
+);
+
 const documentsSlice = createSlice({
   name: 'documents',
   initialState: {
@@ -92,6 +104,16 @@ const documentsSlice = createSlice({
       })
       .addCase(fetchAccessLogs.fulfilled, (state, action) => {
         state.accessLogs[action.payload.docId] = action.payload.logs;
+      })
+      .addCase(markDocumentsRead.fulfilled, (state, action) => {
+        const { ids, all } = action.payload;
+        if (all) {
+          state.list = state.list.map((d) => ({ ...d, is_new: false }));
+        } else if (ids?.length) {
+          state.list = state.list.map((d) =>
+            ids.includes(d.id) ? { ...d, is_new: false } : d
+          );
+        }
       });
   },
 });

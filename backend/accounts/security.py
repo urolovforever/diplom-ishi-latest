@@ -5,12 +5,21 @@ from django.utils import timezone
 
 from .models import CustomUser, LoginAttempt, PasswordHistory, UserSession
 
+
+def get_client_ip(request):
+    """Get real client IP from X-Forwarded-For header (behind proxy) or REMOTE_ADDR."""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
 MAX_PASSWORD_HISTORY = 5
 PASSWORD_EXPIRY_DAYS = 90
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 30
-MAX_ACTIVE_SESSIONS = 2
+MAX_ACTIVE_SESSIONS = 1
 SESSION_INACTIVITY_MINUTES = 30
+SESSION_MAX_AGE_DAYS = 30  # Sessions auto-expire after 1 month
 
 
 class SecurityManager:
@@ -73,16 +82,47 @@ class SecurityManager:
         return False
 
     @staticmethod
+    def check_session_limit(user):
+        """Check if user has reached the max active sessions limit.
+
+        First cleans up expired/inactive sessions, then checks the limit.
+        Returns (is_over_limit, active_sessions_queryset).
+        """
+        now = timezone.now()
+        inactivity_cutoff = now - timedelta(minutes=SESSION_INACTIVITY_MINUTES)
+
+        # Deactivate expired or inactive sessions
+        from django.db.models import Q
+        UserSession.objects.filter(
+            user=user,
+            is_active=True,
+        ).filter(
+            Q(expires_at__lt=now) | Q(last_activity__lt=inactivity_cutoff)
+        ).update(is_active=False)
+
+        active_sessions = UserSession.objects.filter(
+            user=user, is_active=True
+        ).order_by('-last_activity')
+        return active_sessions.count() >= MAX_ACTIVE_SESSIONS, active_sessions
+
+    @staticmethod
     def enforce_session_limit(user):
-        """Deactivate oldest sessions if user exceeds max active sessions."""
+        """Safety net: deactivate oldest sessions if user exceeds max active sessions."""
+        from rest_framework_simplejwt.tokens import RefreshToken
+
         active_sessions = UserSession.objects.filter(
             user=user, is_active=True
         ).order_by('-created_at')
         if active_sessions.count() > MAX_ACTIVE_SESSIONS:
-            to_deactivate = active_sessions[MAX_ACTIVE_SESSIONS:]
-            UserSession.objects.filter(
-                id__in=[s.id for s in to_deactivate]
-            ).update(is_active=False)
+            to_deactivate = list(active_sessions[MAX_ACTIVE_SESSIONS:])
+            for session in to_deactivate:
+                session.is_active = False
+                session.save(update_fields=['is_active'])
+                try:
+                    token = RefreshToken(session.refresh_token)
+                    token.blacklist()
+                except Exception:
+                    pass
 
     @staticmethod
     def check_session_inactivity(user):
@@ -92,3 +132,10 @@ class SecurityManager:
             user=user, is_active=True, last_activity__lt=cutoff,
         ).update(is_active=False)
         return expired
+
+    @staticmethod
+    def cleanup_old_sessions():
+        """Delete session records older than SESSION_MAX_AGE_DAYS."""
+        cutoff = timezone.now() - timedelta(days=SESSION_MAX_AGE_DAYS)
+        count, _ = UserSession.objects.filter(created_at__lt=cutoff).delete()
+        return count

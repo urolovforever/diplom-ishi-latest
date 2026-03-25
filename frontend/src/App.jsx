@@ -10,8 +10,10 @@ import UserDetailPage from './pages/UserDetailPage';
 import OrganizationsPage from './pages/OrganizationsPage';
 import PasswordResetRequestPage from './pages/PasswordResetRequestPage';
 import PasswordResetConfirmPage from './pages/PasswordResetConfirmPage';
+import AdminPanelPage from './pages/AdminPanelPage';
 import AIDashboardPage from './pages/AIDashboardPage';
 import AuditLogPage from './pages/AuditLogPage';
+import SettingsPage from './pages/SettingsPage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleBasedRoute from './components/auth/RoleBasedRoute';
@@ -35,16 +37,10 @@ function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="documents" element={<DocumentsPage />} />
-        <Route
-          path="organizations"
-          element={
-            <RoleBasedRoute allowedRoles={['super_admin', 'konfessiya_rahbari', 'dt_rahbar']}>
-              <OrganizationsPage />
-            </RoleBasedRoute>
-          }
-        />
+        <Route path="organizations" element={<OrganizationsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route
           path="users"
           element={
@@ -58,6 +54,14 @@ function App() {
           element={
             <RoleBasedRoute allowedRoles={['super_admin', 'konfessiya_rahbari', 'dt_rahbar']}>
               <UserDetailPage />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="admin-panel"
+          element={
+            <RoleBasedRoute allowedRoles={['super_admin']}>
+              <AdminPanelPage />
             </RoleBasedRoute>
           }
         />
@@ -77,8 +81,8 @@ function App() {
             </RoleBasedRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

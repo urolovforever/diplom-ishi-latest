@@ -3,15 +3,18 @@ import { Component } from 'react';
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    // In production, send to error tracking service instead of console
+    if (import.meta.env.DEV) {
+      console.error('ErrorBoundary caught:', error, errorInfo);
+    }
   }
 
   render() {
@@ -20,16 +23,16 @@ class ErrorBoundary extends Component {
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center p-8">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Something went wrong
+              Kutilmagan xatolik yuz berdi
             </h1>
             <p className="text-gray-600 mb-4">
-              An unexpected error occurred. Please try refreshing the page.
+              Sahifani yangilab ko'ring.
             </p>
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Refresh Page
+              Sahifani yangilash
             </button>
           </div>
         </div>

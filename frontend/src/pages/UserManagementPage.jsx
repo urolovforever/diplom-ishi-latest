@@ -191,58 +191,102 @@ function UserManagementPage() {
         </div>
       ) : (
         <>
-          <div className="card overflow-hidden">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-surface">
-                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Foydalanuvchi</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Email</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Rol</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Tashkilot</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Holat</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredUsers.map((u) => {
-                  const initials = getInitials(u.first_name, u.last_name);
-                  return (
-                    <tr key={u.id} className="hover:bg-surface/50 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-primary-light/10 rounded-full flex items-center justify-center text-xs font-medium text-primary-light">
-                            {initials || 'U'}
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {filteredUsers.map((u) => {
+              const initials = getInitials(u.first_name, u.last_name);
+              return (
+                <div key={u.id} className="card p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary-light/10 rounded-full flex items-center justify-center text-sm font-medium text-primary-light">
+                        {initials || 'U'}
+                      </div>
+                      <div>
+                        <div className="font-medium text-text-primary">{u.full_name}</div>
+                        <div className="text-xs text-text-secondary">{u.email}</div>
+                      </div>
+                    </div>
+                    <Badge variant={u.is_active ? 'success' : 'danger'}>
+                      {u.is_active ? 'Faol' : 'Nofaol'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="info">{u.role?.name || "Rol yo'q"}</Badge>
+                      {u.organization_name && (
+                        <span className="text-xs text-text-secondary">{u.organization_name}</span>
+                      )}
+                    </div>
+                    {user?.role?.name === 'super_admin' && (
+                      <button
+                        onClick={() => handleToggleActive(u)}
+                        className={`text-sm font-medium ${u.is_active ? 'text-danger hover:text-red-700' : 'text-success hover:text-emerald-700'}`}
+                      >
+                        {u.is_active ? "O'chirish" : "Faollashtirish"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="card overflow-hidden hidden md:block">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-surface">
+                    <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Foydalanuvchi</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Email</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Rol</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Tashkilot</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Holat</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredUsers.map((u) => {
+                    const initials = getInitials(u.first_name, u.last_name);
+                    return (
+                      <tr key={u.id} className="hover:bg-surface/50 transition-colors">
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary-light/10 rounded-full flex items-center justify-center text-xs font-medium text-primary-light">
+                              {initials || 'U'}
+                            </div>
+                            <span className="font-medium text-text-primary">{u.full_name}</span>
                           </div>
-                          <span className="font-medium text-text-primary">{u.full_name}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-text-secondary text-sm">{u.email}</td>
-                      <td className="px-5 py-3">
-                        <Badge variant="info">{u.role?.name || "Rol yo'q"}</Badge>
-                      </td>
-                      <td className="px-5 py-3 text-text-secondary text-sm">
-                        {u.organization_name || '—'}
-                      </td>
-                      <td className="px-5 py-3">
-                        <Badge variant={u.is_active ? 'success' : 'danger'}>
-                          {u.is_active ? 'Faol' : 'Nofaol'}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-3">
-                        {user?.role?.name === 'super_admin' && (
-                          <button
-                            onClick={() => handleToggleActive(u)}
-                            className={`text-sm font-medium ${u.is_active ? 'text-danger hover:text-red-700' : 'text-success hover:text-emerald-700'}`}
-                          >
-                            {u.is_active ? "O'chirish" : "Faollashtirish"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-5 py-3 text-text-secondary text-sm">{u.email}</td>
+                        <td className="px-5 py-3">
+                          <Badge variant="info">{u.role?.name || "Rol yo'q"}</Badge>
+                        </td>
+                        <td className="px-5 py-3 text-text-secondary text-sm">
+                          {u.organization_name || '—'}
+                        </td>
+                        <td className="px-5 py-3">
+                          <Badge variant={u.is_active ? 'success' : 'danger'}>
+                            {u.is_active ? 'Faol' : 'Nofaol'}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3">
+                          {user?.role?.name === 'super_admin' && (
+                            <button
+                              onClick={() => handleToggleActive(u)}
+                              className={`text-sm font-medium ${u.is_active ? 'text-danger hover:text-red-700' : 'text-success hover:text-emerald-700'}`}
+                            >
+                              {u.is_active ? "O'chirish" : "Faollashtirish"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
           <Pagination count={count} currentPage={page} onPageChange={setPage} />
         </>

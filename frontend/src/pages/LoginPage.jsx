@@ -3,15 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import LoginForm from '../components/auth/LoginForm';
 import TwoFactorForm from '../components/auth/TwoFactorForm';
+import SessionLimitForm from '../components/auth/SessionLimitForm';
 import { login, verify2FA } from '../store/authSlice';
 import { Shield } from 'lucide-react';
 
 function LoginPage() {
   const [requires2FA, setRequires2FA] = useState(false);
+  const [sessionLimitReached, setSessionLimitReached] = useState(false);
+  const [activeSessions, setActiveSessions] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [is2FAConfirmed, setIs2FAConfirmed] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
+
+  const handleSessionLimit = (payload) => {
+    setSessionLimitReached(true);
+    setUserId(payload.user_id);
+    setActiveSessions(payload.active_sessions);
+  };
 
   const handleLogin = async (credentials) => {
     const result = await dispatch(login(credentials));
@@ -19,9 +29,12 @@ function LoginPage() {
       if (result.payload.requires_2fa) {
         setRequires2FA(true);
         setUserId(result.payload.user_id);
+        setIs2FAConfirmed(result.payload.is_2fa_confirmed);
       } else {
         navigate('/');
       }
+    } else if (result.payload?.session_limit_reached) {
+      handleSessionLimit(result.payload);
     }
   };
 
@@ -29,7 +42,17 @@ function LoginPage() {
     const result = await dispatch(verify2FA({ user_id: userId, token }));
     if (verify2FA.fulfilled.match(result)) {
       navigate('/');
+    } else if (result.payload?.session_limit_reached) {
+      handleSessionLimit(result.payload);
     }
+  };
+
+  const handleSessionTerminationSuccess = (data) => {
+    localStorage.setItem('access_token', data.access);
+    localStorage.setItem('refresh_token', data.refresh);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    navigate('/');
+    window.location.reload();
   };
 
   return (
@@ -74,14 +97,20 @@ function LoginPage() {
             <h1 className="text-xl font-bold text-text-primary">XMP</h1>
           </div>
 
-          <div className="card p-8">
+          <div className="card p-5 sm:p-8">
             <h2 className="text-xl font-bold text-text-primary mb-1">
-              {requires2FA ? 'Ikki bosqichli tasdiqlash' : 'Tizimga kirish'}
+              {sessionLimitReached
+                ? 'Sessiya limiti'
+                : requires2FA
+                  ? 'Ikki bosqichli tasdiqlash'
+                  : 'Tizimga kirish'}
             </h2>
             <p className="text-sm text-text-secondary mb-6">
-              {requires2FA
-                ? "Autentifikator ilovasidagi kodni kiriting"
-                : "Hisobingizga kirish uchun ma'lumotlarni kiriting"
+              {sessionLimitReached
+                ? "Aktiv sessiyalar soni limitga yetdi"
+                : requires2FA
+                  ? "Autentifikator ilovasidagi kodni kiriting"
+                  : "Hisobingizga kirish uchun ma'lumotlarni kiriting"
               }
             </p>
 
@@ -91,12 +120,23 @@ function LoginPage() {
               </div>
             )}
 
-            {requires2FA ? (
+            {sessionLimitReached ? (
+              <SessionLimitForm
+                userId={userId}
+                activeSessions={activeSessions}
+                onSuccess={handleSessionTerminationSuccess}
+                onBack={() => {
+                  setSessionLimitReached(false);
+                  setRequires2FA(false);
+                }}
+              />
+            ) : requires2FA ? (
               <TwoFactorForm
                 onSubmit={handleVerify2FA}
                 loading={loading}
                 onBack={() => setRequires2FA(false)}
                 userId={userId}
+                isFirstSetup={!is2FAConfirmed}
               />
             ) : (
               <LoginForm onSubmit={handleLogin} loading={loading} />

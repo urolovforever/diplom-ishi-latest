@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import authAPI from '../../api/authAPI';
 
-function TwoFactorForm({ onSubmit, loading, onBack, userId }) {
+function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [qrCode, setQrCode] = useState(null);
   const [secret, setSecret] = useState(null);
@@ -12,25 +12,36 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId }) {
   const inputsRef = useRef([]);
 
   useEffect(() => {
+    // Auto-load QR code on first setup
+    if (isFirstSetup) {
+      loadQRCode();
+    }
+  }, [isFirstSetup]);
+
+  useEffect(() => {
     inputsRef.current[0]?.focus();
   }, []);
+
+  const loadQRCode = async () => {
+    setLoadingQR(true);
+    try {
+      const res = await authAPI.get2FASetup(userId);
+      setQrCode(res.data.qr_code);
+      setSecret(res.data.secret);
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingQR(false);
+    }
+  };
 
   const handleShowQR = async () => {
     if (qrCode) {
       setShowQR(!showQR);
       return;
     }
-    setLoadingQR(true);
-    try {
-      const res = await authAPI.get2FASetup(userId);
-      setQrCode(res.data.qr_code);
-      setSecret(res.data.secret);
-      setShowQR(true);
-    } catch {
-      // silently fail
-    } finally {
-      setLoadingQR(false);
-    }
+    await loadQRCode();
+    setShowQR(true);
   };
 
   const handleCopySecret = () => {
@@ -79,56 +90,66 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* QR Code Section */}
-      <div className="text-center mb-4">
-        <button
-          type="button"
-          onClick={handleShowQR}
-          disabled={loadingQR}
-          className="text-sm text-primary-light hover:text-primary font-medium transition-colors"
-        >
-          {loadingQR
-            ? 'Yuklanmoqda...'
-            : showQR
-              ? 'QR kodni yashirish'
-              : 'Google Authenticator uchun QR kodni ko\'rish'
-          }
-        </button>
-      </div>
-
-      {showQR && qrCode && (
-        <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
-          <p className="text-xs text-text-secondary text-center mb-3">
-            Google Authenticator ilovasida skanerlang
-          </p>
-          <div className="flex justify-center mb-3">
-            <img src={qrCode} alt="2FA QR Code" className="rounded-lg" />
+      {/* QR Code Section - only shown during first-time setup */}
+      {isFirstSetup && (
+        <>
+          <div className="text-center mb-4">
+            {loadingQR ? (
+              <p className="text-sm text-text-secondary">Yuklanmoqda...</p>
+            ) : !showQR ? (
+              <button
+                type="button"
+                onClick={handleShowQR}
+                className="text-sm text-primary-light hover:text-primary font-medium transition-colors"
+              >
+                Google Authenticator uchun QR kodni ko'rish
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowQR(false)}
+                className="text-sm text-primary-light hover:text-primary font-medium transition-colors"
+              >
+                QR kodni yashirish
+              </button>
+            )}
           </div>
-          {secret && (
-            <div className="mt-2">
-              <p className="text-xs text-text-secondary text-center mb-1">
-                Yoki kalitni qo'lda kiriting:
+
+          {showQR && qrCode && (
+            <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
+              <p className="text-xs text-text-secondary text-center mb-3">
+                Google Authenticator ilovasida skanerlang
               </p>
-              <div className="flex items-center justify-center gap-2">
-                <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200 font-mono select-all">
-                  {secret}
-                </code>
-                <button
-                  type="button"
-                  onClick={handleCopySecret}
-                  className="p-1 text-text-secondary hover:text-primary-light transition-colors"
-                  title="Nusxa olish"
-                >
-                  {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                </button>
+              <div className="flex justify-center mb-3">
+                <img src={qrCode} alt="2FA QR Code" className="rounded-lg" />
               </div>
+              {secret && (
+                <div className="mt-2">
+                  <p className="text-xs text-text-secondary text-center mb-1">
+                    Yoki kalitni qo'lda kiriting:
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200 font-mono select-all break-all">
+                      {secret}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopySecret}
+                      className="p-1 text-text-secondary hover:text-primary-light transition-colors"
+                      title="Nusxa olish"
+                    >
+                      {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Code Input */}
-      <div className="flex justify-center gap-2.5 mb-6" onPaste={handlePaste}>
+      <div className="flex justify-center gap-1.5 sm:gap-2.5 mb-6" onPaste={handlePaste}>
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -139,7 +160,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId }) {
             value={digit}
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
-            className="w-12 h-14 text-center text-xl font-bold border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light/30 focus:border-primary-light transition-all"
+            className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light/30 focus:border-primary-light transition-all"
           />
         ))}
       </div>
