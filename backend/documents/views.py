@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from accounts.models import Role
 from accounts.permissions import IsSuperAdmin
+from accounts.security import get_client_ip
 from audit.mixins import AuditMixin
 from .encryption import encrypt_file, decrypt_file
 from .honeypot import HoneypotManager
@@ -71,7 +72,9 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
+        qs = Document.objects.select_related(
+            'uploaded_by__role', 'uploaded_by__organization__confession', 'uploaded_by__confession',
+        ).prefetch_related(
             'versions', 'encrypted_keys__user', 'shares__organization',
         ).all()
         if user.role and user.role.name == Role.SUPER_ADMIN:
@@ -125,24 +128,47 @@ class DocumentListCreateView(AuditMixin, generics.ListCreateAPIView):
             created_by=self.request.user,
         )
 
-        # Notify members of uploader's organization/confession
+        # Create DocumentShare entries from shared_with_organizations
         user = self.request.user
-        from accounts.models import CustomUser
-        recipients = CustomUser.objects.none()
+        shared_org_ids = getattr(instance, '_shared_org_ids', [])
+        for org_id in shared_org_ids:
+            try:
+                org = Organization.objects.get(pk=org_id)
+                DocumentShare.objects.get_or_create(
+                    document=instance, organization=org,
+                    defaults={'shared_by': user},
+                )
+            except Organization.DoesNotExist:
+                continue
 
-        if user.organization:
-            recipients = user.organization.members.filter(is_active=True)
-        elif user.confession:
-            recipients = user.confession.members.filter(is_active=True)
-
+        # Notify members of shared organizations
         sender_name = user.get_full_name() or user.email
-        for member in recipients.exclude(id=user.id):
-            NotificationService.send_in_app(
-                recipient=member,
-                title='Yangi hujjat yuklandi',
-                message=f'"{instance.title}" hujjati yuklandi. Yuboruvchi: {sender_name}',
-                notification_type='info',
-            )
+        if shared_org_ids:
+            from accounts.models import CustomUser
+            shared_orgs = Organization.objects.filter(id__in=shared_org_ids)
+            for org in shared_orgs:
+                for member in org.members.filter(is_active=True).exclude(id=user.id):
+                    NotificationService.send_in_app(
+                        recipient=member,
+                        title='Yangi hujjat yuklandi',
+                        message=f'"{instance.title}" hujjati {org.name} ga yuborildi. Yuboruvchi: {sender_name}',
+                        notification_type='info',
+                    )
+        else:
+            # Notify members of uploader's own organization/confession
+            from accounts.models import CustomUser
+            recipients = CustomUser.objects.none()
+            if user.organization:
+                recipients = user.organization.members.filter(is_active=True)
+            elif user.confession:
+                recipients = user.confession.members.filter(is_active=True)
+            for member in recipients.exclude(id=user.id):
+                NotificationService.send_in_app(
+                    recipient=member,
+                    title='Yangi hujjat yuklandi',
+                    message=f'"{instance.title}" hujjati yuklandi. Yuboruvchi: {sender_name}',
+                    notification_type='info',
+                )
 
         self._create_audit_log('create', instance)
         return instance
@@ -155,7 +181,9 @@ class DocumentDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Document.objects.select_related('uploaded_by__role').prefetch_related(
+        qs = Document.objects.select_related(
+            'uploaded_by__role', 'uploaded_by__organization__confession', 'uploaded_by__confession',
+        ).prefetch_related(
             'versions', 'encrypted_keys__user', 'shares__organization',
         ).all()
         if user.role and user.role.name == Role.SUPER_ADMIN:
@@ -191,7 +219,7 @@ class DocumentDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
             document=instance,
             user=request.user,
             action='view',
-            ip_address=request.META.get('REMOTE_ADDR'),
+            ip_address=get_client_ip(request),
         )
         return response
 
@@ -243,6 +271,27 @@ class DocumentShareView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class DocumentMarkReadView(APIView):
+    """Mark received documents as read for the current user's organization."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        doc_ids = request.data.get('ids', [])
+        mark_all = request.data.get('all', False)
+
+        org = user.organization
+        if not org:
+            return Response({'detail': 'ok', 'updated': 0})
+
+        qs = DocumentShare.objects.filter(organization=org, is_read=False)
+        if not mark_all and doc_ids:
+            qs = qs.filter(document_id__in=doc_ids)
+
+        updated = qs.update(is_read=True)
+        return Response({'detail': 'ok', 'updated': updated})
+
+
 class DocumentDownloadView(APIView):
     """Download a document with confirmation for confidential/secret docs."""
     permission_classes = [IsAuthenticated]
@@ -269,7 +318,7 @@ class DocumentDownloadView(APIView):
             document=doc,
             user=request.user,
             action='download',
-            ip_address=request.META.get('REMOTE_ADDR'),
+            ip_address=get_client_ip(request),
         )
 
         # Check daily download limit
@@ -398,7 +447,7 @@ class DocumentVersionRollbackView(APIView):
             document=document,
             user=user,
             action='rollback',
-            ip_address=request.META.get('REMOTE_ADDR'),
+            ip_address=get_client_ip(request),
         )
 
         return Response({
@@ -449,7 +498,7 @@ class HoneypotAccessView(generics.GenericAPIView):
 
     def get(self, request, pk):
         honeypot = HoneypotManager.check_access(
-            pk, request.user, request.META.get('REMOTE_ADDR')
+            pk, request.user, get_client_ip(request)
         )
         if not honeypot:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)

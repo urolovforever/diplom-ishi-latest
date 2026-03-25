@@ -6,10 +6,12 @@ import {
   FileText,
   Building2,
   Bell,
+  Monitor,
   ShieldCheck,
   ScrollText,
   Users,
   User,
+  Settings,
   Shield,
   X,
 } from 'lucide-react';
@@ -18,12 +20,14 @@ import { getInitials } from '../../utils/helpers';
 const navItems = [
   { path: '/', label: 'Bosh sahifa', icon: LayoutDashboard, roles: null },
   { path: '/documents', label: 'Hujjatlar', icon: FileText, roles: null },
-  { path: '/organizations', label: 'Tashkilotlar', icon: Building2, roles: ['super_admin', 'konfessiya_rahbari', 'dt_rahbar'] },
+  { path: '/organizations', label: 'Tashkilotlar', icon: Building2, roles: null },
   { path: '/notifications', label: 'Bildirishnomalar', icon: Bell, roles: null },
+  { path: '/admin-panel', label: 'Admin panel', icon: Monitor, roles: ['super_admin'] },
   { path: '/ai-dashboard', label: 'AI Xavfsizlik', icon: ShieldCheck, roles: ['super_admin'] },
   { path: '/audit-log', label: 'Audit jurnali', icon: ScrollText, roles: ['super_admin'] },
   { path: '/users', label: 'Foydalanuvchilar', icon: Users, roles: ['super_admin', 'konfessiya_rahbari', 'dt_rahbar'] },
   { path: '/profile', label: 'Profil', icon: User, roles: null },
+  { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: null },
 ];
 
 function Sidebar() {

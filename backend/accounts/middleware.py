@@ -67,7 +67,8 @@ class IPRestrictionMiddleware:
 
     def __call__(self, request):
         if request.path.startswith('/api/'):
-            ip = request.META.get('REMOTE_ADDR')
+            from .security import get_client_ip
+            ip = get_client_ip(request)
             if ip and self._is_blocked(ip):
                 logger.warning('Blocked request from IP: %s', ip)
                 return JsonResponse(

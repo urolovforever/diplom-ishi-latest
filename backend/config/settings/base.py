@@ -70,6 +70,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'confession_pass'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', 600)),
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
     }
 }
 
@@ -147,25 +151,41 @@ CELERY_BEAT_SCHEDULE = {
     'train-isolation-forest': {
         'task': 'ai_security.tasks.train_isolation_forest',
         'schedule': 60 * 60 * 24,  # Daily
-        'options': {'queue': 'default'},
+        'options': {'queue': 'default', 'expires': 60 * 60 * 2},  # expires in 2 hours
     },
     'scan-recent-activity': {
         'task': 'ai_security.tasks.scan_recent_activity',
         'schedule': 60 * 15,  # Every 15 minutes
+        'options': {'expires': 60 * 14},  # expires before next run
     },
     'cleanup-old-logs': {
         'task': 'ai_security.tasks.cleanup_old_logs',
         'schedule': 60 * 60 * 24 * 7,  # Weekly
+        'options': {'expires': 60 * 60 * 24},  # expires in 1 day
     },
     'check-alert-thresholds': {
         'task': 'notifications.tasks.check_alert_thresholds',
         'schedule': 60 * 5,  # Every 5 minutes
+        'options': {'expires': 60 * 4},  # expires before next run
     },
     'daily-encrypted-backup': {
         'task': 'audit.tasks.daily_encrypted_backup',
         'schedule': 60 * 60 * 24,  # Daily
+        'options': {'expires': 60 * 60 * 12},  # expires in 12 hours
+    },
+    'cleanup-inactive-invited-users': {
+        'task': 'accounts.tasks.cleanup_inactive_invited_users',
+        'schedule': 60 * 60 * 24,  # Daily
+        'options': {'expires': 60 * 60 * 12},  # expires in 12 hours
+    },
+    'cleanup-old-sessions': {
+        'task': 'accounts.tasks.cleanup_old_sessions',
+        'schedule': 60 * 60 * 24,  # Daily
+        'options': {'expires': 60 * 60 * 12},  # expires in 12 hours
     },
 }
+CELERY_TASK_TIME_LIMIT = 600  # Hard kill after 10 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 300  # Raise SoftTimeLimitExceeded after 5 minutes
 
 # Email
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
@@ -216,12 +236,21 @@ LOGGING = {
 }
 
 # CORS
+_cors_env = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in _cors_env.split(',') if origin.strip()
+] if _cors_env else [
     'http://localhost',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
 ]
+
+# CSRF trusted origins
+_csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in _csrf_env.split(',') if origin.strip()
+] if _csrf_env else []
 
 # AI Security
 AI_SECURITY = {
@@ -239,6 +268,9 @@ SMS_BACKEND = os.environ.get('SMS_BACKEND', 'console')  # 'console', 'twilio'
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+
+# Resend API
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')

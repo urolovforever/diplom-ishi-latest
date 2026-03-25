@@ -25,6 +25,12 @@ class ActivityLog(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at'], name='actlog_user_date_idx'),
+            models.Index(fields=['created_at'], name='actlog_date_idx'),
+            models.Index(fields=['response_status'], name='actlog_status_idx'),
+            models.Index(fields=['request_method'], name='actlog_method_idx'),
+        ]
 
     def __str__(self):
         return f'{self.user} - {self.action} - {self.created_at}'
@@ -60,6 +66,12 @@ class AnomalyReport(models.Model):
 
     class Meta:
         ordering = ['-detected_at']
+        indexes = [
+            models.Index(fields=['-detected_at'], name='anomaly_detected_idx'),
+            models.Index(fields=['user', 'detected_at'], name='anomaly_user_date_idx'),
+            models.Index(fields=['severity'], name='anomaly_severity_idx'),
+            models.Index(fields=['is_resolved'], name='anomaly_resolved_idx'),
+        ]
 
     def __str__(self):
         return f'{self.severity}: {self.title}'
@@ -77,6 +89,11 @@ class AIModelConfig(models.Model):
     threshold = models.FloatField(default=-0.5)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['model_type', 'is_active'], name='aiconfig_type_active_idx'),
+        ]
 
     def __str__(self):
         return self.name

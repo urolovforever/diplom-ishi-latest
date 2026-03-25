@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import authAPI from '../api/authAPI';
-import FormField from '../components/ui/FormField';
+import PasswordInput from '../components/ui/PasswordInput';
 import { passwordStrength } from '../utils/validation';
 import { Lock, CheckCircle } from 'lucide-react';
 
@@ -58,18 +58,28 @@ function PasswordResetConfirmPage() {
           <div className="bg-red-50 border border-red-100 text-danger p-3 rounded-xl mb-4 text-sm">{errors.token}</div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField label="Yangi parol" error={errors.password} id="new-password">
-            <div className="relative">
-              <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
-              <input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-field pl-10" />
-            </div>
-          </FormField>
-          <FormField label="Parolni tasdiqlash" error={errors.confirm} id="confirm-password">
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            label="Yangi parol"
+            id="new-password"
+            placeholder="Kamida 12 ta belgi"
+            showGenerator={true}
+            showRequirements={true}
+          />
+          {errors.password && <p className="text-xs text-danger -mt-2">{errors.password}</p>}
+
+          <div>
+            <label htmlFor="confirm-password" className="block text-sm font-medium text-text-primary mb-1.5">
+              Parolni tasdiqlash
+            </label>
             <div className="relative">
               <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
               <input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input-field pl-10" />
             </div>
-          </FormField>
+            {errors.confirm && <p className="text-xs text-danger mt-1">{errors.confirm}</p>}
+          </div>
+
           <button type="submit" className="btn-primary w-full">Parolni tiklash</button>
         </form>
       </div>

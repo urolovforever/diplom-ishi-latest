@@ -19,6 +19,13 @@ export const login = createAsyncThunk(
       const response = await authAPI.login(credentials);
       return response.data;
     } catch (error) {
+      if (error.response?.status === 409 && error.response?.data?.session_limit_reached) {
+        return rejectWithValue({
+          session_limit_reached: true,
+          user_id: error.response.data.user_id,
+          active_sessions: error.response.data.active_sessions,
+        });
+      }
       return rejectWithValue(
         error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || 'Login failed'
       );
@@ -33,6 +40,13 @@ export const verify2FA = createAsyncThunk(
       const response = await authAPI.verify2FA(data);
       return response.data;
     } catch (error) {
+      if (error.response?.status === 409 && error.response?.data?.session_limit_reached) {
+        return rejectWithValue({
+          session_limit_reached: true,
+          user_id: error.response.data.user_id,
+          active_sessions: error.response.data.active_sessions,
+        });
+      }
       return rejectWithValue(
         error.response?.data?.detail || 'Verification failed'
       );
@@ -56,6 +70,10 @@ const authSlice = createSlice({
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
+      // Clear E2E encryption keys from IndexedDB
+      import('../utils/crypto').then(({ clearStoredKeys }) => {
+        clearStoredKeys().catch(() => {});
+      }).catch(() => {});
     },
     clearError: (state) => {
       state.error = null;
@@ -81,6 +99,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
+        if (action.payload?.session_limit_reached) return;
         state.error = action.payload;
       })
       .addCase(verify2FA.pending, (state) => {
@@ -98,6 +117,7 @@ const authSlice = createSlice({
       })
       .addCase(verify2FA.rejected, (state, action) => {
         state.loading = false;
+        if (action.payload?.session_limit_reached) return;
         state.error = action.payload;
       });
   },

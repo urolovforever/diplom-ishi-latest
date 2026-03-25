@@ -20,6 +20,9 @@ const documentsAPI = {
 
   // Share
   shareDocument: (docId, organizationIds) => api.post(`/documents/${docId}/share/`, { organization_ids: organizationIds }),
+
+  // Mark as read
+  markDocumentsRead: (data) => api.post('/documents/mark-read/', data),
 };
 
 export default documentsAPI;

@@ -109,7 +109,30 @@ function AuditLogPage() {
         </div>
       ) : (
         <>
-          <div className="card overflow-hidden">
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {logs.map((log) => (
+              <div key={log.id} className="card p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-text-primary text-sm">{log.user?.email || 'Tizim'}</span>
+                  <span className={actionConfig[log.action]?.class || 'badge-neutral'}>{actionConfig[log.action]?.label || log.action}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">
+                  <span>{new Date(log.created_at).toLocaleString()}</span>
+                  <span>{log.model_name}</span>
+                  <span className="font-mono">{log.ip_address || 'N/A'}</span>
+                </div>
+              </div>
+            ))}
+            {logs.length === 0 && (
+              <div className="card p-8 text-center text-text-secondary text-sm">
+                Audit yozuvlari topilmadi
+              </div>
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="card overflow-hidden hidden md:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

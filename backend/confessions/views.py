@@ -15,8 +15,12 @@ from .serializers import (
 
 
 class ConfessionListCreateView(AuditMixin, generics.ListCreateAPIView):
-    permission_classes = [IsSuperAdmin]
     serializer_class = ConfessionSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsSuperAdmin()]
 
     def get_queryset(self):
         return Confession.objects.select_related('leader__role').all()
@@ -40,24 +44,14 @@ class ConfessionDetailView(AuditMixin, generics.RetrieveUpdateDestroyAPIView):
 
 
 class OrganizationListCreateView(AuditMixin, generics.ListCreateAPIView):
-    permission_classes = [IsLeader]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsLeader()]
 
     def get_queryset(self):
-        user = self.request.user
-        role_name = user.role.name if user.role else None
-        qs = Organization.objects.select_related('leader__role', 'confession')
-
-        if role_name == Role.SUPER_ADMIN:
-            return qs.all()
-        elif role_name == Role.KONFESSIYA_RAHBARI:
-            if user.confession:
-                return qs.filter(confession=user.confession)
-            return qs.none()
-        elif role_name == Role.DT_RAHBAR:
-            if user.organization:
-                return qs.filter(id=user.organization.id)
-            return qs.none()
-        return qs.none()
+        return Organization.objects.select_related('leader__role', 'confession').all()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':

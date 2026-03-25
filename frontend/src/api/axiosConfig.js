@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-const PUBLIC_ENDPOINTS = ['/accounts/login/', '/accounts/token/refresh/', '/accounts/password-reset/'];
+const PUBLIC_ENDPOINTS = ['/accounts/login/', '/accounts/token/refresh/', '/accounts/password-reset/', '/accounts/2fa-setup/', '/accounts/verify-2fa/', '/accounts/session-termination/'];
 
 api.interceptors.request.use(
   (config) => {

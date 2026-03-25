@@ -1,14 +1,89 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h1 style="color: #1a202c;">Welcome to Secure Confession Platform</h1>
-  <p>Hello {{ first_name }},</p>
-  <p>Your account has been created successfully. Please set your password to start using the platform.</p>
-  <p style="margin: 30px 0;">
-    <a href="{{ set_password_url }}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Parolni o'rnatish</a>
-  </p>
-  <p style="color: #6b7280; font-size: 14px;">Bu havola 72 soat amal qiladi.</p>
-  <p style="color: #6b7280; font-size: 14px;">If you did not expect this email, please ignore it.</p>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); padding: 40px 40px 32px; text-align: center;">
+              <div style="width: 64px; height: 64px; background-color: rgba(255,255,255,0.15); border-radius: 50%; margin: 0 auto 16px; line-height: 64px; font-size: 28px;">
+                &#128274;
+              </div>
+              <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">
+                Emanat Systems
+              </h1>
+              <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 8px 0 0;">
+                Xavfsiz hujjat almashish tizimi
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="color: #1a202c; font-size: 20px; font-weight: 600; margin: 0 0 8px;">
+                Xush kelibsiz, {{ first_name }}!
+              </h2>
+              <p style="color: #6b7280; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+                Sizning hisobingiz muvaffaqiyatli yaratildi. Platformadan foydalanishni boshlash uchun parolingizni o'rnating.
+              </p>
+
+              <!-- Button -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 8px 0 32px;">
+                    <a href="{{ set_password_url }}"
+                       style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 40px; border-radius: 10px; box-shadow: 0 4px 14px rgba(37,99,235,0.4);">
+                      Parolni o'rnatish
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Info Box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f7ff; border-radius: 10px; border-left: 4px solid #2563eb;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="color: #1e40af; font-size: 13px; font-weight: 600; margin: 0 0 4px;">
+                      Eslatma
+                    </p>
+                    <p style="color: #3b82f6; font-size: 13px; line-height: 1.5; margin: 0;">
+                      Bu havola 72 soat davomida amal qiladi. Muddati o'tgandan keyin administrator bilan bog'laning.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 0;">
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px 32px; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px; line-height: 1.6; margin: 0;">
+                Bu xat avtomatik ravishda yuborilgan.<br>
+                Agar siz ro'yxatdan o'tmagan bo'lsangiz, bu xatga e'tibor bermang.
+              </p>
+              <p style="color: #d1d5db; font-size: 11px; margin: 12px 0 0;">
+                &copy; {{ year }} Emanat Systems. Barcha huquqlar himoyalangan.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
