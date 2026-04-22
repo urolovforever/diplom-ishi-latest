@@ -13,6 +13,7 @@ Creates:
 Safe to run multiple times — uses get_or_create and count checks.
 """
 import random
+import secrets
 import uuid
 from datetime import timedelta
 
@@ -22,7 +23,28 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.models import CustomUser, LoginAttempt, Role
+from accounts.models import (
+    CustomUser,
+    IPRestriction,
+    LoginAttempt,
+    PasswordHistory,
+    PasswordResetToken,
+    Role,
+    SessionTerminationCode,
+    UserSession,
+)
+from ai_security.models import ActivityLog, AIModelConfig, AnomalyReport
+from audit.models import AuditLog, Report
+from confessions.models import Confession, Organization
+from documents.models import (
+    Document,
+    DocumentAccessLog,
+    DocumentEncryptedKey,
+    DocumentShare,
+    DocumentVersion,
+    HoneypotFile,
+)
+from notifications.models import AlertConfig, AlertRule, Notification, TelegramConfig
 
 
 class _DisableAutoNowAdd:
@@ -38,16 +60,6 @@ class _DisableAutoNowAdd:
 
     def __exit__(self, *exc):
         self.field.auto_now_add = self._orig
-from ai_security.models import ActivityLog, AIModelConfig, AnomalyReport
-from audit.models import AuditLog
-from confessions.models import Confession, Organization
-from documents.models import (
-    Document,
-    DocumentAccessLog,
-    DocumentShare,
-    HoneypotFile,
-)
-from notifications.models import AlertRule, Notification
 
 
 IP_POOL = [
@@ -581,7 +593,289 @@ class Command(BaseCommand):
         )
 
         self.stdout.write(self.style.SUCCESS(
-            f'[9/9] Login attempts: {LoginAttempt.objects.count()}'))
+            f'[9/15] Login attempts: {LoginAttempt.objects.count()}'))
+
+        # ---- User Sessions (active + expired + mobile/desktop) ----
+        session_rows = []
+        devices = [
+            ('desktop', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0'),
+            ('desktop', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0'),
+            ('mac', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/17.0'),
+            ('iphone', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148 Safari/604.1'),
+            ('android', 'Mozilla/5.0 (Linux; Android 13) Chrome/120.0 Mobile Safari/537.36'),
+        ]
+        for user in all_users:
+            # 1 active session for most users
+            if random.random() > 0.2:
+                _, ua = random.choice(devices)
+                session_rows.append(UserSession(
+                    user=user,
+                    refresh_token=secrets.token_urlsafe(64),
+                    ip_address=random.choice(IP_POOL),
+                    user_agent=ua,
+                    is_active=True,
+                    expires_at=now + timedelta(days=random.randint(1, 6)),
+                ))
+            # Historic / expired sessions
+            for _ in range(random.randint(2, 6)):
+                _, ua = random.choice(devices)
+                was_active = random.random() > 0.7
+                session_rows.append(UserSession(
+                    user=user,
+                    refresh_token=secrets.token_urlsafe(64),
+                    ip_address=random.choice(IP_POOL),
+                    user_agent=ua,
+                    is_active=was_active,
+                    expires_at=now - timedelta(days=random.randint(1, 25)),
+                ))
+        UserSession.objects.bulk_create(session_rows, batch_size=300, ignore_conflicts=True)
+        self.stdout.write(self.style.SUCCESS(f'[10/15] UserSessions: {UserSession.objects.count()}'))
+
+        # ---- PasswordHistory (last 5 passwords per user) ----
+        ph_rows = []
+        for user in all_users:
+            for _ in range(random.randint(2, 5)):
+                ph_rows.append(PasswordHistory(
+                    user=user,
+                    password_hash=make_password(secrets.token_urlsafe(16)),
+                ))
+        PasswordHistory.objects.bulk_create(ph_rows, batch_size=500)
+
+        # ---- PasswordResetTokens (used + pending + expired) ----
+        prt_rows = []
+        for user in random.sample(all_users, k=min(12, len(all_users))):
+            for _ in range(random.randint(1, 2)):
+                state = random.choice(['used', 'pending', 'expired'])
+                expires = now + timedelta(hours=1) if state == 'pending' else now - timedelta(hours=random.randint(1, 48))
+                prt_rows.append(PasswordResetToken(
+                    user=user,
+                    token=secrets.token_urlsafe(32),
+                    is_used=(state == 'used'),
+                    confirmed_at=now - timedelta(hours=random.randint(1, 48)) if state == 'used' else None,
+                    expires_at=expires,
+                ))
+        PasswordResetToken.objects.bulk_create(prt_rows, batch_size=100)
+
+        # ---- IP Restrictions (whitelist + blacklist) ----
+        ip_rules = [
+            ('10.0.0.0', 'whitelist', 'Ichki tarmoq — ishonchli IP'),
+            ('192.168.1.0', 'whitelist', 'Ofis tarmog\'i'),
+            ('213.230.70.14', 'whitelist', 'CEO uy IP'),
+            ('45.155.205.12', 'blacklist', 'Brute-force hujum manbai — 2025-01-15'),
+            ('103.45.78.99', 'blacklist', 'Tor exit node — shubhali'),
+            ('185.220.101.42', 'blacklist', 'Known tor relay'),
+            ('94.102.49.193', 'blacklist', 'Honeypot access — bloklandi'),
+        ]
+        for ip, lt, reason in ip_rules:
+            IPRestriction.objects.get_or_create(
+                ip_address=ip, list_type=lt,
+                defaults={'reason': reason, 'created_by': admin_user, 'is_active': True},
+            )
+
+        # ---- SessionTerminationCodes (some used) ----
+        user_active_sessions = list(UserSession.objects.filter(is_active=True)[:20])
+        stc_rows = []
+        for sess in user_active_sessions[:10]:
+            used = random.random() > 0.5
+            stc_rows.append(SessionTerminationCode(
+                user=sess.user,
+                code=str(random.randint(100000, 999999)),
+                session_to_terminate=sess,
+                ip_address=sess.ip_address,
+                user_agent=sess.user_agent,
+                is_used=used,
+                expires_at=now + timedelta(minutes=10) if not used else now - timedelta(minutes=random.randint(1, 60)),
+            ))
+        SessionTerminationCode.objects.bulk_create(stc_rows)
+        self.stdout.write(self.style.SUCCESS(
+            f'[11/15] PasswordHistory, ResetTokens, IPRestrictions, SessionCodes seeded'))
+
+        # ---- DocumentVersions (for ~half of documents) ----
+        version_rows = []
+        for doc in random.sample(documents, k=len(documents) // 2):
+            for v in range(2, random.randint(3, 5) + 1):
+                version_rows.append(DocumentVersion(
+                    document=doc,
+                    version_number=v,
+                    file=f'document_versions/2025/01/{doc.id}_v{v}.enc',
+                    change_summary=random.choice([
+                        'Matn xatolari to\'g\'rilandi',
+                        'Yangi bo\'lim qo\'shildi',
+                        'Moliyaviy ma\'lumotlar yangilandi',
+                        'Rasmiy imzo qo\'yildi',
+                        'Huquqiy ko\'rib chiqish asosida o\'zgartirildi',
+                    ]),
+                    created_by=doc.uploaded_by,
+                ))
+        DocumentVersion.objects.bulk_create(version_rows, batch_size=100, ignore_conflicts=True)
+
+        # ---- DocumentEncryptedKey (for e2e documents) ----
+        dek_rows = []
+        e2e_docs = Document.objects.filter(is_e2e_encrypted=True)
+        for doc in e2e_docs:
+            # Key for uploader + org members
+            recipients = {doc.uploaded_by}
+            if doc.organization:
+                recipients.update(doc.organization.members.all()[:3])
+            for user in recipients:
+                dek_rows.append(DocumentEncryptedKey(
+                    document=doc, user=user,
+                    encrypted_key=secrets.token_urlsafe(128),
+                ))
+        DocumentEncryptedKey.objects.bulk_create(dek_rows, batch_size=100, ignore_conflicts=True)
+        self.stdout.write(self.style.SUCCESS(
+            f'[12/15] DocumentVersions: {DocumentVersion.objects.count()}, '
+            f'DocumentEncryptedKeys: {DocumentEncryptedKey.objects.count()}'))
+
+        # ---- AlertConfig & TelegramConfig ----
+        alert_configs = [
+            ('Kunlik anomaliya yig\'indisi', 'Kuniga 5 tadan ortiq anomaliya bo\'lsa xabar', 5),
+            ('Failed login chegarasi', '5 daqiqada 10+ failed_login', 10),
+            ('Honeypot murojaatlari', 'Har qanday honeypot access alert', 1),
+            ('Error rate 20%+', 'Xatolik darajasi 20% dan yuqori bo\'lsa', 20),
+        ]
+        for name, desc, th in alert_configs:
+            AlertConfig.objects.get_or_create(
+                name=name,
+                defaults={'description': desc, 'threshold': th, 'is_active': True, 'created_by': admin_user},
+            )
+
+        # Telegram for admin + 2 konfessiya rahbars
+        tg_recipients = [admin_user] + list(CustomUser.objects.filter(role__name=Role.KONFESSIYA_RAHBARI)[:2])
+        for user in tg_recipients:
+            TelegramConfig.objects.get_or_create(
+                user=user,
+                defaults={
+                    'chat_id': str(random.randint(100000000, 999999999)),
+                    'is_active': True,
+                    'alert_types': ['anomaly', 'honeypot', 'login'],
+                },
+            )
+
+        # ---- Reports (audit.Report) — generated reports ----
+        report_types = [
+            ('Oylik faoliyat hisoboti — 2025-yanvar', 'activity'),
+            ('Xavfsizlik hisoboti — 2024 Q4', 'security'),
+            ('Tashkilotlar kesimida hisobot', 'organization'),
+            ('Haftalik anomaliya hisoboti', 'security'),
+            ('Audit logs eksporti — yanvar', 'activity'),
+        ]
+        for title, rt in report_types:
+            Report.objects.get_or_create(
+                title=title,
+                defaults={
+                    'report_type': rt,
+                    'data': {'summary': 'demo', 'total_events': random.randint(100, 5000)},
+                    'generated_by': admin_user,
+                    'date_from': now - timedelta(days=30),
+                    'date_to': now,
+                },
+            )
+        self.stdout.write(self.style.SUCCESS(
+            f'[13/15] AlertConfig, TelegramConfig, Reports seeded'))
+
+        # ---- 2FA + locked users + failed_login_count ----
+        # Enable 2FA on 3 users (totp_secret populated) so the flow can be demoed
+        twofa_demo_emails = ['konfessiya@scp.local', 'dtrahbar@scp.local', 'admin@scp.local']
+        for email in twofa_demo_emails:
+            try:
+                u = CustomUser.objects.get(email=email)
+                if not u.totp_secret:
+                    u.totp_secret = secrets.token_hex(16)
+                u.is_2fa_enabled = True
+                u.is_2fa_confirmed = True
+                u.save(update_fields=['totp_secret', 'is_2fa_enabled', 'is_2fa_confirmed'])
+            except CustomUser.DoesNotExist:
+                pass
+
+        # Lock 2 random xodim users to show lockout state
+        xodims = list(CustomUser.objects.filter(role__name=Role.DT_XODIMI))
+        if xodims:
+            for u in random.sample(xodims, k=min(2, len(xodims))):
+                u.failed_login_count = 6
+                u.locked_until = now + timedelta(minutes=20)  # currently locked
+                u.save(update_fields=['failed_login_count', 'locked_until'])
+
+        # Give some users a healthy failed_login_count between 1-3 (not locked)
+        for u in random.sample(all_users, k=min(6, len(all_users))):
+            if u.failed_login_count == 0:
+                u.failed_login_count = random.randint(1, 3)
+                u.save(update_fields=['failed_login_count'])
+
+        # ---- Extra honeypot access events recorded as activity logs ----
+        hp_access_logs = []
+        honeypot_objs = list(HoneypotFile.objects.all())
+        for hp in honeypot_objs:
+            for _ in range(random.randint(1, 3)):
+                attacker = random.choice(anomalous_users)
+                hp_access_logs.append(ActivityLog(
+                    user=attacker,
+                    action='honeypot_access',
+                    resource='honeypot', resource_type='HoneypotFile',
+                    resource_id=str(hp.id),
+                    ip_address=random.choice(SUSPICIOUS_IPS),
+                    user_agent='curl/7.68.0',
+                    request_method='GET',
+                    request_path=f'/api/documents/honeypot/{hp.id}/download/',
+                    response_status=200,
+                    details={'honeypot': True, 'trap_title': hp.title},
+                    metadata={'alert_triggered': True},
+                    created_at=now - timedelta(hours=random.randint(1, 72)),
+                ))
+        with _DisableAutoNowAdd(ActivityLog, 'created_at'):
+            ActivityLog.objects.bulk_create(hp_access_logs)
+
+        # ---- More varied audit logs with JSON changes ----
+        extra_audit = []
+        for _ in range(80):
+            action = random.choice(['create', 'update', 'delete'])
+            changes = {
+                'security_level': {'from': 'internal', 'to': 'confidential'},
+            } if action == 'update' else {'created_fields': ['title', 'file']} if action == 'create' else {'deleted': True}
+            extra_audit.append(AuditLog(
+                user=random.choice(all_users),
+                action=action,
+                model_name=random.choice(['Document', 'Organization', 'CustomUser']),
+                object_id=str(uuid.uuid4()),
+                changes=changes,
+                ip_address=random.choice(IP_POOL),
+            ))
+        AuditLog.objects.bulk_create(extra_audit)
+
+        self.stdout.write(self.style.SUCCESS(
+            f'[14/15] 2FA/locks/honeypot access/audit extras applied'))
+
+        # ---- Impossible-travel anomaly: same user, 2 distant IPs quickly ----
+        impossible_travel_logs = []
+        for au in anomalous_users[:3]:
+            burst = now - timedelta(hours=random.randint(6, 30))
+            # Tashkent IP
+            impossible_travel_logs.append(ActivityLog(
+                user=au, action='login', resource='auth',
+                ip_address='213.230.70.14',
+                user_agent=random.choice(USER_AGENTS),
+                request_method='POST', request_path='/api/auth/login/',
+                response_status=200,
+                details={'geo_hint': 'Tashkent, UZ'},
+                metadata={'demo': 'impossible_travel'},
+                created_at=burst,
+            ))
+            # Moscow IP 8 minutes later
+            impossible_travel_logs.append(ActivityLog(
+                user=au, action='login', resource='auth',
+                ip_address='95.108.213.18',
+                user_agent=random.choice(USER_AGENTS),
+                request_method='POST', request_path='/api/auth/login/',
+                response_status=200,
+                details={'geo_hint': 'Moscow, RU'},
+                metadata={'demo': 'impossible_travel'},
+                created_at=burst + timedelta(minutes=8),
+            ))
+        with _DisableAutoNowAdd(ActivityLog, 'created_at'):
+            ActivityLog.objects.bulk_create(impossible_travel_logs)
+
+        self.stdout.write(self.style.SUCCESS('[15/15] Impossible-travel scenarios added'))
+
         self.stdout.write(self.style.SUCCESS('\n=== Demo seed complete ==='))
         self.stdout.write(f'  Users:           {CustomUser.objects.count()}')
         self.stdout.write(f'  Confessions:     {Confession.objects.count()}')
@@ -596,3 +890,13 @@ class Command(BaseCommand):
         self.stdout.write(f'  AlertRules:      {AlertRule.objects.count()}')
         self.stdout.write(f'  HoneypotFiles:   {HoneypotFile.objects.count()}')
         self.stdout.write(f'  LoginAttempts:   {LoginAttempt.objects.count()}')
+        self.stdout.write(f'  UserSessions:    {UserSession.objects.count()}')
+        self.stdout.write(f'  PasswordHistory: {PasswordHistory.objects.count()}')
+        self.stdout.write(f'  ResetTokens:     {PasswordResetToken.objects.count()}')
+        self.stdout.write(f'  IPRestrictions:  {IPRestriction.objects.count()}')
+        self.stdout.write(f'  SessionCodes:    {SessionTerminationCode.objects.count()}')
+        self.stdout.write(f'  DocVersions:     {DocumentVersion.objects.count()}')
+        self.stdout.write(f'  E2E Keys:        {DocumentEncryptedKey.objects.count()}')
+        self.stdout.write(f'  AlertConfigs:    {AlertConfig.objects.count()}')
+        self.stdout.write(f'  TelegramConfigs: {TelegramConfig.objects.count()}')
+        self.stdout.write(f'  Reports:         {Report.objects.count()}')
