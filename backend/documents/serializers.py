@@ -1,5 +1,6 @@
 import json
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
 from confessions.models import Organization
@@ -101,9 +102,9 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
         try:
             keys = json.loads(value)
         except (json.JSONDecodeError, TypeError):
-            raise serializers.ValidationError("JSON formatida ro'yxat kutilmoqda.")
+            raise serializers.ValidationError(_("JSON formatida ro'yxat kutilmoqda."))
         if not isinstance(keys, list):
-            raise serializers.ValidationError("Ro'yxat kutilmoqda.")
+            raise serializers.ValidationError(_("Ro'yxat kutilmoqda."))
         return keys
 
     def validate_shared_with_organizations(self, value):
@@ -112,15 +113,15 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
         try:
             org_ids = json.loads(value)
         except (json.JSONDecodeError, TypeError):
-            raise serializers.ValidationError("JSON formatida UUID ro'yxati kutilmoqda.")
+            raise serializers.ValidationError(_("JSON formatida UUID ro'yxati kutilmoqda."))
         if not isinstance(org_ids, list):
-            raise serializers.ValidationError("UUID ro'yxati kutilmoqda.")
+            raise serializers.ValidationError(_("UUID ro'yxati kutilmoqda."))
         for oid in org_ids:
             try:
                 import uuid as _uuid
                 _uuid.UUID(str(oid))
             except ValueError:
-                raise serializers.ValidationError(f"Noto'g'ri UUID: {oid}")
+                raise serializers.ValidationError(_("Noto'g'ri UUID: {uuid}").format(uuid=oid))
         return org_ids
 
     def create(self, validated_data):

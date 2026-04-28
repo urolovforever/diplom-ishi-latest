@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 function LoginForm({ onSubmit, loading }) {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,7 +17,7 @@ function LoginForm({ onSubmit, loading }) {
     <form onSubmit={handleSubmit}>
       <div className="mb-4">
         <label className="block text-sm font-medium text-text-primary mb-1.5">
-          Elektron pochta
+          {t('form.email_label')}
         </label>
         <div className="relative">
           <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
@@ -24,14 +26,14 @@ function LoginForm({ onSubmit, loading }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="input-field pl-10"
-            placeholder="email@example.com"
+            placeholder={t('form.email_placeholder')}
             required
           />
         </div>
       </div>
       <div className="mb-4">
         <label className="block text-sm font-medium text-text-primary mb-1.5">
-          Parol
+          {t('form.password_label')}
         </label>
         <div className="relative">
           <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
@@ -40,7 +42,7 @@ function LoginForm({ onSubmit, loading }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-field pl-10 pr-10"
-            placeholder="Parolingizni kiriting"
+            placeholder={t('form.password_placeholder')}
             required
           />
           <button
@@ -54,11 +56,11 @@ function LoginForm({ onSubmit, loading }) {
       </div>
       <div className="flex justify-end mb-6">
         <a href="/password-reset" className="text-sm text-primary-light hover:text-primary transition-colors">
-          Parolni unutdingizmi?
+          {t('form.forgot_password')}
         </a>
       </div>
       <button type="submit" disabled={loading} className="btn-primary w-full">
-        {loading ? 'Kirish...' : 'Kirish'}
+        {loading ? t('form.login_button_loading') : t('form.login_button')}
       </button>
     </form>
   );

@@ -1,0 +1,65 @@
+{
+  "page": {
+    "title": "Bosh sahifa",
+    "welcome": "Xush kelibsiz, {{name}}!",
+    "default_user": "Foydalanuvchi"
+  },
+  "cards": {
+    "documents": "Hujjatlar",
+    "unread_notifications": "O'qilmagan xabarlar",
+    "organizations": "Tashkilotlar",
+    "total_users": "Jami foydalanuvchilar",
+    "ai_anomalies": "AI anomaliyalar",
+    "unresolved": "Hal qilinmagan",
+    "critical_anomalies": "Kritik anomaliyalar",
+    "organization_count": "{{count}} tashkilot",
+    "trend_compared": "o'tgan davrga nisbatan"
+  },
+  "sections": {
+    "confessions": "Konfessiyalar",
+    "document_categories": "Hujjat kategoriyalari",
+    "by_role": "Rollar bo'yicha"
+  },
+  "categories": {
+    "registration": "Ro'yxatga olish",
+    "reports": "Hisobotlar",
+    "normative": "Me'yoriy",
+    "confidential": "Maxfiy"
+  },
+  "roles": {
+    "super_admin": "Super Admin",
+    "konfessiya_rahbari": "Konfessiya Rahbari",
+    "konfessiya_xodimi": "Konfessiya Xodimi",
+    "dt_rahbar": "DT Rahbari",
+    "dt_xodimi": "DT Xodimi"
+  },
+  "activity_chart": {
+    "title": "Faollik dinamikasi",
+    "normal": "Normal",
+    "anomaly": "Anomaliya",
+    "total": "Jami",
+    "no_data": "Ma'lumotlar mavjud emas"
+  },
+  "confessions_pie": {
+    "title": "Konfessiyalar holati",
+    "draft": "Qoralama",
+    "submitted": "Yuborilgan",
+    "under_review": "Ko'rib chiqilmoqda",
+    "approved": "Tasdiqlangan",
+    "rejected": "Rad etilgan"
+  },
+  "alerts": {
+    "title": "So'nggi ogohlantirishlar",
+    "empty": "Ogohlantirishlar yo'q"
+  },
+  "documents_table": {
+    "title": "So'nggi hujjatlar",
+    "empty": "Hujjatlar mavjud emas",
+    "levels": {
+      "public": "Ommaviy",
+      "internal": "Ichki",
+      "confidential": "Maxfiy",
+      "secret": "Sir"
+    }
+  }
+}

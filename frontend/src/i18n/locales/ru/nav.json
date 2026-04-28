@@ -1,0 +1,13 @@
+{
+  "dashboard": "Главная",
+  "documents": "Документы",
+  "organizations": "Организации",
+  "notifications": "Уведомления",
+  "admin": "Админ-панель",
+  "ai_security": "AI Безопасность",
+  "audit": "Журнал аудита",
+  "users": "Пользователи",
+  "profile": "Профиль",
+  "settings": "Настройки",
+  "logout": "Выход"
+}

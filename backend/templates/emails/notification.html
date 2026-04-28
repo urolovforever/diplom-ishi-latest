@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load i18n %}
 <html lang="uz">
 <head>
   <meta charset="utf-8">
@@ -19,7 +20,7 @@
                 Emanat Systems
               </h1>
               <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 8px 0 0;">
-                Bildirishnoma
+                {% trans "Bildirishnoma" %}
               </p>
             </td>
           </tr>
@@ -47,10 +48,10 @@
           <tr>
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="color: #9ca3af; font-size: 12px; line-height: 1.6; margin: 0;">
-                Bu xat avtomatik ravishda yuborilgan.
+                {% trans "Bu xat avtomatik ravishda yuborilgan." %}
               </p>
               <p style="color: #d1d5db; font-size: 11px; margin: 12px 0 0;">
-                &copy; {{ year }} Emanat Systems. Barcha huquqlar himoyalangan.
+                {% blocktrans with y=year %}&copy; {{ y }} Emanat Systems. Barcha huquqlar himoyalangan.{% endblocktrans %}
               </p>
             </td>
           </tr>

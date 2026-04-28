@@ -1,0 +1,13 @@
+{
+  "dashboard": "Dashboard",
+  "documents": "Documents",
+  "organizations": "Organizations",
+  "notifications": "Notifications",
+  "admin": "Admin Panel",
+  "ai_security": "AI Security",
+  "audit": "Audit Log",
+  "users": "Users",
+  "profile": "Profile",
+  "settings": "Settings",
+  "logout": "Logout"
+}

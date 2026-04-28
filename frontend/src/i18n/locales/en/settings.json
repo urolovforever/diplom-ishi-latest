@@ -1,0 +1,43 @@
+{
+  "page": {
+    "title": "Settings",
+    "description": "Manage your account settings"
+  },
+  "sections": {
+    "password_change": "Change password",
+    "sessions_title": "Sessions"
+  },
+  "info": {
+    "password_reset_message": "A special link to change your password will be sent to your email.",
+    "session_limit": "You can be active on only one device at a time. When you sign in from another device, the previous session must be ended."
+  },
+  "buttons": {
+    "resend_link": "Resend",
+    "send_link": "Send link to email",
+    "sending": "Sending..."
+  },
+  "success": {
+    "link_sent": "Link sent!",
+    "check_email": "A password reset link has been sent to your email. Please check your inbox."
+  },
+  "errors": {
+    "request_failed": "An error occurred. Please try again.",
+    "sessions_load_failed": "Error loading sessions"
+  },
+  "toasts": {
+    "link_sent": "Password reset link sent to your email"
+  },
+  "badges": {
+    "max_sessions": "Max 1 active",
+    "active": "Active"
+  },
+  "empty": {
+    "no_sessions": "No sessions found"
+  },
+  "time": {
+    "just_now": "Just now",
+    "minutes_ago": "{{count}} minutes ago",
+    "hours_ago": "{{count}} hours ago",
+    "days_ago": "{{count}} days ago"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "User management",
+    "user_count": "{{count}} users in total"
+  },
+  "buttons": {
+    "create": "Create",
+    "cancel": "Cancel"
+  },
+  "search": {
+    "placeholder": "Search..."
+  },
+  "badges": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "no_role": "No role"
+  },
+  "actions": {
+    "deactivate": "Deactivate",
+    "activate": "Activate"
+  },
+  "table": {
+    "user": "User",
+    "email": "Email",
+    "role": "Role",
+    "organization": "Organization",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "modals": {
+    "create_title": "Create user",
+    "leader_assignment_note": "This user will be assigned as the leader of the selected {{entity}}"
+  },
+  "form": {
+    "first_name": "First name",
+    "last_name": "Last name",
+    "role_placeholder": "Select a role...",
+    "confession_placeholder": "Select a confession...",
+    "organization_placeholder": "Select an organization...",
+    "confession_label": "Confession",
+    "organization_label": "Organization",
+    "entity_confession": "confession",
+    "entity_organization": "organization"
+  },
+  "errors": {
+    "required_field": "Required field",
+    "role_required": "Select a role",
+    "confession_required": "Select a confession",
+    "organization_required": "Select an organization",
+    "load_failed": "Failed to load users",
+    "update_failed": "Failed to update user",
+    "create_failed": "Failed to create",
+    "load_user_failed": "Failed to load user",
+    "update_user_failed": "Failed to update user"
+  },
+  "toasts": {
+    "user_created": "User created. Email sent.",
+    "user_activated": "User activated",
+    "user_deactivated": "User deactivated",
+    "user_updated": "User updated"
+  },
+  "detail": {
+    "back": "Back",
+    "title": "User details",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "twofa_label": "2FA enabled",
+    "created": "Created",
+    "updated": "Last updated",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "no_role": "No role",
+    "deactivate_button": "Deactivate user",
+    "activate_button": "Activate user"
+  }
+}

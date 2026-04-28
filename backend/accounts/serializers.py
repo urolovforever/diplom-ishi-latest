@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.utils.translation import gettext_lazy as _
 from .models import CustomUser, Role
 from .validators import validate_password_strength
 from .permissions import ROLE_CREATION_MAP, ROLE_ENTITY_MAP
@@ -25,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'role_id', 'is_active', 'is_2fa_enabled',
             'has_public_key', 'confession', 'organization', 'organization_name',
-            'confession_name', 'created_at', 'updated_at',
+            'confession_name', 'language', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -57,9 +58,9 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(email=data['email'], password=data['password'])
         if not user:
-            raise serializers.ValidationError('Invalid email or password.')
+            raise serializers.ValidationError(_('Invalid email or password.'))
         if not user.is_active:
-            raise serializers.ValidationError('User account is disabled.')
+            raise serializers.ValidationError(_('User account is disabled.'))
         data['user'] = user
         return data
 
@@ -75,7 +76,7 @@ class InviteSerializer(serializers.ModelSerializer):
 
     def validate_role_id(self, value):
         if not Role.objects.filter(id=value).exists():
-            raise serializers.ValidationError('Invalid role.')
+            raise serializers.ValidationError(_('Invalid role.'))
         return value
 
     def validate(self, data):
@@ -86,7 +87,7 @@ class InviteSerializer(serializers.ModelSerializer):
             allowed_roles = ROLE_CREATION_MAP.get(creator_role, [])
             if target_role.name not in allowed_roles:
                 raise serializers.ValidationError(
-                    {'role_id': "Siz bu rolda foydalanuvchi yarata olmaysiz."}
+                    {'role_id': _("Siz bu rolda foydalanuvchi yarata olmaysiz.")}
                 )
 
             # Determine entity type for the target role
@@ -102,28 +103,28 @@ class InviteSerializer(serializers.ModelSerializer):
 
                 if not confession_id:
                     raise serializers.ValidationError(
-                        {'confession_id': "Bu rol uchun konfessiya tanlash majburiy."}
+                        {'confession_id': _("Bu rol uchun konfessiya tanlash majburiy.")}
                     )
                 from confessions.models import Confession
                 try:
                     Confession.objects.get(id=confession_id)
                 except Confession.DoesNotExist:
                     raise serializers.ValidationError(
-                        {'confession_id': "Konfessiya topilmadi."}
+                        {'confession_id': _("Konfessiya topilmadi.")}
                     )
 
             elif entity_type == 'organization':
                 organization_id = data.get('organization_id')
                 if not organization_id:
                     raise serializers.ValidationError(
-                        {'organization_id': "Bu rol uchun tashkilot tanlash majburiy."}
+                        {'organization_id': _("Bu rol uchun tashkilot tanlash majburiy.")}
                     )
                 from confessions.models import Organization
                 try:
                     org = Organization.objects.get(id=organization_id)
                 except Organization.DoesNotExist:
                     raise serializers.ValidationError(
-                        {'organization_id': "Tashkilot topilmadi."}
+                        {'organization_id': _("Tashkilot topilmadi.")}
                     )
 
                 # Konfessiya rahbari faqat o'z konfessiyasi ostidagi DT'larga rahbar tayinlay oladi
@@ -132,7 +133,7 @@ class InviteSerializer(serializers.ModelSerializer):
                         and request.user.confession):
                     if org.confession_id != request.user.confession_id:
                         raise serializers.ValidationError(
-                            {'organization_id': "Siz faqat o'z konfessiyangizga tegishli tashkilotlarga rahbar tayinlay olasiz."}
+                            {'organization_id': _("Siz faqat o'z konfessiyangizga tegishli tashkilotlarga rahbar tayinlay olasiz.")}
                         )
 
         return data
@@ -181,7 +182,7 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate_old_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
-            raise serializers.ValidationError('Current password is incorrect.')
+            raise serializers.ValidationError(_('Current password is incorrect.'))
         return value
 
 
@@ -206,7 +207,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name']
+        fields = ['first_name', 'last_name', 'language']
 
 
 class PublicKeySerializer(serializers.Serializer):

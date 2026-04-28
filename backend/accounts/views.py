@@ -5,6 +5,7 @@ import uuid
 import qrcode
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from datetime import timedelta
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -50,7 +51,7 @@ class LoginView(APIView):
             if SecurityManager.check_account_lockout(user):
                 SecurityManager.record_login_attempt(email, ip_address, user_agent, False, user)
                 return Response(
-                    {'detail': 'Account is locked due to multiple failed login attempts. Try again later.'},
+                    {'detail': _('Account is locked due to multiple failed login attempts. Try again later.')},
                     status=status.HTTP_403_FORBIDDEN,
                 )
         except CustomUser.DoesNotExist:
@@ -141,7 +142,7 @@ class Verify2FAView(APIView):
             user = CustomUser.objects.get(id=serializer.validated_data['user_id'])
         except CustomUser.DoesNotExist:
             return Response(
-                {'detail': 'Invalid user.'},
+                {'detail': _('Invalid user.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -155,7 +156,7 @@ class Verify2FAView(APIView):
 
         if not valid:
             return Response(
-                {'detail': 'Invalid 2FA token.'},
+                {'detail': _('Invalid 2FA token.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -215,13 +216,13 @@ class TwoFASetupView(APIView):
         user_id = request.data.get('user_id')
         if not user_id:
             return Response(
-                {'detail': 'user_id is required.'},
+                {'detail': _('user_id is required.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Use consistent error response to prevent user enumeration
         generic_error = Response(
-            {'detail': '2FA setup is not available.'},
+            {'detail': _('2FA setup is not available.')},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -311,7 +312,7 @@ class UserDetailView(AuditMixin, generics.RetrieveUpdateAPIView):
         # Faqat super_admin edit qila oladi
         if request.user.role and request.user.role.name != Role.SUPER_ADMIN:
             return Response(
-                {'detail': "Siz foydalanuvchini tahrirlash huquqiga ega emassiz."},
+                {'detail': _("Siz foydalanuvchini tahrirlash huquqiga ega emassiz.")},
                 status=status.HTTP_403_FORBIDDEN,
             )
         return super().update(request, *args, **kwargs)
@@ -333,7 +334,7 @@ class ChangePasswordView(APIView):
         # Check password history
         if SecurityManager.check_password_history(user, new_password):
             return Response(
-                {'detail': 'Cannot reuse one of your last 5 passwords.'},
+                {'detail': _('Cannot reuse one of your last 5 passwords.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -345,7 +346,7 @@ class ChangePasswordView(APIView):
         user.must_change_password = False
         user.save(update_fields=['password', 'password_changed_at', 'must_change_password'])
 
-        return Response({'detail': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+        return Response({'detail': _('Password changed successfully.')}, status=status.HTTP_200_OK)
 
 
 class PasswordResetRequestView(APIView):
@@ -365,7 +366,7 @@ class PasswordResetRequestView(APIView):
             pass  # Don't reveal whether email exists
 
         return Response(
-            {'detail': 'If an account with that email exists, a reset link has been sent.'},
+            {'detail': _('If an account with that email exists, a reset link has been sent.')},
             status=status.HTTP_200_OK,
         )
 
@@ -383,13 +384,13 @@ class PasswordResetConfirmView(APIView):
             )
         except PasswordResetToken.DoesNotExist:
             return Response(
-                {'detail': 'Invalid or expired token.'},
+                {'detail': _('Invalid or expired token.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if not reset_token.is_valid:
             return Response(
-                {'detail': 'Invalid or expired token.'},
+                {'detail': _('Invalid or expired token.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -409,7 +410,7 @@ class PasswordResetConfirmView(APIView):
         reset_token.save(update_fields=['is_used', 'confirmed_at'])
 
         return Response(
-            {'detail': 'Password has been reset successfully.'},
+            {'detail': _('Password has been reset successfully.')},
             status=status.HTTP_200_OK,
         )
 
@@ -445,7 +446,7 @@ class PublicKeyView(APIView):
             update_fields.append('encrypted_private_key')
 
         user.save(update_fields=update_fields)
-        return Response({'detail': 'Public key saved successfully.'}, status=status.HTTP_200_OK)
+        return Response({'detail': _('Public key saved successfully.')}, status=status.HTTP_200_OK)
 
     def get(self, request):
         user = request.user
@@ -465,11 +466,11 @@ class UserPublicKeyView(APIView):
         try:
             user = CustomUser.objects.get(pk=pk, is_active=True)
         except CustomUser.DoesNotExist:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         if not user.public_key:
             return Response(
-                {'detail': 'User has not set up E2E encryption yet.'},
+                {'detail': _('User has not set up E2E encryption yet.')},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -599,7 +600,7 @@ class SessionRevokeView(APIView):
             )
         except UserSession.DoesNotExist:
             return Response(
-                {'detail': 'Sessiya topilmadi.'},
+                {'detail': _('Sessiya topilmadi.')},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -642,7 +643,7 @@ class SessionRevokeAllView(APIView):
                 pass
 
         count = others.count()
-        return Response({'detail': f'{count} ta sessiya tugatildi.'})
+        return Response({'detail': _("{count} ta sessiya tugatildi.").format(count=count)})
 
 
 class SessionTerminationRequestView(APIView):
@@ -662,7 +663,7 @@ class SessionTerminationRequestView(APIView):
             user = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
             return Response(
-                {'detail': 'Foydalanuvchi topilmadi.'},
+                {'detail': _('Foydalanuvchi topilmadi.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -670,7 +671,7 @@ class SessionTerminationRequestView(APIView):
             session = UserSession.objects.get(id=session_id, user=user, is_active=True)
         except UserSession.DoesNotExist:
             return Response(
-                {'detail': 'Sessiya topilmadi.'},
+                {'detail': _('Sessiya topilmadi.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -693,7 +694,7 @@ class SessionTerminationRequestView(APIView):
         send_session_termination_code.delay(user.email, code)
 
         return Response(
-            {'detail': 'Tasdiqlash kodi emailga yuborildi.'},
+            {'detail': _('Tasdiqlash kodi emailga yuborildi.')},
             status=status.HTTP_200_OK,
         )
 
@@ -713,7 +714,7 @@ class SessionTerminationConfirmView(APIView):
             user = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
             return Response(
-                {'detail': 'Foydalanuvchi topilmadi.'},
+                {'detail': _('Foydalanuvchi topilmadi.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -724,13 +725,13 @@ class SessionTerminationConfirmView(APIView):
             ).latest('created_at')
         except SessionTerminationCode.DoesNotExist:
             return Response(
-                {'detail': 'Noto\'g\'ri kod.'},
+                {'detail': _('Noto\'g\'ri kod.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if not termination_code.is_valid:
             return Response(
-                {'detail': 'Kod muddati tugagan. Qayta urinib ko\'ring.'},
+                {'detail': _('Kod muddati tugagan. Qayta urinib ko\'ring.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

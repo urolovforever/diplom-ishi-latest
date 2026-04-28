@@ -1,0 +1,102 @@
+{
+  "page": {
+    "title": "Панель администратора",
+    "description": "Общее состояние безопасности платформы"
+  },
+  "tabs": {
+    "active_users": "Активные пользователи",
+    "login_history": "История входов",
+    "security_status": "Состояние безопасности",
+    "ip_management": "Управление IP",
+    "top_users": "Самые активные пользователи",
+    "document_stats": "Статистика документов"
+  },
+  "cards": {
+    "online_users": "Пользователи онлайн",
+    "successful_24h": "Успешные (24ч)",
+    "failed_24h": "Неудачные (24ч)",
+    "total_users": "Всего пользователей",
+    "two_fa_enabled": "2FA включена",
+    "two_fa_disabled": "2FA отключена",
+    "password_expired": "Срок пароля истёк",
+    "locked": "Заблокированы",
+    "e2e_keys": "Ключи E2E",
+    "total_documents": "Всего документов",
+    "e2e_encrypted": "E2E зашифрованных",
+    "secret": "Секретные (secret)",
+    "confidential": "Конфиденциальные"
+  },
+  "sections": {
+    "active_sessions": "Активные сессии (за последние 30 минут)",
+    "last_50_logins": "Последние 50 попыток входа",
+    "two_fa_coverage": "Покрытие 2FA",
+    "two_fa_coverage_info": "{{enabled}} / {{total}} пользователей с включённой 2FA",
+    "add_ip_restriction": "Добавить ограничение IP",
+    "ip_restrictions_list": "Список ограничений IP",
+    "ip_management": "Управление IP",
+    "top_users_24h": "Самые активные пользователи (за 24 часа)",
+    "recent_downloads": "Последние загрузки",
+    "most_accessed_documents": "Самые просматриваемые документы",
+    "by_security_level": "По уровню безопасности"
+  },
+  "empty": {
+    "no_active_users": "Сейчас нет активных пользователей",
+    "no_ip_restrictions": "Ограничений IP нет",
+    "no_data": "Нет данных",
+    "no_downloads": "Загрузок нет"
+  },
+  "table": {
+    "user": "Пользователь",
+    "role": "Роль",
+    "ip": "IP",
+    "last_activity": "Последняя активность",
+    "email": "Email",
+    "status": "Статус",
+    "time": "Время",
+    "date": "Дата",
+    "action_column": "Действие",
+    "model": "Модель",
+    "object_id": "ID объекта",
+    "ip_address": "IP-адрес",
+    "document": "Документ",
+    "created_by": "Создал",
+    "reason": "Причина"
+  },
+  "badges": {
+    "ok": "OK",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "fail": "Неудача"
+  },
+  "form": {
+    "ip_address": "IP-адрес",
+    "list_type": "Тип",
+    "reason": "Причина",
+    "reason_placeholder": "Необязательная причина..."
+  },
+  "filters": {
+    "blacklist": "Blacklist",
+    "whitelist": "Whitelist"
+  },
+  "buttons": {
+    "add_ip": "Добавить",
+    "adding_ip": "Добавление...",
+    "reload": "Перезагрузить"
+  },
+  "info": {
+    "ip_reason": "Причина: {{reason}}"
+  },
+  "errors": {
+    "load_failed": "Произошла ошибка при загрузке данных.",
+    "ip_delete_failed": "Ошибка при удалении ограничения IP.",
+    "ip_create_failed": "Ошибка при добавлении ограничения IP.",
+    "audit_load_failed": "Ошибка при загрузке журнала аудита."
+  },
+  "columns": {
+    "requests": "Запросы",
+    "downloads": "Загрузки",
+    "errors": "Ошибки",
+    "views": "Просмотры",
+    "level": "Уровень"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "page": {
+    "title": "AI Панель безопасности",
+    "description": "Обнаружение угроз в реальном времени с помощью искусственного интеллекта"
+  },
+  "buttons": {
+    "scan": "Сканировать",
+    "scanning": "Сканирование...",
+    "resolve": "Разрешить",
+    "false_positive": "Ложное срабатывание"
+  },
+  "cards": {
+    "total_anomalies": "Всего аномалий",
+    "unreviewed": "Не рассмотрено",
+    "resolved": "Разрешено",
+    "critical": "Критические"
+  },
+  "errors": {
+    "dashboard_load_failed": "Ошибка при загрузке данных панели.",
+    "scan_failed": "Ошибка при запуске сканирования.",
+    "review_failed": "Ошибка при обработке аномалии."
+  },
+  "sections": {
+    "model_status": "Состояние модели",
+    "anomaly_score": "Оценка аномалии",
+    "ai_explanation": "Объяснение AI"
+  },
+  "form": {
+    "name": "Название",
+    "last_trained": "Последнее обучение",
+    "never_trained": "Никогда",
+    "training_samples": "Образцы",
+    "threshold": "Порог"
+  },
+  "table": {
+    "title": "Последние аномалии",
+    "user": "Пользователь",
+    "severity": "Уровень",
+    "score": "Оценка",
+    "detected": "Обнаружено",
+    "status": "Статус",
+    "actions": "Действия"
+  },
+  "actions": {
+    "resolve": "Разрешить",
+    "false_positive": "Ложное срабатывание",
+    "view_details": "Подробнее"
+  },
+  "badges": {
+    "resolved": "Разрешено",
+    "pending": "Ожидает"
+  },
+  "empty": {
+    "no_anomalies": "Аномалии не обнаружены",
+    "no_explanation": "Данные объяснения AI отсутствуют"
+  },
+  "modal": {
+    "title": "Подробности аномалии"
+  },
+  "info": {
+    "already_resolved": "Эта аномалия уже разрешена"
+  }
+}

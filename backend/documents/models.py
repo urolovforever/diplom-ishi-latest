@@ -1,22 +1,23 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
 class Document(models.Model):
     SECURITY_LEVELS = [
-        ('public', 'Public'),
-        ('internal', 'Internal'),
-        ('confidential', 'Confidential'),
-        ('secret', 'Secret'),
+        ('public', _('Public')),
+        ('internal', _('Internal')),
+        ('confidential', _('Confidential')),
+        ('secret', _('Secret')),
     ]
 
     # TZ: Document categories
     CATEGORIES = [
-        ('registration', "Ro'yxatga olish hujjatlari"),
-        ('reports', 'Hisobotlar'),
-        ('normative', "Me'yoriy hujjatlar"),
-        ('confidential', 'Maxfiy hujjatlar'),
+        ('registration', _("Ro'yxatga olish hujjatlari")),
+        ('reports', _('Hisobotlar')),
+        ('normative', _("Me'yoriy hujjatlar")),
+        ('confidential', _('Maxfiy hujjatlar')),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

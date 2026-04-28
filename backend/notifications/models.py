@@ -1,14 +1,15 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
 class Notification(models.Model):
     TYPE_CHOICES = [
-        ('info', 'Info'),
-        ('warning', 'Warning'),
-        ('alert', 'Alert'),
-        ('system', 'System'),
+        ('info', _('Info')),
+        ('warning', _('Warning')),
+        ('alert', _('Alert')),
+        ('system', _('System')),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { checkKeyStatus, uploadPublicKey } from '../../store/cryptoSlice';
 import { generateKeyPair, storePrivateKey } from '../../utils/crypto';
 import PasswordInput from '../ui/PasswordInput';
 import { Shield, Key } from 'lucide-react';
 
 function KeySetup({ children, onComplete }) {
+  const { t } = useTranslation('auth');
   const dispatch = useDispatch();
   const { keyPairGenerated, loading } = useSelector((state) => state.crypto);
   const { token } = useSelector((state) => state.auth);
@@ -27,7 +29,7 @@ function KeySetup({ children, onComplete }) {
       <div className="flex items-center justify-center min-h-screen bg-surface">
         <div className="text-center">
           <Key size={32} className="mx-auto mb-3 text-primary-light animate-pulse-dot" />
-          <p className="text-text-secondary">Shifrlash kalitlari tekshirilmoqda...</p>
+          <p className="text-text-secondary">{t('keysetup.checking')}</p>
         </div>
       </div>
     );
@@ -40,27 +42,27 @@ function KeySetup({ children, onComplete }) {
   const handleGenerate = async () => {
     setError(null);
     if (!password || password.length < 12) {
-      setError("Parol kamida 12 ta belgidan iborat bo'lishi kerak.");
+      setError(t('keysetup.errors.min_length'));
       return;
     }
     if (!/[A-Z]/.test(password)) {
-      setError("Parolda kamida 1 ta katta harf bo'lishi kerak.");
+      setError(t('keysetup.errors.uppercase'));
       return;
     }
     if (!/[a-z]/.test(password)) {
-      setError("Parolda kamida 1 ta kichik harf bo'lishi kerak.");
+      setError(t('keysetup.errors.lowercase'));
       return;
     }
     if (!/[0-9]/.test(password)) {
-      setError("Parolda kamida 1 ta raqam bo'lishi kerak.");
+      setError(t('keysetup.errors.number'));
       return;
     }
     if (!/[^A-Za-z0-9]/.test(password)) {
-      setError("Parolda kamida 1 ta maxsus belgi bo'lishi kerak (!@#$%^&*).");
+      setError(t('keysetup.errors.special_char'));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Parollar mos kelmaydi.");
+      setError(t('keysetup.errors.mismatch'));
       return;
     }
 
@@ -79,7 +81,7 @@ function KeySetup({ children, onComplete }) {
       setSuccess(true);
       onComplete?.();
     } catch (err) {
-      setError(err.message || "Kalit generatsiyasi muvaffaqiyatsiz tugadi.");
+      setError(err.message || t('keysetup.errors.min_length'));
     } finally {
       setGenerating(false);
     }
@@ -92,10 +94,9 @@ function KeySetup({ children, onComplete }) {
           <div className="w-14 h-14 bg-primary-light/10 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Shield size={28} className="text-primary-light" />
           </div>
-          <h2 className="text-xl font-bold text-text-primary">E2E shifrlash sozlamalari</h2>
+          <h2 className="text-xl font-bold text-text-primary">{t('keysetup.title')}</h2>
           <p className="text-sm text-text-secondary mt-2">
-            Konfessiyalaringizni himoya qilish uchun noyob shifrlash kaliti juftligini yaratishimiz kerak.
-            Maxfiy kalitingiz parol bilan shifrlangan holda brauzeringizda saqlanadi.
+            {t('keysetup.description')}
           </p>
         </div>
 
@@ -107,22 +108,22 @@ function KeySetup({ children, onComplete }) {
           <PasswordInput
             value={password}
             onChange={setPassword}
-            label="Shifrlash paroli"
+            label={t('keysetup.password_label')}
             id="encryption-password"
-            placeholder="Kamida 12 ta belgi"
+            placeholder={t('keysetup.password_placeholder')}
             showGenerator={true}
             showRequirements={true}
           />
 
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1.5">
-              Parolni tasdiqlash
+              {t('keysetup.confirm_password_label')}
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Parolni qayta kiriting"
+              placeholder={t('keysetup.confirm_password_placeholder')}
               className="input-field"
             />
           </div>
@@ -133,11 +134,11 @@ function KeySetup({ children, onComplete }) {
             className="btn-primary w-full flex items-center justify-center gap-2"
           >
             <Key size={18} />
-            {generating ? 'Kalitlar yaratilmoqda...' : 'Shifrlash kalitlarini yaratish'}
+            {generating ? t('keysetup.generate_loading') : t('keysetup.generate_button')}
           </button>
 
           <p className="text-xs text-text-secondary text-center">
-            Bu parolni eslab qoling — yangi qurilmalarda konfessiyalarni ochish uchun kerak bo'ladi.
+            {t('keysetup.password_reminder')}
           </p>
         </div>
       </div>

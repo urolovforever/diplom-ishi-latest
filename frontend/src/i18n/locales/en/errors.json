@@ -1,0 +1,12 @@
+{
+  "not_found": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or has been moved",
+    "home_link": "Return to home"
+  },
+  "boundary": {
+    "title": "An unexpected error occurred",
+    "description": "Try refreshing the page.",
+    "reload_button": "Refresh page"
+  }
+}

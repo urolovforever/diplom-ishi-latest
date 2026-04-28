@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import authAPI from '../api/authAPI';
 import Badge from '../components/ui/Badge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { addToast } from '../store/uiSlice';
 
 function UserDetailPage() {
+  const { t } = useTranslation('users');
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -26,22 +28,22 @@ function UserDetailPage() {
           is_active: res.data.is_active,
         });
       } catch {
-        dispatch(addToast({ type: 'error', message: 'Failed to load user' }));
+        dispatch(addToast({ type: 'error', message: t('errors.load_user_failed') }));
         navigate('/users');
       }
       setLoading(false);
     };
     fetchUser();
-  }, [id, dispatch, navigate]);
+  }, [id, dispatch, navigate, t]);
 
   const handleSave = async () => {
     try {
       const res = await authAPI.updateUser(id, form);
       setUser(res.data);
       setEditing(false);
-      dispatch(addToast({ type: 'success', message: 'User updated' }));
+      dispatch(addToast({ type: 'success', message: t('toasts.user_updated') }));
     } catch {
-      dispatch(addToast({ type: 'error', message: 'Failed to update user' }));
+      dispatch(addToast({ type: 'error', message: t('errors.update_user_failed') }));
     }
   };
 
@@ -51,10 +53,10 @@ function UserDetailPage() {
       setUser(res.data);
       dispatch(addToast({
         type: 'success',
-        message: `User ${user.is_active ? 'deactivated' : 'activated'}`,
+        message: user.is_active ? t('toasts.user_deactivated') : t('toasts.user_activated'),
       }));
     } catch {
-      dispatch(addToast({ type: 'error', message: 'Failed to update user' }));
+      dispatch(addToast({ type: 'error', message: t('errors.update_user_failed') }));
     }
   };
 
@@ -76,9 +78,9 @@ function UserDetailPage() {
             onClick={() => navigate('/users')}
             className="text-gray-500 hover:text-gray-700"
           >
-            &larr; Back
+            &larr; {t('detail.back')}
           </button>
-          <h1 className="text-2xl font-bold">User Details</h1>
+          <h1 className="text-2xl font-bold">{t('detail.title')}</h1>
         </div>
         <div className="flex space-x-2">
           {editing ? (
@@ -87,13 +89,13 @@ function UserDetailPage() {
                 onClick={() => setEditing(false)}
                 className="px-4 py-2 border rounded hover:bg-gray-50"
               >
-                Cancel
+                {t('detail.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
-                Save
+                {t('detail.save')}
               </button>
             </>
           ) : (
@@ -101,7 +103,7 @@ function UserDetailPage() {
               onClick={() => setEditing(true)}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Edit
+              {t('detail.edit')}
             </button>
           )}
         </div>
@@ -110,7 +112,7 @@ function UserDetailPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">First Name</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.first_name')}</label>
             {editing ? (
               <input
                 type="text"
@@ -123,7 +125,7 @@ function UserDetailPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.last_name')}</label>
             {editing ? (
               <input
                 type="text"
@@ -136,37 +138,37 @@ function UserDetailPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.email')}</label>
             <p className="text-lg">{user.email}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Role</label>
-            <Badge variant="info">{user.role?.name || 'No role'}</Badge>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.role')}</label>
+            <Badge variant="info">{user.role?.name || t('detail.no_role')}</Badge>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.status')}</label>
             <Badge variant={user.is_active ? 'success' : 'danger'}>
-              {user.is_active ? 'Active' : 'Inactive'}
+              {user.is_active ? t('detail.active') : t('detail.inactive')}
             </Badge>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">2FA Enabled</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.twofa_label')}</label>
             <Badge variant={user.is_2fa_enabled ? 'success' : 'warning'}>
-              {user.is_2fa_enabled ? 'Enabled' : 'Disabled'}
+              {user.is_2fa_enabled ? t('detail.enabled') : t('detail.disabled')}
             </Badge>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Created</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.created')}</label>
             <p className="text-lg">{new Date(user.created_at).toLocaleDateString()}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
+            <label className="block text-sm font-medium text-gray-500 mb-1">{t('detail.updated')}</label>
             <p className="text-lg">{new Date(user.updated_at).toLocaleDateString()}</p>
           </div>
         </div>
 
         <div className="mt-6 pt-6 border-t">
-          <h3 className="text-lg font-semibold mb-4">Actions</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('detail.actions')}</h3>
           <button
             onClick={handleToggleActive}
             className={`px-4 py-2 rounded text-white ${
@@ -175,7 +177,7 @@ function UserDetailPage() {
                 : 'bg-green-500 hover:bg-green-600'
             }`}
           >
-            {user.is_active ? 'Deactivate User' : 'Activate User'}
+            {user.is_active ? t('detail.deactivate_button') : t('detail.activate_button')}
           </button>
         </div>
       </div>

@@ -1,0 +1,102 @@
+{
+  "page": {
+    "title": "Admin panel",
+    "description": "Overall platform security status"
+  },
+  "tabs": {
+    "active_users": "Active users",
+    "login_history": "Login history",
+    "security_status": "Security status",
+    "ip_management": "IP management",
+    "top_users": "Top users",
+    "document_stats": "Document statistics"
+  },
+  "cards": {
+    "online_users": "Online users",
+    "successful_24h": "Successful (24h)",
+    "failed_24h": "Failed (24h)",
+    "total_users": "Total users",
+    "two_fa_enabled": "2FA enabled",
+    "two_fa_disabled": "2FA disabled",
+    "password_expired": "Password expired",
+    "locked": "Locked",
+    "e2e_keys": "E2E keys",
+    "total_documents": "Total documents",
+    "e2e_encrypted": "E2E encrypted",
+    "secret": "Secret",
+    "confidential": "Confidential"
+  },
+  "sections": {
+    "active_sessions": "Active sessions (within last 30 minutes)",
+    "last_50_logins": "Last 50 login attempts",
+    "two_fa_coverage": "2FA coverage",
+    "two_fa_coverage_info": "{{enabled}} / {{total}} users have 2FA enabled",
+    "add_ip_restriction": "Add new IP restriction",
+    "ip_restrictions_list": "IP restrictions list",
+    "ip_management": "IP management",
+    "top_users_24h": "Top users (last 24 hours)",
+    "recent_downloads": "Recent downloads",
+    "most_accessed_documents": "Most accessed documents",
+    "by_security_level": "By security level"
+  },
+  "empty": {
+    "no_active_users": "No active users right now",
+    "no_ip_restrictions": "No IP restrictions",
+    "no_data": "No data",
+    "no_downloads": "No downloads"
+  },
+  "table": {
+    "user": "User",
+    "role": "Role",
+    "ip": "IP",
+    "last_activity": "Last activity",
+    "email": "Email",
+    "status": "Status",
+    "time": "Time",
+    "date": "Date",
+    "action_column": "Action",
+    "model": "Model",
+    "object_id": "Object ID",
+    "ip_address": "IP address",
+    "document": "Document",
+    "created_by": "Created by",
+    "reason": "Reason"
+  },
+  "badges": {
+    "ok": "OK",
+    "error": "Error",
+    "success": "Success",
+    "fail": "Failed"
+  },
+  "form": {
+    "ip_address": "IP address",
+    "list_type": "Type",
+    "reason": "Reason",
+    "reason_placeholder": "Optional reason..."
+  },
+  "filters": {
+    "blacklist": "Blacklist",
+    "whitelist": "Whitelist"
+  },
+  "buttons": {
+    "add_ip": "Add",
+    "adding_ip": "Adding...",
+    "reload": "Reload"
+  },
+  "info": {
+    "ip_reason": "Reason: {{reason}}"
+  },
+  "errors": {
+    "load_failed": "An error occurred while loading data.",
+    "ip_delete_failed": "Error deleting IP restriction.",
+    "ip_create_failed": "Error adding IP restriction.",
+    "audit_load_failed": "Error loading audit log."
+  },
+  "columns": {
+    "requests": "Requests",
+    "downloads": "Downloads",
+    "errors": "Errors",
+    "views": "Views",
+    "level": "Level"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "page": {
+    "title": "Bildirishnomalar"
+  },
+  "buttons": {
+    "mark_all_read": "Hammasini o'qilgan deb belgilash"
+  },
+  "filters": {
+    "all": "Barchasi",
+    "unread": "O'qilmagan",
+    "read": "O'qilgan"
+  },
+  "empty": {
+    "no_notifications": "Bildirishnomalar yo'q"
+  },
+  "info": {
+    "total_count": "Jami {{count}} ta bildirishnoma"
+  },
+  "actions": {
+    "mark_read": "O'qilgan deb belgilash",
+    "delete": "O'chirish"
+  }
+}

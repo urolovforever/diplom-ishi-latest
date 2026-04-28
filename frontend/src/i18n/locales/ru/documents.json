@@ -1,0 +1,88 @@
+{
+  "setup": {
+    "title": "Настройка E2E-шифрования",
+    "skip_button": "Пропустить пока"
+  },
+  "page": {
+    "title": "Документы",
+    "description": "Отправка и получение документов"
+  },
+  "buttons": {
+    "upload": "Загрузить",
+    "cancel": "Отмена",
+    "decrypt": "Открыть"
+  },
+  "tabs": {
+    "sent": "Отправленные",
+    "received": "Полученные"
+  },
+  "search": {
+    "placeholder": "Поиск по названию..."
+  },
+  "filters": {
+    "all_organizations": "Все организации",
+    "all_users": "Все пользователи",
+    "clear": "Очистить",
+    "no_results": "Ничего не найдено"
+  },
+  "badges": {
+    "new": "Новый",
+    "confession_type": "Конфессия"
+  },
+  "info": {
+    "total_count": "Всего {{count}} документов",
+    "e2e_encrypted": "Документ будет загружен с E2E-шифрованием"
+  },
+  "empty": {
+    "search_results": "По вашему запросу ничего не найдено",
+    "sent": "Отправленные документы не найдены",
+    "received": "Полученные документы не найдены"
+  },
+  "table": {
+    "name": "Название",
+    "organization": "Организация",
+    "user": "Пользователь",
+    "date": "Дата",
+    "actions": "Действия"
+  },
+  "actions": {
+    "download": "Скачать",
+    "delete": "Удалить"
+  },
+  "dialogs": {
+    "confirm_delete": "Вы действительно хотите удалить этот документ?"
+  },
+  "errors": {
+    "missing_iv": "Ключ шифрования (IV) для этого документа не найден. Файл невозможно открыть.",
+    "upload_failed": "Ошибка загрузки: {{error}}",
+    "decrypt_failed": "Ошибка расшифровки. Проверьте Ваш пароль."
+  },
+  "modals": {
+    "decrypt_title": "Пароль E2E-шифрования",
+    "decrypt_message": "Чтобы открыть документ, введите Ваш пароль E2E-шифрования (заданный в KeySetup):",
+    "upload_title": "Загрузка документа",
+    "upload_button": "Загрузить",
+    "upload_loading": "Загрузка..."
+  },
+  "form": {
+    "password_label": "Пароль",
+    "password_placeholder": "Введите пароль...",
+    "description_label": "Описание",
+    "description_placeholder": "Краткое описание...",
+    "send_to": "Кому отправить",
+    "select_confession": "Выберите конфессию...",
+    "recipient_search_empty": "Сначала выберите конфессию или введите название...",
+    "recipient_search_filled": "Введите название организации..."
+  },
+  "upload": {
+    "drag_message": "Перетащите файл сюда или",
+    "select_file": "выберите файл"
+  },
+  "sections": {
+    "confessions": "Конфессии",
+    "organizations": "Религиозные организации"
+  },
+  "warnings": {
+    "e2e_not_setup": "E2E-шифрование не настроено. При нажатии кнопки «Загрузить» откроется страница настройки."
+  }
+}

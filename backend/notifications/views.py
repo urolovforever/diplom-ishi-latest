@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -43,7 +44,7 @@ class MarkReadView(APIView):
         elif serializer.validated_data.get('ids'):
             count = qs.filter(id__in=serializer.validated_data['ids']).update(is_read=True)
         else:
-            return Response({'detail': 'Provide "ids" or "all": true.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': _('Provide "ids" or "all": true.')}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'marked_read': count})
 
@@ -98,7 +99,7 @@ class TelegramConfigView(APIView):
             config = TelegramConfig.objects.get(user=request.user)
             return Response(TelegramConfigSerializer(config).data)
         except TelegramConfig.DoesNotExist:
-            return Response({'detail': 'Not configured.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Not configured.')}, status=status.HTTP_404_NOT_FOUND)
 
     def put(self, request):
         config, created = TelegramConfig.objects.get_or_create(

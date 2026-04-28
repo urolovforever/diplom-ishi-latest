@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { setSidebarOpen } from '../../store/uiSlice';
 import {
   LayoutDashboard,
@@ -18,22 +19,23 @@ import {
 import { getInitials } from '../../utils/helpers';
 
 const navItems = [
-  { path: '/', label: 'Bosh sahifa', icon: LayoutDashboard, roles: null },
-  { path: '/documents', label: 'Hujjatlar', icon: FileText, roles: null },
-  { path: '/organizations', label: 'Tashkilotlar', icon: Building2, roles: null },
-  { path: '/notifications', label: 'Bildirishnomalar', icon: Bell, roles: null },
-  { path: '/admin-panel', label: 'Admin panel', icon: Monitor, roles: ['super_admin'] },
-  { path: '/ai-dashboard', label: 'AI Xavfsizlik', icon: ShieldCheck, roles: ['super_admin'] },
-  { path: '/audit-log', label: 'Audit jurnali', icon: ScrollText, roles: ['super_admin'] },
-  { path: '/users', label: 'Foydalanuvchilar', icon: Users, roles: ['super_admin', 'konfessiya_rahbari', 'dt_rahbar'] },
-  { path: '/profile', label: 'Profil', icon: User, roles: null },
-  { path: '/settings', label: 'Sozlamalar', icon: Settings, roles: null },
+  { path: '/', labelKey: 'dashboard', icon: LayoutDashboard, roles: null },
+  { path: '/documents', labelKey: 'documents', icon: FileText, roles: null },
+  { path: '/organizations', labelKey: 'organizations', icon: Building2, roles: null },
+  { path: '/notifications', labelKey: 'notifications', icon: Bell, roles: null },
+  { path: '/admin-panel', labelKey: 'admin', icon: Monitor, roles: ['super_admin'] },
+  { path: '/ai-dashboard', labelKey: 'ai_security', icon: ShieldCheck, roles: ['super_admin'] },
+  { path: '/audit-log', labelKey: 'audit', icon: ScrollText, roles: ['super_admin'] },
+  { path: '/users', labelKey: 'users', icon: Users, roles: ['super_admin', 'konfessiya_rahbari', 'dt_rahbar'] },
+  { path: '/profile', labelKey: 'profile', icon: User, roles: null },
+  { path: '/settings', labelKey: 'settings', icon: Settings, roles: null },
 ];
 
 function Sidebar() {
   const user = useSelector((state) => state.auth.user);
   const { sidebarOpen, sidebarCollapsed } = useSelector((state) => state.ui);
   const dispatch = useDispatch();
+  const { t } = useTranslation('nav');
   const userRole = user?.role?.name;
 
   const filteredItems = navItems.filter(
@@ -101,7 +103,7 @@ function Sidebar() {
                     }
                   >
                     <Icon size={19} className="flex-shrink-0" />
-                    {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                    {!sidebarCollapsed && <span className="truncate">{t(item.labelKey)}</span>}
                   </NavLink>
                 </li>
               );

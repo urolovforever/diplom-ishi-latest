@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { fetchDashboardStats } from '../store/confessionsSlice';
 import { usePermission } from '../hooks/usePermission';
 import StatCard from '../components/dashboard/StatCard';
@@ -8,22 +9,8 @@ import RecentAlerts from '../components/dashboard/RecentAlerts';
 import RecentDocumentsTable from '../components/dashboard/RecentDocumentsTable';
 import { FileText, Bell, Building2, Users, ShieldAlert, AlertTriangle } from 'lucide-react';
 
-const ROLE_LABELS = {
-  super_admin: 'Super Admin',
-  konfessiya_rahbari: 'Konfessiya Rahbari',
-  konfessiya_xodimi: 'Konfessiya Xodimi',
-  dt_rahbar: 'DT Rahbari',
-  dt_xodimi: 'DT Xodimi',
-};
-
-const CATEGORY_LABELS = {
-  registration: "Ro'yxatga olish",
-  reports: 'Hisobotlar',
-  normative: "Me'yoriy",
-  confidential: 'Maxfiy',
-};
-
 function DashboardPage() {
+  const { t } = useTranslation('dashboard');
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { stats } = useSelector((state) => state.confessions);
@@ -38,28 +25,28 @@ function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Bosh sahifa</h1>
+        <h1 className="text-2xl font-bold text-text-primary">{t('page.title')}</h1>
         <p className="text-sm text-text-secondary mt-1">
-          Xush kelibsiz, {user?.first_name || 'Foydalanuvchi'}!
+          {t('page.welcome', { name: user?.first_name || t('page.default_user') })}
         </p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard
-          title="Hujjatlar"
+          title={t('cards.documents')}
           value={stats?.documents}
           icon={FileText}
           color="green"
         />
         <StatCard
-          title="O'qilmagan xabarlar"
+          title={t('cards.unread_notifications')}
           value={stats?.notifications}
           icon={Bell}
           color="yellow"
         />
         <StatCard
-          title="Tashkilotlar"
+          title={t('cards.organizations')}
           value={stats?.organizations}
           icon={Building2}
           color="purple"
@@ -70,26 +57,26 @@ function DashboardPage() {
       {isAdmin && stats?.total_users !== undefined && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard
-            title="Jami foydalanuvchilar"
+            title={t('cards.total_users')}
             value={stats.total_users}
             icon={Users}
             color="blue"
           />
           <StatCard
-            title="AI anomaliyalar"
+            title={t('cards.ai_anomalies')}
             value={stats.anomalies_total}
             icon={ShieldAlert}
             color="red"
           />
           <StatCard
-            title="Hal qilinmagan"
+            title={t('cards.unresolved')}
             value={stats.anomalies_unresolved}
             icon={AlertTriangle}
             color="yellow"
             pulsating={stats.anomalies_critical > 0}
           />
           <StatCard
-            title="Kritik anomaliyalar"
+            title={t('cards.critical_anomalies')}
             value={stats.anomalies_critical}
             icon={AlertTriangle}
             color="red"
@@ -104,12 +91,12 @@ function DashboardPage() {
         {/* Confessions breakdown */}
         {isAdmin && stats?.confessions && Object.keys(stats.confessions).length > 0 && (
           <div className="card p-5">
-            <h3 className="text-sm font-semibold text-text-primary mb-3">Konfessiyalar</h3>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">{t('sections.confessions')}</h3>
             <div className="space-y-2">
               {Object.entries(stats.confessions).map(([name, count]) => (
                 <div key={name} className="flex justify-between items-center">
                   <span className="text-sm text-text-secondary">{name}</span>
-                  <span className="text-sm font-semibold text-text-primary">{count} tashkilot</span>
+                  <span className="text-sm font-semibold text-text-primary">{t('cards.organization_count', { count })}</span>
                 </div>
               ))}
             </div>
@@ -123,11 +110,11 @@ function DashboardPage() {
           {/* Document categories */}
           {stats?.document_categories && Object.keys(stats.document_categories).length > 0 && (
             <div className="card p-5">
-              <h3 className="text-sm font-semibold text-text-primary mb-3">Hujjat kategoriyalari</h3>
+              <h3 className="text-sm font-semibold text-text-primary mb-3">{t('sections.document_categories')}</h3>
               <div className="space-y-2">
                 {Object.entries(stats.document_categories).map(([cat, count]) => (
                   <div key={cat} className="flex justify-between items-center">
-                    <span className="text-sm text-text-secondary">{CATEGORY_LABELS[cat] || cat}</span>
+                    <span className="text-sm text-text-secondary">{t(`categories.${cat}`, { defaultValue: cat })}</span>
                     <span className="text-sm font-semibold text-text-primary">{count}</span>
                   </div>
                 ))}
@@ -138,11 +125,11 @@ function DashboardPage() {
           {/* Users by role */}
           {stats?.users_by_role && Object.keys(stats.users_by_role).length > 0 && (
             <div className="card p-5">
-              <h3 className="text-sm font-semibold text-text-primary mb-3">Rollar bo'yicha</h3>
+              <h3 className="text-sm font-semibold text-text-primary mb-3">{t('sections.by_role')}</h3>
               <div className="space-y-2">
                 {Object.entries(stats.users_by_role).map(([role, count]) => (
                   <div key={role} className="flex justify-between items-center">
-                    <span className="text-sm text-text-secondary">{ROLE_LABELS[role] || role}</span>
+                    <span className="text-sm text-text-secondary">{t(`roles.${role}`, { defaultValue: role })}</span>
                     <span className="text-sm font-semibold text-text-primary">{count}</span>
                   </div>
                 ))}

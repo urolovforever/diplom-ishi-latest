@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { X, User, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 function ExplainPanel({ anomaly, features = {}, onClose, onResolve, onMarkFalsePositive }) {
+  const { t } = useTranslation('ai');
   const entries = Object.entries(features)
     .filter(([key]) => !key.startsWith('_'))
     .sort(([, a], [, b]) => {
@@ -29,7 +31,7 @@ function ExplainPanel({ anomaly, features = {}, onClose, onResolve, onMarkFalseP
       <div className="relative bg-white rounded-card shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto animate-scale-in">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-card">
-          <h2 className="text-lg font-bold text-text-primary">Anomaliya tafsilotlari</h2>
+          <h2 className="text-lg font-bold text-text-primary">{t('modal.title')}</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
             <X size={20} className="text-text-secondary" />
           </button>
@@ -55,13 +57,13 @@ function ExplainPanel({ anomaly, features = {}, onClose, onResolve, onMarkFalseP
             <p className={`text-5xl font-bold ${scoreColor}`}>
               {score.toFixed(4)}
             </p>
-            <p className="text-sm text-text-secondary mt-1">Anomaliya bali</p>
+            <p className="text-sm text-text-secondary mt-1">{t('sections.anomaly_score')}</p>
           </div>
 
           {/* Feature bars */}
           {entries.length > 0 ? (
             <div>
-              <h3 className="text-sm font-semibold text-text-primary mb-3">AI tushuntirishi</h3>
+              <h3 className="text-sm font-semibold text-text-primary mb-3">{t('sections.ai_explanation')}</h3>
               <div className="space-y-3">
                 {entries.map(([key, val]) => {
                   const value = typeof val === 'object' ? val.value : val;
@@ -91,7 +93,7 @@ function ExplainPanel({ anomaly, features = {}, onClose, onResolve, onMarkFalseP
               </div>
             </div>
           ) : (
-            <p className="text-sm text-text-secondary text-center">AI tushuntirish ma'lumotlari mavjud emas</p>
+            <p className="text-sm text-text-secondary text-center">{t('empty.no_explanation')}</p>
           )}
 
           {/* Action buttons */}
@@ -102,18 +104,18 @@ function ExplainPanel({ anomaly, features = {}, onClose, onResolve, onMarkFalseP
                 className="btn-primary flex-1 flex items-center justify-center gap-2"
               >
                 <ShieldCheck size={18} />
-                Hal qilish
+                {t('buttons.resolve')}
               </button>
               <button
                 onClick={handleFalsePositive}
                 className="btn-secondary flex-1"
               >
-                Yolg'on ijobiy
+                {t('buttons.false_positive')}
               </button>
             </div>
           )}
           {anomaly?.is_resolved && (
-            <p className="text-sm text-success text-center font-medium">Bu anomaliya allaqachon hal qilingan</p>
+            <p className="text-sm text-success text-center font-medium">{t('info.already_resolved')}</p>
           )}
         </div>
       </div>

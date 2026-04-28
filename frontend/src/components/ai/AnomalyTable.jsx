@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../utils/helpers';
 import { Eye, CheckCircle, XCircle } from 'lucide-react';
 
@@ -9,12 +10,13 @@ const severityConfig = {
 };
 
 function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDetail }) {
+  const { t } = useTranslation('ai');
   return (
     <>
       {/* Mobile card view */}
       <div className="space-y-3 md:hidden">
         <div className="px-1">
-          <h3 className="text-sm font-semibold text-text-primary">So'nggi anomaliyalar</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{t('table.title')}</h3>
         </div>
         {anomalies.map((a) => (
           <div key={a.id} className="card p-4">
@@ -28,23 +30,23 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
                 <span>{formatDate(a.detected_at)}</span>
               </div>
               {a.is_resolved ? (
-                <span className="badge-success">Hal qilingan</span>
+                <span className="badge-success">{t('badges.resolved')}</span>
               ) : (
-                <span className="badge-danger">Kutilmoqda</span>
+                <span className="badge-danger">{t('badges.pending')}</span>
               )}
             </div>
             <div className="flex items-center gap-1">
               {onViewDetail && (
-                <button onClick={() => onViewDetail(a)} className="p-1.5 text-primary-light hover:bg-blue-50 rounded-lg transition-colors" title="Batafsil">
+                <button onClick={() => onViewDetail(a)} className="p-1.5 text-primary-light hover:bg-blue-50 rounded-lg transition-colors" title={t('actions.view_details')}>
                   <Eye size={16} />
                 </button>
               )}
               {!a.is_resolved && (
                 <>
-                  <button onClick={() => onResolve?.(a.id)} className="p-1.5 text-success hover:bg-emerald-50 rounded-lg transition-colors" title="Hal qilish">
+                  <button onClick={() => onResolve?.(a.id)} className="p-1.5 text-success hover:bg-emerald-50 rounded-lg transition-colors" title={t('actions.resolve')}>
                     <CheckCircle size={16} />
                   </button>
-                  <button onClick={() => onMarkFalsePositive?.(a.id)} className="p-1.5 text-text-secondary hover:bg-gray-100 rounded-lg transition-colors" title="Yolg'on ijobiy">
+                  <button onClick={() => onMarkFalsePositive?.(a.id)} className="p-1.5 text-text-secondary hover:bg-gray-100 rounded-lg transition-colors" title={t('actions.false_positive')}>
                     <XCircle size={16} />
                   </button>
                 </>
@@ -54,7 +56,7 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
         ))}
         {anomalies.length === 0 && (
           <div className="card p-8 text-center text-text-secondary text-sm">
-            Anomaliyalar aniqlanmadi
+            {t('empty.no_anomalies')}
           </div>
         )}
       </div>
@@ -62,18 +64,18 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
       {/* Desktop table */}
       <div className="card overflow-hidden hidden md:block">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-text-primary">So'nggi anomaliyalar</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{t('table.title')}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface">
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Foydalanuvchi</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Darajasi</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Ball</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Aniqlangan</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Holat</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.user')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.severity')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.score')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.detected')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -87,9 +89,9 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
                   <td className="px-4 py-3 text-text-secondary">{formatDate(a.detected_at)}</td>
                   <td className="px-4 py-3">
                     {a.is_resolved ? (
-                      <span className="badge-success">Hal qilingan</span>
+                      <span className="badge-success">{t('badges.resolved')}</span>
                     ) : (
-                      <span className="badge-danger">Kutilmoqda</span>
+                      <span className="badge-danger">{t('badges.pending')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -98,7 +100,7 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
                         <button
                           onClick={() => onViewDetail(a)}
                           className="p-1.5 text-primary-light hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Batafsil"
+                          title={t('actions.view_details')}
                         >
                           <Eye size={16} />
                         </button>
@@ -108,14 +110,14 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
                           <button
                             onClick={() => onResolve?.(a.id)}
                             className="p-1.5 text-success hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="Hal qilish"
+                            title={t('actions.resolve')}
                           >
                             <CheckCircle size={16} />
                           </button>
                           <button
                             onClick={() => onMarkFalsePositive?.(a.id)}
                             className="p-1.5 text-text-secondary hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Yolg'on ijobiy"
+                            title={t('actions.false_positive')}
                           >
                             <XCircle size={16} />
                           </button>
@@ -128,7 +130,7 @@ function AnomalyTable({ anomalies = [], onResolve, onMarkFalsePositive, onViewDe
               {anomalies.length === 0 && (
                 <tr>
                   <td colSpan="6" className="px-4 py-12 text-center text-text-secondary">
-                    Anomaliyalar aniqlanmadi
+                    {t('empty.no_anomalies')}
                   </td>
                 </tr>
               )}

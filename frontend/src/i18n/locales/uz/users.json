@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Foydalanuvchilar boshqaruvi",
+    "user_count": "Jami {{count}} ta foydalanuvchi"
+  },
+  "buttons": {
+    "create": "Yaratish",
+    "cancel": "Bekor qilish"
+  },
+  "search": {
+    "placeholder": "Qidirish..."
+  },
+  "badges": {
+    "active": "Faol",
+    "inactive": "Nofaol",
+    "no_role": "Rol yo'q"
+  },
+  "actions": {
+    "deactivate": "O'chirish",
+    "activate": "Faollashtirish"
+  },
+  "table": {
+    "user": "Foydalanuvchi",
+    "email": "Email",
+    "role": "Rol",
+    "organization": "Tashkilot",
+    "status": "Holat",
+    "actions": "Amallar"
+  },
+  "modals": {
+    "create_title": "Foydalanuvchi yaratish",
+    "leader_assignment_note": "Bu foydalanuvchi tanlangan {{entity}} rahbari sifatida tayinlanadi"
+  },
+  "form": {
+    "first_name": "Ism",
+    "last_name": "Familiya",
+    "role_placeholder": "Rol tanlang...",
+    "confession_placeholder": "Konfessiya tanlang...",
+    "organization_placeholder": "Tashkilot tanlang...",
+    "confession_label": "Konfessiya",
+    "organization_label": "Tashkilot",
+    "entity_confession": "konfessiya",
+    "entity_organization": "tashkilot"
+  },
+  "errors": {
+    "required_field": "Majburiy maydon",
+    "role_required": "Rol tanlang",
+    "confession_required": "Konfessiya tanlang",
+    "organization_required": "Tashkilot tanlang",
+    "load_failed": "Foydalanuvchilarni yuklashda xatolik",
+    "update_failed": "Foydalanuvchini yangilashda xatolik",
+    "create_failed": "Yaratishda xatolik",
+    "load_user_failed": "Foydalanuvchini yuklashda xatolik",
+    "update_user_failed": "Foydalanuvchini yangilashda xatolik"
+  },
+  "toasts": {
+    "user_created": "Foydalanuvchi yaratildi. Email yuborildi.",
+    "user_activated": "Foydalanuvchi faollashtirildi",
+    "user_deactivated": "Foydalanuvchi o'chirildi",
+    "user_updated": "Foydalanuvchi yangilandi"
+  },
+  "detail": {
+    "back": "Orqaga",
+    "title": "Foydalanuvchi tafsilotlari",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "edit": "Tahrirlash",
+    "first_name": "Ism",
+    "last_name": "Familiya",
+    "email": "Email",
+    "role": "Rol",
+    "status": "Holat",
+    "twofa_label": "2FA yoqilgan",
+    "created": "Yaratilgan",
+    "updated": "Oxirgi yangilanish",
+    "actions": "Amallar",
+    "active": "Faol",
+    "inactive": "Nofaol",
+    "enabled": "Yoqilgan",
+    "disabled": "O'chirilgan",
+    "no_role": "Rol yo'q",
+    "deactivate_button": "Foydalanuvchini o'chirish",
+    "activate_button": "Foydalanuvchini faollashtirish"
+  }
+}

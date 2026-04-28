@@ -1,0 +1,43 @@
+{
+  "page": {
+    "title": "Sozlamalar",
+    "description": "Hisobingiz sozlamalarini boshqarish"
+  },
+  "sections": {
+    "password_change": "Parolni o'zgartirish",
+    "sessions_title": "Sessiyalar"
+  },
+  "info": {
+    "password_reset_message": "Parolni o'zgartirish uchun emailingizga maxsus havola yuboriladi.",
+    "session_limit": "Bir vaqtda faqat 1 ta qurilmada aktiv bo'lishi mumkin. Boshqa qurilmadan kirganingizda avvalgi sessiyani tugatishingiz kerak bo'ladi."
+  },
+  "buttons": {
+    "resend_link": "Qayta yuborish",
+    "send_link": "Havolani emailga yuborish",
+    "sending": "Yuborilmoqda..."
+  },
+  "success": {
+    "link_sent": "Havola yuborildi!",
+    "check_email": "Emailingizga parolni o'zgartirish havolasi yuborildi. Emailingizni tekshiring."
+  },
+  "errors": {
+    "request_failed": "Xatolik yuz berdi. Qayta urinib ko'ring.",
+    "sessions_load_failed": "Sessiyalarni yuklashda xatolik"
+  },
+  "toasts": {
+    "link_sent": "Parolni o'zgartirish havolasi emailga yuborildi"
+  },
+  "badges": {
+    "max_sessions": "Max 1 ta aktiv",
+    "active": "Aktiv"
+  },
+  "empty": {
+    "no_sessions": "Sessiyalar topilmadi"
+  },
+  "time": {
+    "just_now": "Hozir",
+    "minutes_ago": "{{count}} daqiqa oldin",
+    "hours_ago": "{{count}} soat oldin",
+    "days_ago": "{{count}} kun oldin"
+  }
+}

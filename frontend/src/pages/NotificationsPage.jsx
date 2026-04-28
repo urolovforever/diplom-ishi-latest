@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import {
   fetchNotifications,
   fetchUnreadCount,
@@ -17,6 +18,7 @@ const TYPE_CONFIG = {
 };
 
 function NotificationsPage() {
+  const { t } = useTranslation('notifications');
   const dispatch = useDispatch();
   const { list, count, unreadCount, loading } = useSelector((state) => state.notifications);
   const [filter, setFilter] = useState('');
@@ -48,7 +50,7 @@ function NotificationsPage() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-text-primary">Bildirishnomalar</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{t('page.title')}</h1>
           {unreadCount > 0 && (
             <span className="bg-danger text-white text-xs font-bold px-2.5 py-1 rounded-full">
               {unreadCount}
@@ -58,16 +60,16 @@ function NotificationsPage() {
         {unreadCount > 0 && (
           <button onClick={handleMarkAllRead} className="btn-secondary flex items-center gap-2 text-sm">
             <CheckCheck size={16} />
-            Hammasini o'qilgan deb belgilash
+            {t('buttons.mark_all_read')}
           </button>
         )}
       </div>
 
       <div className="mb-4">
         <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field max-w-xs">
-          <option value="">Barchasi</option>
-          <option value="unread">O'qilmagan</option>
-          <option value="read">O'qilgan</option>
+          <option value="">{t('filters.all')}</option>
+          <option value="unread">{t('filters.unread')}</option>
+          <option value="read">{t('filters.read')}</option>
         </select>
       </div>
 
@@ -107,7 +109,7 @@ function NotificationsPage() {
                     <button
                       onClick={() => handleMarkOneRead(notif.id)}
                       className="p-1.5 text-primary-light hover:bg-blue-50 rounded-lg transition-colors"
-                      title="O'qilgan deb belgilash"
+                      title={t('actions.mark_read')}
                     >
                       <CheckCheck size={16} />
                     </button>
@@ -115,7 +117,7 @@ function NotificationsPage() {
                   <button
                     onClick={() => handleDelete(notif.id)}
                     className="p-1.5 text-danger hover:bg-red-50 rounded-lg transition-colors"
-                    title="O'chirish"
+                    title={t('actions.delete')}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -126,11 +128,11 @@ function NotificationsPage() {
           {list.length === 0 && (
             <div className="card p-12 text-center">
               <Bell size={40} className="mx-auto mb-3 text-text-secondary/30" />
-              <p className="text-text-secondary">Bildirishnomalar yo'q</p>
+              <p className="text-text-secondary">{t('empty.no_notifications')}</p>
             </div>
           )}
           {count > 0 && (
-            <p className="text-sm text-text-secondary text-center pt-2">Jami {count} ta bildirishnoma</p>
+            <p className="text-sm text-text-secondary text-center pt-2">{t('info.total_count', { count })}</p>
           )}
         </div>
       )}

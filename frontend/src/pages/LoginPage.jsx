@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import LoginForm from '../components/auth/LoginForm';
 import TwoFactorForm from '../components/auth/TwoFactorForm';
 import SessionLimitForm from '../components/auth/SessionLimitForm';
@@ -8,6 +9,7 @@ import { login, verify2FA } from '../store/authSlice';
 import { Shield } from 'lucide-react';
 
 function LoginPage() {
+  const { t } = useTranslation('auth');
   const [requires2FA, setRequires2FA] = useState(false);
   const [sessionLimitReached, setSessionLimitReached] = useState(false);
   const [activeSessions, setActiveSessions] = useState([]);
@@ -64,23 +66,23 @@ function LoginPage() {
             <Shield size={40} />
           </div>
           <h1 className="text-3xl font-bold mb-4">
-            Xavfsiz Ma'lumotlar Platformasi
+            {t('platform.title')}
           </h1>
           <p className="text-lg text-white/80">
-            O'zbekiston Respublikasi diniy konfessiyalari uchun xavfsiz ma'lumot almashish tizimi
+            {t('platform.subtitle')}
           </p>
           <div className="mt-12 grid grid-cols-3 gap-6 text-center">
             <div>
               <p className="text-2xl font-bold">16</p>
-              <p className="text-sm text-white/70">Konfessiyalar</p>
+              <p className="text-sm text-white/70">{t('platform.stat_confessions')}</p>
             </div>
             <div>
               <p className="text-2xl font-bold">E2E</p>
-              <p className="text-sm text-white/70">Shifrlash</p>
+              <p className="text-sm text-white/70">{t('platform.stat_e2e')}</p>
             </div>
             <div>
               <p className="text-2xl font-bold">AI</p>
-              <p className="text-sm text-white/70">Xavfsizlik</p>
+              <p className="text-sm text-white/70">{t('platform.stat_ai')}</p>
             </div>
           </div>
         </div>
@@ -94,23 +96,23 @@ function LoginPage() {
             <div className="w-14 h-14 bg-primary-light rounded-xl flex items-center justify-center mx-auto mb-3">
               <Shield size={28} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold text-text-primary">XMP</h1>
+            <h1 className="text-xl font-bold text-text-primary">{t('platform.logo_text')}</h1>
           </div>
 
           <div className="card p-5 sm:p-8">
             <h2 className="text-xl font-bold text-text-primary mb-1">
               {sessionLimitReached
-                ? 'Sessiya limiti'
+                ? t('login.session_limit_title')
                 : requires2FA
-                  ? 'Ikki bosqichli tasdiqlash'
-                  : 'Tizimga kirish'}
+                  ? t('login.twofa_title')
+                  : t('login.title')}
             </h2>
             <p className="text-sm text-text-secondary mb-6">
               {sessionLimitReached
-                ? "Aktiv sessiyalar soni limitga yetdi"
+                ? t('login.session_limit_message')
                 : requires2FA
-                  ? "Autentifikator ilovasidagi kodni kiriting"
-                  : "Hisobingizga kirish uchun ma'lumotlarni kiriting"
+                  ? t('login.twofa_message')
+                  : t('login.message')
               }
             </p>
 

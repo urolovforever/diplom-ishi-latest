@@ -1,0 +1,65 @@
+{
+  "page": {
+    "title": "Главная",
+    "welcome": "Добро пожаловать, {{name}}!",
+    "default_user": "Пользователь"
+  },
+  "cards": {
+    "documents": "Документы",
+    "unread_notifications": "Непрочитанные уведомления",
+    "organizations": "Организации",
+    "total_users": "Всего пользователей",
+    "ai_anomalies": "AI-аномалии",
+    "unresolved": "Нерешённые",
+    "critical_anomalies": "Критические аномалии",
+    "organization_count": "{{count}} организаций",
+    "trend_compared": "по сравнению с прошлым периодом"
+  },
+  "sections": {
+    "confessions": "Konfessiya",
+    "document_categories": "Категории документов",
+    "by_role": "По ролям"
+  },
+  "categories": {
+    "registration": "Регистрация",
+    "reports": "Отчёты",
+    "normative": "Нормативные",
+    "confidential": "Конфиденциальные"
+  },
+  "roles": {
+    "super_admin": "Супер-админ",
+    "konfessiya_rahbari": "Глава конфессии",
+    "konfessiya_xodimi": "Сотрудник конфессии",
+    "dt_rahbar": "Глава религиозной организации",
+    "dt_xodimi": "Сотрудник религиозной организации"
+  },
+  "activity_chart": {
+    "title": "Динамика активности",
+    "normal": "Нормально",
+    "anomaly": "Аномалия",
+    "total": "Всего",
+    "no_data": "Данные отсутствуют"
+  },
+  "confessions_pie": {
+    "title": "Статус Konfessiya",
+    "draft": "Черновик",
+    "submitted": "Отправлено",
+    "under_review": "На рассмотрении",
+    "approved": "Утверждено",
+    "rejected": "Отклонено"
+  },
+  "alerts": {
+    "title": "Последние оповещения",
+    "empty": "Оповещений нет"
+  },
+  "documents_table": {
+    "title": "Последние документы",
+    "empty": "Документы отсутствуют",
+    "levels": {
+      "public": "Публичный",
+      "internal": "Внутренний",
+      "confidential": "Конфиденциальный",
+      "secret": "Секретный"
+    }
+  }
+}

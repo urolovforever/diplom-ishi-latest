@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class Role(models.Model):
@@ -14,11 +15,11 @@ class Role(models.Model):
     DT_XODIMI = 'dt_xodimi'
 
     ROLE_CHOICES = [
-        (SUPER_ADMIN, 'Super Admin'),
-        (KONFESSIYA_RAHBARI, 'Konfessiya Rahbari'),
-        (KONFESSIYA_XODIMI, 'Konfessiya Xodimi'),
-        (DT_RAHBAR, 'Diniy Tashkilot Rahbari'),
-        (DT_XODIMI, 'Diniy Tashkilot Xodimi'),
+        (SUPER_ADMIN, _('Super Admin')),
+        (KONFESSIYA_RAHBARI, _('Konfessiya Rahbari')),
+        (KONFESSIYA_XODIMI, _('Konfessiya Xodimi')),
+        (DT_RAHBAR, _('Diniy Tashkilot Rahbari')),
+        (DT_XODIMI, _('Diniy Tashkilot Xodimi')),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -66,9 +67,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     totp_secret = models.CharField(max_length=64, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
     twofa_method = models.CharField(
-        max_length=10, choices=[('totp', 'TOTP'), ('sms', 'SMS')],
+        max_length=10, choices=[('totp', _('TOTP')), ('sms', _('SMS'))],
         default='totp', blank=True,
     )
+    LANGUAGE_CHOICES = [
+        ('uz', _("O'zbek")),
+        ('ru', _('Русский')),
+        ('en', _('English')),
+    ]
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='uz')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

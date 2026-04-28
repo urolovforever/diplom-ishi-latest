@@ -1,0 +1,74 @@
+{
+  "sections": {
+    "confessions_title": "Confessions",
+    "confessions_filtered_count": "{{count}} / {{total}} confessions",
+    "confessions_total_count": "{{count}} confessions in total",
+    "organizations_title": "Religious organizations",
+    "organizations_filtered_count": "{{count}} / {{total}} organizations",
+    "organizations_total_count": "{{count}} organizations in total"
+  },
+  "buttons": {
+    "create_confession": "Create confession",
+    "create_organization": "Create organization",
+    "create_submit": "Create",
+    "create_loading": "Creating...",
+    "cancel": "Cancel"
+  },
+  "empty": {
+    "confessions": "No confessions found",
+    "confessions_search": "No confessions match your search",
+    "organizations": "No organizations found",
+    "organizations_search": "No organizations match your search"
+  },
+  "search": {
+    "placeholder": "Search (name, description, leader)..."
+  },
+  "filters": {
+    "all_confessions": "All confessions"
+  },
+  "cards": {
+    "leader_assigned": "Leader: {{leader_name}}",
+    "leader_unassigned": "Leader not assigned",
+    "organization_count": "{{count}} organizations",
+    "member_count": "{{count}} members",
+    "subtext_organizations": "({{count}} organizations)",
+    "delete_confession_title": "Delete confession",
+    "other_group": "Other"
+  },
+  "modals": {
+    "confession_title": "Create confession",
+    "organization_title": "Create organization"
+  },
+  "form": {
+    "name_label": "Name",
+    "description_label": "Description",
+    "confession_name_placeholder": "Enter confession name...",
+    "confession_description_placeholder": "Short description of the confession...",
+    "new_confession_section": "Create a new confession",
+    "confession_name_input": "Confession name...",
+    "confession_label": "Confession",
+    "confession_select": "Select a confession...",
+    "organization_name_placeholder": "Enter organization name...",
+    "errors": {
+      "name_required": "Name is required",
+      "confession_required": "Confession is required"
+    }
+  },
+  "toasts": {
+    "confession_created": "Confession created",
+    "confession_deleted": "Confession deleted",
+    "organization_created": "Organization created",
+    "organization_deleted": "Organization deleted"
+  },
+  "errors": {
+    "confession_creation_failed": "Failed to create confession",
+    "confession_deletion_failed": "Failed to delete confession",
+    "organization_creation_failed": "Failed to create organization",
+    "organization_deletion_failed": "Failed to delete organization",
+    "organizations_load_failed": "Failed to load organizations"
+  },
+  "dialogs": {
+    "confirm_confession_delete": "Are you sure you want to delete this confession? All related organizations may also be deleted.",
+    "confirm_organization_delete": "Are you sure you want to delete this organization?"
+  }
+}

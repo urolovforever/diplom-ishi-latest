@@ -1,0 +1,88 @@
+{
+  "setup": {
+    "title": "Set up E2E encryption",
+    "skip_button": "Skip for now"
+  },
+  "page": {
+    "title": "Documents",
+    "description": "Send and receive documents"
+  },
+  "buttons": {
+    "upload": "Upload",
+    "cancel": "Cancel",
+    "decrypt": "Open"
+  },
+  "tabs": {
+    "sent": "Sent",
+    "received": "Received"
+  },
+  "search": {
+    "placeholder": "Search by name..."
+  },
+  "filters": {
+    "all_organizations": "All organizations",
+    "all_users": "All users",
+    "clear": "Clear",
+    "no_results": "No results found"
+  },
+  "badges": {
+    "new": "New",
+    "confession_type": "Confession"
+  },
+  "info": {
+    "total_count": "{{count}} documents in total",
+    "e2e_encrypted": "Document will be uploaded with E2E encryption"
+  },
+  "empty": {
+    "search_results": "No search results found",
+    "sent": "No sent documents found",
+    "received": "No received documents found"
+  },
+  "table": {
+    "name": "Name",
+    "organization": "Organization",
+    "user": "User",
+    "date": "Date",
+    "actions": "Actions"
+  },
+  "actions": {
+    "download": "Download",
+    "delete": "Delete"
+  },
+  "dialogs": {
+    "confirm_delete": "Do you want to delete this document?"
+  },
+  "errors": {
+    "missing_iv": "The encryption key (IV) for this document was not found. The file cannot be opened.",
+    "upload_failed": "Upload error: {{error}}",
+    "decrypt_failed": "Decryption error. Please check your password."
+  },
+  "modals": {
+    "decrypt_title": "E2E encryption password",
+    "decrypt_message": "Enter your E2E encryption password to open the document (the one you set in KeySetup):",
+    "upload_title": "Upload document",
+    "upload_button": "Upload",
+    "upload_loading": "Uploading..."
+  },
+  "form": {
+    "password_label": "Password",
+    "password_placeholder": "Enter password...",
+    "description_label": "Description",
+    "description_placeholder": "Brief description...",
+    "send_to": "Send to",
+    "select_confession": "Select a confession...",
+    "recipient_search_empty": "Select a confession first or type a name...",
+    "recipient_search_filled": "Type an organization name..."
+  },
+  "upload": {
+    "drag_message": "Drop the file here or",
+    "select_file": "select a file"
+  },
+  "sections": {
+    "confessions": "Confessions",
+    "organizations": "Religious organizations"
+  },
+  "warnings": {
+    "e2e_not_setup": "E2E encryption is not set up. The setup page will open when you click Upload."
+  }
+}

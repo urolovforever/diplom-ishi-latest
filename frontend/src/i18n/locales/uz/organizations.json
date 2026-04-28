@@ -1,0 +1,74 @@
+{
+  "sections": {
+    "confessions_title": "Konfessiyalar",
+    "confessions_filtered_count": "{{count}} / {{total}} konfessiya",
+    "confessions_total_count": "Jami {{count}} ta konfessiya",
+    "organizations_title": "Diniy Tashkilotlar",
+    "organizations_filtered_count": "{{count}} / {{total}} tashkilot",
+    "organizations_total_count": "Jami {{count}} ta tashkilot"
+  },
+  "buttons": {
+    "create_confession": "Konfessiya yaratish",
+    "create_organization": "Tashkilot yaratish",
+    "create_submit": "Yaratish",
+    "create_loading": "Yaratilmoqda...",
+    "cancel": "Bekor qilish"
+  },
+  "empty": {
+    "confessions": "Konfessiyalar topilmadi",
+    "confessions_search": "Qidiruv bo'yicha konfessiya topilmadi",
+    "organizations": "Tashkilotlar topilmadi",
+    "organizations_search": "Qidiruv bo'yicha tashkilot topilmadi"
+  },
+  "search": {
+    "placeholder": "Qidirish (nomi, tavsif, rahbar)..."
+  },
+  "filters": {
+    "all_confessions": "Barcha konfessiyalar"
+  },
+  "cards": {
+    "leader_assigned": "Rahbar: {{leader_name}}",
+    "leader_unassigned": "Rahbar tayinlanmagan",
+    "organization_count": "{{count}} ta tashkilot",
+    "member_count": "{{count}} a'zo",
+    "subtext_organizations": "({{count}} tashkilot)",
+    "delete_confession_title": "Konfessiyani o'chirish",
+    "other_group": "Boshqa"
+  },
+  "modals": {
+    "confession_title": "Konfessiya yaratish",
+    "organization_title": "Tashkilot yaratish"
+  },
+  "form": {
+    "name_label": "Nomi",
+    "description_label": "Tavsif",
+    "confession_name_placeholder": "Konfessiya nomini kiriting...",
+    "confession_description_placeholder": "Konfessiya haqida qisqacha tavsif...",
+    "new_confession_section": "Yangi konfessiya yaratish",
+    "confession_name_input": "Konfessiya nomi...",
+    "confession_label": "Konfessiya",
+    "confession_select": "Konfessiya tanlang...",
+    "organization_name_placeholder": "Tashkilot nomini kiriting...",
+    "errors": {
+      "name_required": "Nomi majburiy",
+      "confession_required": "Konfessiya majburiy"
+    }
+  },
+  "toasts": {
+    "confession_created": "Konfessiya yaratildi",
+    "confession_deleted": "Konfessiya o'chirildi",
+    "organization_created": "Tashkilot yaratildi",
+    "organization_deleted": "Tashkilot o'chirildi"
+  },
+  "errors": {
+    "confession_creation_failed": "Konfessiya yaratishda xatolik",
+    "confession_deletion_failed": "Konfessiyani o'chirishda xatolik",
+    "organization_creation_failed": "Tashkilotni yaratishda xatolik",
+    "organization_deletion_failed": "Tashkilotni o'chirishda xatolik",
+    "organizations_load_failed": "Tashkilotlarni yuklashda xatolik"
+  },
+  "dialogs": {
+    "confirm_confession_delete": "Bu konfessiyani o'chirishni xohlaysizmi? Barcha tegishli tashkilotlar ham o'chirilishi mumkin.",
+    "confirm_organization_delete": "Bu tashkilotni o'chirishni xohlaysizmi?"
+  }
+}

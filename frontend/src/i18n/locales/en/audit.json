@@ -1,0 +1,35 @@
+{
+  "page": {
+    "title": "Audit log",
+    "description": "System action history"
+  },
+  "buttons": {
+    "export_csv": "Export CSV"
+  },
+  "filters": {
+    "all_actions": "All actions"
+  },
+  "actions": {
+    "create": "Create",
+    "read": "Read",
+    "update": "Update",
+    "delete": "Delete"
+  },
+  "search": {
+    "placeholder": "Search by model name..."
+  },
+  "table": {
+    "date": "Date",
+    "user": "User",
+    "action": "Action",
+    "model": "Model",
+    "object_id": "Object ID",
+    "ip_address": "IP address"
+  },
+  "empty": {
+    "no_logs": "No audit records found"
+  },
+  "errors": {
+    "load_failed": "Error loading audit log."
+  }
+}

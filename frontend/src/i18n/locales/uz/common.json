@@ -1,0 +1,44 @@
+{
+  "actions": {
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "create": "Yaratish",
+    "submit": "Yuborish",
+    "close": "Yopish",
+    "confirm": "Tasdiqlash",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "search": "Qidirish",
+    "filter": "Filtr",
+    "loading": "Yuklanmoqda...",
+    "refresh": "Yangilash"
+  },
+  "states": {
+    "active": "Faol",
+    "inactive": "Faol emas",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "empty": "Ma'lumot yo'q",
+    "error": "Xatolik yuz berdi",
+    "success": "Muvaffaqiyatli"
+  },
+  "language": {
+    "label": "Til",
+    "uz": "O'zbek",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "pagination": {
+    "previous": "Oldingi",
+    "next": "Keyingi"
+  },
+  "stat": {
+    "compared_to_previous": "o'tgan davrga nisbatan"
+  },
+  "alerts": {
+    "title": "So'nggi ogohlantirishlar",
+    "empty": "Ogohlantirishlar yo'q"
+  }
+}

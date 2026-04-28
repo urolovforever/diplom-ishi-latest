@@ -1,0 +1,102 @@
+{
+  "page": {
+    "title": "Admin Panel",
+    "description": "Platformaning umumiy xavfsizlik holati"
+  },
+  "tabs": {
+    "active_users": "Faol foydalanuvchilar",
+    "login_history": "Login tarixi",
+    "security_status": "Xavfsizlik holati",
+    "ip_management": "IP boshqaruvi",
+    "top_users": "Eng faol userlar",
+    "document_stats": "Hujjat statistikasi"
+  },
+  "cards": {
+    "online_users": "Onlayn foydalanuvchilar",
+    "successful_24h": "Muvaffaqiyatli (24s)",
+    "failed_24h": "Muvaffaqiyatsiz (24s)",
+    "total_users": "Jami foydalanuvchilar",
+    "two_fa_enabled": "2FA yoqilgan",
+    "two_fa_disabled": "2FA o'chirilgan",
+    "password_expired": "Parol muddati tugagan",
+    "locked": "Bloklangan",
+    "e2e_keys": "E2E kalitlar",
+    "total_documents": "Jami hujjatlar",
+    "e2e_encrypted": "E2E shifrlangan",
+    "secret": "Maxfiy (secret)",
+    "confidential": "Konfidensial"
+  },
+  "sections": {
+    "active_sessions": "Faol sessiyalar (30 daqiqa ichida)",
+    "last_50_logins": "Oxirgi 50 ta login urinish",
+    "two_fa_coverage": "2FA qamrov darajasi",
+    "two_fa_coverage_info": "{{enabled}} / {{total}} foydalanuvchi 2FA yoqilgan",
+    "add_ip_restriction": "Yangi IP cheklov qo'shish",
+    "ip_restrictions_list": "IP cheklovlar ro'yxati",
+    "ip_management": "IP boshqaruvi",
+    "top_users_24h": "Eng faol foydalanuvchilar (24 soat)",
+    "recent_downloads": "So'nggi yuklab olishlar",
+    "most_accessed_documents": "Eng ko'p ko'rilgan hujjatlar",
+    "by_security_level": "Xavfsizlik darajasi bo'yicha"
+  },
+  "empty": {
+    "no_active_users": "Hozirda faol foydalanuvchi yo'q",
+    "no_ip_restrictions": "IP cheklovlar yo'q",
+    "no_data": "Ma'lumot yo'q",
+    "no_downloads": "Yuklab olishlar yo'q"
+  },
+  "table": {
+    "user": "Foydalanuvchi",
+    "role": "Role",
+    "ip": "IP",
+    "last_activity": "Oxirgi faoliyat",
+    "email": "Email",
+    "status": "Holat",
+    "time": "Vaqt",
+    "date": "Sana",
+    "action_column": "Harakat",
+    "model": "Model",
+    "object_id": "Obyekt ID",
+    "ip_address": "IP Manzil",
+    "document": "Hujjat",
+    "created_by": "Yaratgan",
+    "reason": "Sabab"
+  },
+  "badges": {
+    "ok": "OK",
+    "error": "Xato",
+    "success": "Muvaffaqiyatli",
+    "fail": "Muvaffaqiyatsiz"
+  },
+  "form": {
+    "ip_address": "IP manzil",
+    "list_type": "Turi",
+    "reason": "Sabab",
+    "reason_placeholder": "Ixtiyoriy sabab..."
+  },
+  "filters": {
+    "blacklist": "Blacklist",
+    "whitelist": "Whitelist"
+  },
+  "buttons": {
+    "add_ip": "Qo'shish",
+    "adding_ip": "Qo'shilmoqda...",
+    "reload": "Qayta yuklash"
+  },
+  "info": {
+    "ip_reason": "Sabab: {{reason}}"
+  },
+  "errors": {
+    "load_failed": "Ma'lumotlarni yuklashda xatolik yuz berdi.",
+    "ip_delete_failed": "IP cheklovni o'chirishda xatolik.",
+    "ip_create_failed": "IP cheklov qo'shishda xatolik.",
+    "audit_load_failed": "Audit jurnalini yuklashda xatolik."
+  },
+  "columns": {
+    "requests": "So'rovlar",
+    "downloads": "Yuklab olishlar",
+    "errors": "Xatoliklar",
+    "views": "Ko'rishlar",
+    "level": "Daraja"
+  }
+}

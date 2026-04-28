@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import confessionsAPI from '../api/confessionsAPI';
 import Modal from '../components/ui/Modal';
 import Badge from '../components/ui/Badge';
@@ -12,6 +13,7 @@ import { ROLES } from '../utils/constants';
 const CAN_MANAGE = ['super_admin'];
 
 function OrganizationsPage() {
+  const { t } = useTranslation('organizations');
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const userRole = user?.role?.name;
@@ -47,10 +49,10 @@ function OrganizationsPage() {
       const orgs = res.data.results || res.data;
       setOrganizations(orgs);
     } catch {
-      dispatch(addToast({ type: 'error', message: "Tashkilotlarni yuklashda xatolik" }));
+      dispatch(addToast({ type: 'error', message: t('errors.organizations_load_failed') }));
     }
     setLoading(false);
-  }, [dispatch]);
+  }, [dispatch, t]);
 
   const fetchConfessions = useCallback(async () => {
     try {
@@ -104,12 +106,12 @@ function OrganizationsPage() {
   const groupedOrgs = useMemo(() => {
     const groups = {};
     filteredOrganizations.forEach((org) => {
-      const confName = org.confession_name || 'Boshqa';
+      const confName = org.confession_name || t('cards.other_group');
       if (!groups[confName]) groups[confName] = [];
       groups[confName].push(org);
     });
     return groups;
-  }, [filteredOrganizations]);
+  }, [filteredOrganizations, t]);
 
   // Unique confession names for filter dropdown
   const confessionNames = useMemo(() => {
@@ -127,7 +129,7 @@ function OrganizationsPage() {
     try {
       const res = await confessionsAPI.createConfession({ name: newConfessionName.trim() });
       const created = res.data;
-      dispatch(addToast({ type: 'success', message: "Konfessiya yaratildi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.confession_created') }));
       setNewConfessionName('');
       setShowNewConfession(false);
       await fetchConfessions();
@@ -135,7 +137,7 @@ function OrganizationsPage() {
         setForm((prev) => ({ ...prev, confession: created.id }));
       }
     } catch (err) {
-      const detail = err.response?.data?.name?.[0] || err.response?.data?.detail || "Konfessiya yaratishda xatolik";
+      const detail = err.response?.data?.name?.[0] || err.response?.data?.detail || t('errors.confession_creation_failed');
       dispatch(addToast({ type: 'error', message: detail }));
     } finally {
       setCreatingConfession(false);
@@ -152,7 +154,7 @@ function OrganizationsPage() {
   const handleCreateConfessionModal = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!confessionForm.name.trim()) errs.name = "Nomi majburiy";
+    if (!confessionForm.name.trim()) errs.name = t('form.errors.name_required');
     if (Object.keys(errs).length) { setConfessionFormErrors(errs); return; }
     setCreatingConfessionModal(true);
     try {
@@ -160,11 +162,11 @@ function OrganizationsPage() {
         name: confessionForm.name.trim(),
         description: confessionForm.description.trim(),
       });
-      dispatch(addToast({ type: 'success', message: "Konfessiya yaratildi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.confession_created') }));
       setShowConfessionModal(false);
       fetchConfessions();
     } catch (err) {
-      const detail = err.response?.data?.name?.[0] || err.response?.data?.detail || "Konfessiya yaratishda xatolik";
+      const detail = err.response?.data?.name?.[0] || err.response?.data?.detail || t('errors.confession_creation_failed');
       dispatch(addToast({ type: 'error', message: detail }));
     } finally {
       setCreatingConfessionModal(false);
@@ -172,14 +174,14 @@ function OrganizationsPage() {
   };
 
   const handleDeleteConfession = async (id) => {
-    if (!window.confirm("Bu konfessiyani o'chirishni xohlaysizmi? Barcha tegishli tashkilotlar ham o'chirilishi mumkin.")) return;
+    if (!window.confirm(t('dialogs.confirm_confession_delete'))) return;
     try {
       await confessionsAPI.deleteConfession(id);
-      dispatch(addToast({ type: 'success', message: "Konfessiya o'chirildi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.confession_deleted') }));
       fetchConfessions();
       fetchOrganizations();
     } catch {
-      dispatch(addToast({ type: 'error', message: "Konfessiyani o'chirishda xatolik" }));
+      dispatch(addToast({ type: 'error', message: t('errors.confession_deletion_failed') }));
     }
   };
 
@@ -196,8 +198,8 @@ function OrganizationsPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!form.name.trim()) errs.name = "Nomi majburiy";
-    if (!isKonfessiyaRahbari && !form.confession) errs.confession = "Konfessiya majburiy";
+    if (!form.name.trim()) errs.name = t('form.errors.name_required');
+    if (!isKonfessiyaRahbari && !form.confession) errs.confession = t('form.errors.confession_required');
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
     try {
       await confessionsAPI.createOrganization({
@@ -205,23 +207,23 @@ function OrganizationsPage() {
         description: form.description,
         confession: isKonfessiyaRahbari ? user.confession : form.confession,
       });
-      dispatch(addToast({ type: 'success', message: "Tashkilot yaratildi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.organization_created') }));
       setShowCreate(false);
       fetchOrganizations();
     } catch (err) {
-      const detail = err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || "Tashkilotni yaratishda xatolik";
+      const detail = err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || t('errors.organization_creation_failed');
       dispatch(addToast({ type: 'error', message: detail }));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bu tashkilotni o'chirishni xohlaysizmi?")) return;
+    if (!window.confirm(t('dialogs.confirm_organization_delete'))) return;
     try {
       await confessionsAPI.deleteOrganization(id);
-      dispatch(addToast({ type: 'success', message: "Tashkilot o'chirildi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.organization_deleted') }));
       fetchOrganizations();
     } catch {
-      dispatch(addToast({ type: 'error', message: "Tashkilotni o'chirishda xatolik" }));
+      dispatch(addToast({ type: 'error', message: t('errors.organization_deletion_failed') }));
     }
   };
 
@@ -233,7 +235,7 @@ function OrganizationsPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
           <input
             type="text"
-            placeholder="Qidirish (nomi, tavsif, rahbar)..."
+            placeholder={t('search.placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field pl-9 w-full"
@@ -246,7 +248,7 @@ function OrganizationsPage() {
             onChange={(e) => setSelectedConfession(e.target.value)}
             className="input-field pl-9 pr-8 min-w-[200px]"
           >
-            <option value="">Barcha konfessiyalar</option>
+            <option value="">{t('filters.all_confessions')}</option>
             {confessionNames.map((name) => (
               <option key={name} value={name}>{name}</option>
             ))}
@@ -258,17 +260,17 @@ function OrganizationsPage() {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Konfessiyalar</h1>
+            <h1 className="text-2xl font-bold text-text-primary">{t('sections.confessions_title')}</h1>
             <p className="text-sm text-text-secondary mt-1">
               {filteredConfessions.length !== confessions.length
-                ? `${filteredConfessions.length} / ${confessions.length} konfessiya`
-                : `Jami ${confessions.length} ta konfessiya`}
+                ? t('sections.confessions_filtered_count', { count: filteredConfessions.length, total: confessions.length })
+                : t('sections.confessions_total_count', { count: confessions.length })}
             </p>
           </div>
           {isSuperAdmin && (
             <button onClick={handleOpenConfessionModal} className="btn-primary flex items-center gap-2">
               <Plus size={18} />
-              Konfessiya yaratish
+              {t('buttons.create_confession')}
             </button>
           )}
         </div>
@@ -281,7 +283,7 @@ function OrganizationsPage() {
           <div className="card p-8 text-center">
             <BookOpen size={36} className="mx-auto mb-3 text-text-secondary/30" />
             <p className="text-text-secondary">
-              {searchQuery ? "Qidiruv bo'yicha konfessiya topilmadi" : "Konfessiyalar topilmadi"}
+              {searchQuery ? t('empty.confessions_search') : t('empty.confessions')}
             </p>
           </div>
         ) : (
@@ -300,14 +302,14 @@ function OrganizationsPage() {
                       <span className="flex items-center gap-1">
                         <Users size={14} />
                         {conf.leader ? (
-                          <>Rahbar: {conf.leader.full_name || conf.leader.email}</>
+                          <>{t('cards.leader_assigned', { leader_name: conf.leader.full_name || conf.leader.email })}</>
                         ) : (
-                          <span className="text-yellow-600">Rahbar tayinlanmagan</span>
+                          <span className="text-yellow-600">{t('cards.leader_unassigned')}</span>
                         )}
                       </span>
                       <span className="flex items-center gap-1">
                         <Building2 size={14} />
-                        {conf.organizations_count ?? 0} ta tashkilot
+                        {t('cards.organization_count', { count: conf.organizations_count ?? 0 })}
                       </span>
                     </div>
                   </div>
@@ -315,7 +317,7 @@ function OrganizationsPage() {
                     <button
                       onClick={() => handleDeleteConfession(conf.id)}
                       className="flex items-center gap-1 text-sm text-danger hover:text-red-700 transition-colors ml-2 flex-shrink-0"
-                      title="Konfessiyani o'chirish"
+                      title={t('cards.delete_confession_title')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -331,17 +333,17 @@ function OrganizationsPage() {
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-text-primary">Diniy Tashkilotlar</h2>
+            <h2 className="text-2xl font-bold text-text-primary">{t('sections.organizations_title')}</h2>
             <p className="text-sm text-text-secondary mt-1">
               {filteredOrganizations.length !== organizations.length
-                ? `${filteredOrganizations.length} / ${organizations.length} tashkilot`
-                : `Jami ${organizations.length} ta tashkilot`}
+                ? t('sections.organizations_filtered_count', { count: filteredOrganizations.length, total: organizations.length })
+                : t('sections.organizations_total_count', { count: organizations.length })}
             </p>
           </div>
           {canManage && (
             <button onClick={handleOpenCreate} className="btn-primary flex items-center gap-2">
               <Plus size={18} />
-              Tashkilot yaratish
+              {t('buttons.create_organization')}
             </button>
           )}
         </div>
@@ -354,7 +356,7 @@ function OrganizationsPage() {
           <div className="card p-12 text-center">
             <Building2 size={40} className="mx-auto mb-3 text-text-secondary/30" />
             <p className="text-text-secondary">
-              {searchQuery || selectedConfession ? "Qidiruv bo'yicha tashkilot topilmadi" : "Tashkilotlar topilmadi"}
+              {searchQuery || selectedConfession ? t('empty.organizations_search') : t('empty.organizations')}
             </p>
           </div>
         ) : (
@@ -363,7 +365,7 @@ function OrganizationsPage() {
               <div key={confName}>
                 <h3 className="text-lg font-semibold text-text-primary mb-3 flex items-center gap-2">
                   <Badge variant="warning">{confName}</Badge>
-                  <span className="text-sm text-text-secondary font-normal">({orgs.length} tashkilot)</span>
+                  <span className="text-sm text-text-secondary font-normal">{t('cards.subtext_organizations', { count: orgs.length })}</span>
                 </h3>
                 <div className="space-y-2">
                   {orgs.map((org) => (
@@ -378,13 +380,13 @@ function OrganizationsPage() {
                             <span className="flex items-center gap-1">
                               <Users size={14} />
                               {org.leader ? (
-                                <>Rahbar: {org.leader.full_name || org.leader.email}</>
+                                <>{t('cards.leader_assigned', { leader_name: org.leader.full_name || org.leader.email })}</>
                               ) : (
-                                <span className="text-yellow-600">Rahbar tayinlanmagan</span>
+                                <span className="text-yellow-600">{t('cards.leader_unassigned')}</span>
                               )}
                             </span>
                             {org.members_count !== undefined && (
-                              <span>{org.members_count} a'zo</span>
+                              <span>{t('cards.member_count', { count: org.members_count })}</span>
                             )}
                           </div>
                         </div>
@@ -408,44 +410,42 @@ function OrganizationsPage() {
         )}
       </div>
 
-      {/* Create Confession Modal */}
-      <Modal isOpen={showConfessionModal} onClose={() => setShowConfessionModal(false)} title="Konfessiya yaratish">
+      <Modal isOpen={showConfessionModal} onClose={() => setShowConfessionModal(false)} title={t('modals.confession_title')}>
         <form onSubmit={handleCreateConfessionModal} className="space-y-3">
-          <FormField label="Nomi" error={confessionFormErrors.name} id="conf-name">
+          <FormField label={t('form.name_label')} error={confessionFormErrors.name} id="conf-name">
             <input
               id="conf-name"
               type="text"
               value={confessionForm.name}
               onChange={(e) => setConfessionForm({ ...confessionForm, name: e.target.value })}
               className="input-field"
-              placeholder="Konfessiya nomini kiriting..."
+              placeholder={t('form.confession_name_placeholder')}
             />
           </FormField>
-          <FormField label="Tavsif" id="conf-desc">
+          <FormField label={t('form.description_label')} id="conf-desc">
             <textarea
               id="conf-desc"
               value={confessionForm.description}
               onChange={(e) => setConfessionForm({ ...confessionForm, description: e.target.value })}
               className="input-field"
               rows={3}
-              placeholder="Konfessiya haqida qisqacha tavsif..."
+              placeholder={t('form.confession_description_placeholder')}
             />
           </FormField>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowConfessionModal(false)} className="btn-secondary">Bekor qilish</button>
+            <button type="button" onClick={() => setShowConfessionModal(false)} className="btn-secondary">{t('buttons.cancel')}</button>
             <button type="submit" disabled={creatingConfessionModal} className="btn-primary">
-              {creatingConfessionModal ? 'Yaratilmoqda...' : 'Yaratish'}
+              {creatingConfessionModal ? t('buttons.create_loading') : t('buttons.create_submit')}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Create Organization Modal */}
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Tashkilot yaratish">
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title={t('modals.organization_title')}>
         <form onSubmit={handleCreate} className="space-y-3">
           {!isKonfessiyaRahbari && (
             <div>
-              <FormField label="Konfessiya" error={formErrors.confession} id="org-confession">
+              <FormField label={t('form.confession_label')} error={formErrors.confession} id="org-confession">
                 <div className="flex items-center gap-2">
                   <select
                     id="org-confession"
@@ -453,7 +453,7 @@ function OrganizationsPage() {
                     onChange={(e) => setForm({ ...form, confession: e.target.value })}
                     className="input-field flex-1"
                   >
-                    <option value="">Konfessiya tanlang...</option>
+                    <option value="">{t('form.confession_select')}</option>
                     {confessions.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -462,7 +462,7 @@ function OrganizationsPage() {
                     type="button"
                     onClick={() => setShowNewConfession(!showNewConfession)}
                     className="p-2 text-primary-light hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
-                    title="Yangi konfessiya yaratish"
+                    title={t('form.new_confession_section')}
                   >
                     {showNewConfession ? <X size={18} /> : <PlusCircle size={18} />}
                   </button>
@@ -470,14 +470,14 @@ function OrganizationsPage() {
               </FormField>
               {showNewConfession && (
                 <div className="mt-2 p-3 bg-surface rounded-xl space-y-2">
-                  <p className="text-xs font-medium text-text-secondary">Yangi konfessiya yaratish</p>
+                  <p className="text-xs font-medium text-text-secondary">{t('form.new_confession_section')}</p>
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={newConfessionName}
                       onChange={(e) => setNewConfessionName(e.target.value)}
                       className="input-field flex-1"
-                      placeholder="Konfessiya nomi..."
+                      placeholder={t('form.confession_name_input')}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateConfessionInline(); } }}
                     />
                     <button
@@ -486,22 +486,22 @@ function OrganizationsPage() {
                       disabled={creatingConfession || !newConfessionName.trim()}
                       className="btn-primary text-sm px-3 py-2 flex-shrink-0"
                     >
-                      {creatingConfession ? '...' : 'Yaratish'}
+                      {creatingConfession ? '...' : t('buttons.create_submit')}
                     </button>
                   </div>
                 </div>
               )}
             </div>
           )}
-          <FormField label="Nomi" error={formErrors.name} id="org-name">
-            <input id="org-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
+          <FormField label={t('form.name_label')} error={formErrors.name} id="org-name">
+            <input id="org-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder={t('form.organization_name_placeholder')} />
           </FormField>
-          <FormField label="Tavsif" id="org-desc">
+          <FormField label={t('form.description_label')} id="org-desc">
             <textarea id="org-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-field" rows={3} />
           </FormField>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Bekor qilish</button>
-            <button type="submit" className="btn-primary">Yaratish</button>
+            <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">{t('buttons.cancel')}</button>
+            <button type="submit" className="btn-primary">{t('buttons.create_submit')}</button>
           </div>
         </form>
       </Modal>

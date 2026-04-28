@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import authAPI from '../api/authAPI';
 import PasswordInput from '../components/ui/PasswordInput';
 import { passwordStrength } from '../utils/validation';
 import { Lock, CheckCircle } from 'lucide-react';
 
 function PasswordResetConfirmPage() {
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');
@@ -19,15 +21,15 @@ function PasswordResetConfirmPage() {
     const errs = {};
     const pwErr = passwordStrength(password);
     if (pwErr) errs.password = pwErr;
-    if (password !== confirmPassword) errs.confirm = "Parollar mos kelmaydi";
-    if (!token) errs.token = "Tiklash tokeni topilmadi";
+    if (password !== confirmPassword) errs.confirm = t('password_confirm.errors.mismatch');
+    if (!token) errs.token = t('password_confirm.errors.no_token');
     if (Object.keys(errs).length) { setErrors(errs); return; }
     try {
       await authAPI.confirmPasswordReset({ token, new_password: password });
       setSuccess(true);
       setServerError('');
     } catch (err) {
-      setServerError(err.response?.data?.detail || "Parolni tiklashda xatolik");
+      setServerError(err.response?.data?.detail || t('password_confirm.errors.reset_failed'));
     }
   };
 
@@ -36,10 +38,10 @@ function PasswordResetConfirmPage() {
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="card max-w-md w-full p-8 text-center mx-4">
           <CheckCircle size={48} className="mx-auto mb-4 text-success" />
-          <h1 className="text-xl font-bold text-text-primary mb-2">Parol tiklandi</h1>
-          <p className="text-text-secondary mb-6">Parolingiz muvaffaqiyatli o'zgartirildi.</p>
+          <h1 className="text-xl font-bold text-text-primary mb-2">{t('password_confirm.success_title')}</h1>
+          <p className="text-text-secondary mb-6">{t('password_confirm.success_message')}</p>
           <Link to="/login" className="btn-primary inline-flex items-center gap-2">
-            Tizimga kirish
+            {t('password_confirm.login_button')}
           </Link>
         </div>
       </div>
@@ -49,8 +51,8 @@ function PasswordResetConfirmPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="card max-w-md w-full p-8 mx-4">
-        <h1 className="text-xl font-bold text-text-primary mb-1">Yangi parol o'rnatish</h1>
-        <p className="text-sm text-text-secondary mb-6">Yangi parolingizni kiriting</p>
+        <h1 className="text-xl font-bold text-text-primary mb-1">{t('password_confirm.title')}</h1>
+        <p className="text-sm text-text-secondary mb-6">{t('password_confirm.description')}</p>
         {serverError && (
           <div className="bg-red-50 border border-red-100 text-danger p-3 rounded-xl mb-4 text-sm">{serverError}</div>
         )}
@@ -61,9 +63,9 @@ function PasswordResetConfirmPage() {
           <PasswordInput
             value={password}
             onChange={setPassword}
-            label="Yangi parol"
+            label={t('password_confirm.password_label')}
             id="new-password"
-            placeholder="Kamida 12 ta belgi"
+            placeholder={t('password_confirm.password_placeholder')}
             showGenerator={true}
             showRequirements={true}
           />
@@ -71,7 +73,7 @@ function PasswordResetConfirmPage() {
 
           <div>
             <label htmlFor="confirm-password" className="block text-sm font-medium text-text-primary mb-1.5">
-              Parolni tasdiqlash
+              {t('password_confirm.confirm_label')}
             </label>
             <div className="relative">
               <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
@@ -80,7 +82,7 @@ function PasswordResetConfirmPage() {
             {errors.confirm && <p className="text-xs text-danger mt-1">{errors.confirm}</p>}
           </div>
 
-          <button type="submit" className="btn-primary w-full">Parolni tiklash</button>
+          <button type="submit" className="btn-primary w-full">{t('password_confirm.submit_button')}</button>
         </form>
       </div>
     </div>

@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Monitor, Smartphone, Tablet, ArrowLeft, Mail, AlertTriangle } from 'lucide-react';
 import authAPI from '../../api/authAPI';
 
 function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
+  const { t, i18n } = useTranslation('auth');
   const [step, setStep] = useState('select'); // 'select' | 'verify'
   const [selectedSession, setSelectedSession] = useState(null);
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
@@ -31,11 +33,12 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
 
-    if (diffMin < 1) return "Hozir";
-    if (diffMin < 60) return `${diffMin} daqiqa oldin`;
-    if (diffHr < 24) return `${diffHr} soat oldin`;
-    if (diffDay < 7) return `${diffDay} kun oldin`;
-    return date.toLocaleDateString('uz-UZ');
+    if (diffMin < 1) return t('session_limit.now');
+    if (diffMin < 60) return t('session_limit.minutes_ago', { count: diffMin });
+    if (diffHr < 24) return t('session_limit.hours_ago', { count: diffHr });
+    if (diffDay < 7) return t('session_limit.days_ago', { count: diffDay });
+    const localeMap = { uz: 'uz-UZ', ru: 'ru-RU', en: 'en-US' };
+    return date.toLocaleDateString(localeMap[i18n.language] || 'uz-UZ');
   };
 
   const handleRequestCode = async () => {
@@ -50,7 +53,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
       });
       setStep('verify');
     } catch (err) {
-      setError(err.response?.data?.detail || "Xatolik yuz berdi");
+      setError(err.response?.data?.detail || t('session_limit.errors.generic'));
     } finally {
       setLoading(false);
       submittingRef.current = false;
@@ -99,7 +102,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
       });
       onSuccess(res.data);
     } catch (err) {
-      setError(err.response?.data?.detail || "Noto'g'ri kod");
+      setError(err.response?.data?.detail || t('session_limit.errors.invalid_code'));
       setDigits(['', '', '', '', '', '']);
       inputsRef.current[0]?.focus();
     } finally {
@@ -122,7 +125,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
             <Mail size={24} className="text-primary-light" />
           </div>
           <p className="text-sm text-text-secondary">
-            Emailingizga 6 xonali tasdiqlash kodi yuborildi. Kodni kiriting.
+            {t('session_limit.verify_description')}
           </p>
         </div>
 
@@ -154,7 +157,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
           disabled={loading || digits.some((d) => d === '')}
           className="btn-primary w-full mb-3"
         >
-          {loading ? "Tasdiqlanmoqda..." : "Tasdiqlash"}
+          {loading ? t('session_limit.confirm_loading') : t('session_limit.confirm_button')}
         </button>
 
         <button
@@ -167,7 +170,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
           className="w-full text-sm text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center gap-1"
         >
           <ArrowLeft size={14} />
-          Orqaga
+          {t('session_limit.back')}
         </button>
       </form>
     );
@@ -180,7 +183,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
           <AlertTriangle size={24} className="text-amber-600" />
         </div>
         <p className="text-sm text-text-secondary">
-          Boshqa qurilmada aktiv sessiya mavjud. Davom etish uchun uni tanlang va tugatish kodini so'rang.
+          {t('session_limit.select_description')}
         </p>
       </div>
 
@@ -207,7 +210,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">
-                {session.device?.model || session.device?.browser} — {session.device?.os || "Noma'lum OS"}
+                {session.device?.model || session.device?.browser} — {session.device?.os || t('session_limit.unknown_os')}
               </p>
               <p className="text-xs text-text-secondary truncate">
                 {session.ip_address} · {formatDate(session.last_activity)}
@@ -234,7 +237,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
         disabled={!selectedSession || loading}
         className="btn-primary w-full mb-3"
       >
-        {loading ? "Yuborilmoqda..." : "Tasdiqlash kodini yuborish"}
+        {loading ? t('session_limit.request_code_loading') : t('session_limit.request_code')}
       </button>
 
       <button
@@ -243,7 +246,7 @@ function SessionLimitForm({ userId, activeSessions, onSuccess, onBack }) {
         className="w-full text-sm text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center gap-1"
       >
         <ArrowLeft size={14} />
-        Orqaga
+        {t('session_limit.back')}
       </button>
     </div>
   );
