@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import authAPI from '../api/authAPI';
 import FormField from '../components/ui/FormField';
 import Skeleton from '../components/ui/Skeleton';
@@ -9,6 +10,7 @@ import { User, Save } from 'lucide-react';
 import { getInitials } from '../utils/helpers';
 
 function ProfilePage() {
+  const { t } = useTranslation(['profile', 'users']);
   const dispatch = useDispatch();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ function ProfilePage() {
       setLastName(res.data.last_name);
       setLoading(false);
     }).catch(() => {
-      dispatch(addToast({ type: 'error', message: "Profilni yuklashda xatolik" }));
+      dispatch(addToast({ type: 'error', message: t('errors.load_failed') }));
       setLoading(false);
     });
   }, [dispatch]);
@@ -38,9 +40,9 @@ function ProfilePage() {
       const res = await authAPI.updateProfile({ first_name: firstName, last_name: lastName });
       setProfile(res.data);
       setErrors({});
-      dispatch(addToast({ type: 'success', message: "Profil yangilandi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.updated') }));
     } catch {
-      dispatch(addToast({ type: 'error', message: "Profilni yangilashda xatolik" }));
+      dispatch(addToast({ type: 'error', message: t('errors.update_failed') }));
     }
   };
 
@@ -59,8 +61,8 @@ function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Profil</h1>
-        <p className="text-sm text-text-secondary mt-1">Shaxsiy ma'lumotlarni boshqarish</p>
+        <h1 className="text-2xl font-bold text-text-primary">{t('page.title')}</h1>
+        <p className="text-sm text-text-secondary mt-1">{t('page.description')}</p>
       </div>
 
       {/* Profile header card */}
@@ -82,18 +84,18 @@ function ProfilePage() {
 
         <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
           <User size={16} className="text-primary-light" />
-          Shaxsiy ma'lumotlar
+          {t('sections.personal_info')}
         </h3>
         <form onSubmit={handleUpdateProfile} className="space-y-3">
-          <FormField label="Ism" error={errors.first_name} id="first_name">
+          <FormField label={t('users:form.first_name')} error={errors.first_name} id="first_name">
             <input id="first_name" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="input-field" />
           </FormField>
-          <FormField label="Familiya" error={errors.last_name} id="last_name">
+          <FormField label={t('users:form.last_name')} error={errors.last_name} id="last_name">
             <input id="last_name" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className="input-field" />
           </FormField>
           <button type="submit" className="btn-primary flex items-center gap-2">
             <Save size={16} />
-            Saqlash
+            {t('buttons.save')}
           </button>
         </form>
       </div>

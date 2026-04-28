@@ -1,0 +1,74 @@
+{
+  "sections": {
+    "confessions_title": "Конфессии",
+    "confessions_filtered_count": "{{count}} / {{total}} конфессий",
+    "confessions_total_count": "Всего {{count}} конфессий",
+    "organizations_title": "Религиозные организации",
+    "organizations_filtered_count": "{{count}} / {{total}} организаций",
+    "organizations_total_count": "Всего {{count}} организаций"
+  },
+  "buttons": {
+    "create_confession": "Создать конфессию",
+    "create_organization": "Создать организацию",
+    "create_submit": "Создать",
+    "create_loading": "Создаётся...",
+    "cancel": "Отмена"
+  },
+  "empty": {
+    "confessions": "Конфессии не найдены",
+    "confessions_search": "По запросу конфессий не найдено",
+    "organizations": "Организации не найдены",
+    "organizations_search": "По запросу организаций не найдено"
+  },
+  "search": {
+    "placeholder": "Поиск (название, описание, руководитель)..."
+  },
+  "filters": {
+    "all_confessions": "Все конфессии"
+  },
+  "cards": {
+    "leader_assigned": "Руководитель: {{leader_name}}",
+    "leader_unassigned": "Руководитель не назначен",
+    "organization_count": "{{count}} организаций",
+    "member_count": "{{count}} участников",
+    "subtext_organizations": "({{count}} организаций)",
+    "delete_confession_title": "Удалить конфессию",
+    "other_group": "Прочие"
+  },
+  "modals": {
+    "confession_title": "Создание конфессии",
+    "organization_title": "Создание организации"
+  },
+  "form": {
+    "name_label": "Название",
+    "description_label": "Описание",
+    "confession_name_placeholder": "Введите название конфессии...",
+    "confession_description_placeholder": "Краткое описание конфессии...",
+    "new_confession_section": "Создать новую конфессию",
+    "confession_name_input": "Название конфессии...",
+    "confession_label": "Конфессия",
+    "confession_select": "Выберите конфессию...",
+    "organization_name_placeholder": "Введите название организации...",
+    "errors": {
+      "name_required": "Название обязательно",
+      "confession_required": "Конфессия обязательна"
+    }
+  },
+  "toasts": {
+    "confession_created": "Конфессия создана",
+    "confession_deleted": "Конфессия удалена",
+    "organization_created": "Организация создана",
+    "organization_deleted": "Организация удалена"
+  },
+  "errors": {
+    "confession_creation_failed": "Ошибка создания конфессии",
+    "confession_deletion_failed": "Ошибка удаления конфессии",
+    "organization_creation_failed": "Ошибка создания организации",
+    "organization_deletion_failed": "Ошибка удаления организации",
+    "organizations_load_failed": "Ошибка загрузки организаций"
+  },
+  "dialogs": {
+    "confirm_confession_delete": "Вы действительно хотите удалить эту конфессию? Все связанные организации также могут быть удалены.",
+    "confirm_organization_delete": "Вы действительно хотите удалить эту организацию?"
+  }
+}

@@ -1,0 +1,502 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-28 10:17+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+#: accounts/models.py:18
+msgid "Super Admin"
+msgstr "Super Admin"
+
+#: accounts/models.py:19
+msgid "Konfessiya Rahbari"
+msgstr "Konfessiya Rahbari"
+
+#: accounts/models.py:20
+msgid "Konfessiya Xodimi"
+msgstr "Konfessiya Xodimi"
+
+#: accounts/models.py:21
+msgid "Diniy Tashkilot Rahbari"
+msgstr "Diniy Tashkilot Rahbari"
+
+#: accounts/models.py:22
+msgid "Diniy Tashkilot Xodimi"
+msgstr "Diniy Tashkilot Xodimi"
+
+#: accounts/models.py:70
+msgid "TOTP"
+msgstr "TOTP"
+
+#: accounts/models.py:70
+msgid "SMS"
+msgstr "SMS"
+
+#: accounts/models.py:74
+msgid "O'zbek"
+msgstr "O'zbek"
+
+#: accounts/models.py:75
+msgid "Русский"
+msgstr "Русский"
+
+#: accounts/models.py:76
+msgid "English"
+msgstr "English"
+
+#: accounts/serializers.py:61
+msgid "Invalid email or password."
+msgstr "Elektron pochta yoki parol noto'g'ri."
+
+#: accounts/serializers.py:63
+msgid "User account is disabled."
+msgstr "Foydalanuvchi hisobi o'chirilgan."
+
+#: accounts/serializers.py:79
+msgid "Invalid role."
+msgstr "Noto'g'ri rol."
+
+#: accounts/serializers.py:90
+msgid "Siz bu rolda foydalanuvchi yarata olmaysiz."
+msgstr "Siz bu rolda foydalanuvchi yarata olmaysiz."
+
+#: accounts/serializers.py:106
+msgid "Bu rol uchun konfessiya tanlash majburiy."
+msgstr "Bu rol uchun konfessiya tanlash majburiy."
+
+#: accounts/serializers.py:113
+msgid "Konfessiya topilmadi."
+msgstr "Konfessiya topilmadi."
+
+#: accounts/serializers.py:120
+msgid "Bu rol uchun tashkilot tanlash majburiy."
+msgstr "Bu rol uchun tashkilot tanlash majburiy."
+
+#: accounts/serializers.py:127
+msgid "Tashkilot topilmadi."
+msgstr "Tashkilot topilmadi."
+
+#: accounts/serializers.py:136
+msgid ""
+"Siz faqat o'z konfessiyangizga tegishli tashkilotlarga rahbar tayinlay "
+"olasiz."
+msgstr "Siz faqat o'z konfessiyangizga tegishli tashkilotlarga rahbar tayinlay olasiz."
+
+#: accounts/serializers.py:185
+msgid "Current password is incorrect."
+msgstr "Joriy parol noto'g'ri."
+
+#: accounts/validators.py:11
+msgid "Password must be at least 12 characters long."
+msgstr "Parol kamida 12 ta belgidan iborat bo'lishi kerak."
+
+#: accounts/validators.py:13
+msgid "Password must contain at least one uppercase letter."
+msgstr "Parolda kamida bitta katta harf bo'lishi kerak."
+
+#: accounts/validators.py:15
+msgid "Password must contain at least one lowercase letter."
+msgstr "Parolda kamida bitta kichik harf bo'lishi kerak."
+
+#: accounts/validators.py:17
+msgid "Password must contain at least one digit."
+msgstr "Parolda kamida bitta raqam bo'lishi kerak."
+
+#: accounts/validators.py:19
+msgid "Password must contain at least one special character."
+msgstr "Parolda kamida bitta maxsus belgi bo'lishi kerak."
+
+#: accounts/views.py:54
+msgid ""
+"Account is locked due to multiple failed login attempts. Try again later."
+msgstr ""
+
+#: accounts/views.py:145
+msgid "Invalid user."
+msgstr "Noto'g'ri foydalanuvchi."
+
+#: accounts/views.py:159
+msgid "Invalid 2FA token."
+msgstr "Noto'g'ri 2FA kodi."
+
+#: accounts/views.py:219
+msgid "user_id is required."
+msgstr "user_id majburiy."
+
+#: accounts/views.py:225
+msgid "2FA setup is not available."
+msgstr "2FA sozlash mavjud emas."
+
+#: accounts/views.py:315
+msgid "Siz foydalanuvchini tahrirlash huquqiga ega emassiz."
+msgstr "Siz foydalanuvchini tahrirlash huquqiga ega emassiz."
+
+#: accounts/views.py:337
+msgid "Cannot reuse one of your last 5 passwords."
+msgstr "Oxirgi 5 ta paroldan birini qayta ishlatib bo'lmaydi."
+
+#: accounts/views.py:349
+msgid "Password changed successfully."
+msgstr "Parol muvaffaqiyatli o'zgartirildi."
+
+#: accounts/views.py:369
+msgid "If an account with that email exists, a reset link has been sent."
+msgstr "Agar bunday email bilan hisob mavjud bo'lsa, tiklash havolasi yuborildi."
+
+#: accounts/views.py:387 accounts/views.py:393
+msgid "Invalid or expired token."
+msgstr "Noto'g'ri yoki muddati o'tgan token."
+
+#: accounts/views.py:413
+msgid "Password has been reset successfully."
+msgstr "Parol muvaffaqiyatli tiklandi."
+
+#: accounts/views.py:449
+msgid "Public key saved successfully."
+msgstr "Ochiq kalit muvaffaqiyatli saqlandi."
+
+#: accounts/views.py:469
+msgid "User not found."
+msgstr "Foydalanuvchi topilmadi."
+
+#: accounts/views.py:473
+msgid "User has not set up E2E encryption yet."
+msgstr "Foydalanuvchi hali E2E shifrlashni sozlamagan."
+
+#: accounts/views.py:603 accounts/views.py:674
+msgid "Sessiya topilmadi."
+msgstr "Sessiya topilmadi."
+
+#: accounts/views.py:646
+#, python-brace-format
+msgid "{count} ta sessiya tugatildi."
+msgstr "{count} ta sessiya tugatildi."
+
+#: accounts/views.py:666 accounts/views.py:717
+msgid "Foydalanuvchi topilmadi."
+msgstr "Foydalanuvchi topilmadi."
+
+#: accounts/views.py:697
+msgid "Tasdiqlash kodi emailga yuborildi."
+msgstr "Tasdiqlash kodi emailga yuborildi."
+
+#: accounts/views.py:728
+msgid "Noto'g'ri kod."
+msgstr "Noto'g'ri kod."
+
+#: accounts/views.py:734
+msgid "Kod muddati tugagan. Qayta urinib ko'ring."
+msgstr "Kod muddati tugagan. Qayta urinib ko'ring."
+
+#: ai_security/models.py:42
+msgid "Low"
+msgstr "Past"
+
+#: ai_security/models.py:43
+msgid "Medium"
+msgstr "O'rta"
+
+#: ai_security/models.py:44
+msgid "High"
+msgstr "Yuqori"
+
+#: ai_security/models.py:45
+msgid "Critical"
+msgstr "Kritik"
+
+#: ai_security/views.py:108
+msgid "No active AI model configured."
+msgstr "Faol AI model sozlanmagan."
+
+#: ai_security/views.py:118
+msgid "Scan initiated."
+msgstr "Skanerlash boshlandi."
+
+#: ai_security/views.py:141
+msgid "Not enough data for evaluation."
+msgstr "Baholash uchun ma'lumot yetarli emas."
+
+#: ai_security/views.py:163 documents/views.py:304 documents/views.py:505
+msgid "Not found."
+msgstr "Topilmadi."
+
+#: confessions/serializers.py:87
+msgid "O'zingizni rahbar qilib tayinlay olmaysiz."
+msgstr "O'zingizni rahbar qilib tayinlay olmaysiz."
+
+#: confessions/serializers.py:94
+msgid "Siz faqat o'z konfessiyangizdagi DT larga rahbar tayinlaysiz."
+msgstr "Siz faqat o'z konfessiyangizdagi DT larga rahbar tayinlaysiz."
+
+#: confessions/serializers.py:100
+msgid "Sizda rahbar tayinlash huquqi yo'q."
+msgstr "Sizda rahbar tayinlash huquqi yo'q."
+
+#: confessions/views.py:69
+msgid "Siz tashkilot yarata olmaysiz."
+msgstr "Siz tashkilot yarata olmaysiz."
+
+#: confessions/views.py:78
+msgid "Siz faqat o'z konfessiyangiz uchun tashkilot yarata olasiz."
+msgstr "Siz faqat o'z konfessiyangiz uchun tashkilot yarata olasiz."
+
+#: documents/models.py:9
+msgid "Public"
+msgstr "Ochiq"
+
+#: documents/models.py:10
+msgid "Internal"
+msgstr "Ichki"
+
+#: documents/models.py:11
+msgid "Confidential"
+msgstr "Konfidensial"
+
+#: documents/models.py:12
+msgid "Secret"
+msgstr "Maxfiy"
+
+#: documents/models.py:17
+msgid "Ro'yxatga olish hujjatlari"
+msgstr "Ro'yxatga olish hujjatlari"
+
+#: documents/models.py:18
+msgid "Hisobotlar"
+msgstr "Hisobotlar"
+
+#: documents/models.py:19
+msgid "Me'yoriy hujjatlar"
+msgstr "Me'yoriy hujjatlar"
+
+#: documents/models.py:20
+msgid "Maxfiy hujjatlar"
+msgstr "Maxfiy hujjatlar"
+
+#: documents/serializers.py:105
+msgid "JSON formatida ro'yxat kutilmoqda."
+msgstr "JSON formatida ro'yxat kutilmoqda."
+
+#: documents/serializers.py:107
+msgid "Ro'yxat kutilmoqda."
+msgstr "Ro'yxat kutilmoqda."
+
+#: documents/serializers.py:116
+msgid "JSON formatida UUID ro'yxati kutilmoqda."
+msgstr "JSON formatida UUID ro'yxati kutilmoqda."
+
+#: documents/serializers.py:118
+msgid "UUID ro'yxati kutilmoqda."
+msgstr "UUID ro'yxati kutilmoqda."
+
+#: documents/serializers.py:124
+#, python-brace-format
+msgid "Noto'g'ri UUID: {uuid}"
+msgstr "Noto'g'ri UUID: {uuid}"
+
+#: documents/views.py:236
+msgid "Hujjat topilmadi."
+msgstr "Hujjat topilmadi."
+
+#: documents/views.py:243
+msgid "Ruxsat berilmagan."
+msgstr "Ruxsat berilmagan."
+
+#: documents/views.py:247
+msgid "organization_ids talab qilinadi."
+msgstr "organization_ids talab qilinadi."
+
+#: documents/views.py:270
+#, python-brace-format
+msgid "Hujjat {count} ta tashkilotga ulashildi."
+msgstr "Hujjat {count} ta tashkilotga ulashildi."
+
+#: documents/views.py:335
+msgid "File not available."
+msgstr "Fayl mavjud emas."
+
+#: documents/views.py:337
+msgid "No file attached."
+msgstr "Fayl biriktirilmagan."
+
+#: documents/views.py:371
+msgid "Provide v1 and v2 query params with version numbers."
+msgstr "Versiya raqamlari bilan v1 va v2 query parametrlarini taqdim eting."
+
+#: documents/views.py:379 documents/views.py:428
+msgid "Version not found."
+msgstr "Versiya topilmadi."
+
+#: documents/views.py:388
+msgid "Cannot compare binary files. Diff only works with text files."
+msgstr "Binary fayllarni solishtirib bo'lmaydi. Diff faqat matn fayllar bilan ishlaydi."
+
+#: documents/views.py:414
+msgid "Document not found."
+msgstr "Hujjat topilmadi."
+
+#: documents/views.py:421
+msgid "Permission denied."
+msgstr "Ruxsat berilmagan."
+
+#: documents/views.py:455
+#, python-brace-format
+msgid "Document rolled back to version {version_number}."
+msgstr "Hujjat {version_number}-versiyaga qaytarildi."
+
+#: documents/views.py:506
+msgid "Access denied."
+msgstr "Kirish rad etildi."
+
+#: notifications/models.py:9
+msgid "Info"
+msgstr "Ma'lumot"
+
+#: notifications/models.py:10
+msgid "Warning"
+msgstr "Ogohlantirish"
+
+#: notifications/models.py:11
+msgid "Alert"
+msgstr "Ogohlantirish"
+
+#: notifications/models.py:12
+msgid "System"
+msgstr "Tizim"
+
+#: notifications/tasks.py:80
+msgid "Emanat Systems — Parolni tiklash"
+msgstr "Emanat Systems — Parolni tiklash"
+
+#: notifications/tasks.py:82
+#, python-brace-format
+msgid "Parolni tiklash: {reset_url}"
+msgstr "Parolni tiklash: {reset_url}"
+
+#: notifications/tasks.py:103
+msgid "Emanat Systems — Xush kelibsiz!"
+msgstr "Emanat Systems — Xush kelibsiz!"
+
+#: notifications/tasks.py:105
+#, python-brace-format
+msgid "{first_name}, parolingizni o'rnating: {set_password_url}"
+msgstr "{first_name}, parolingizni o'rnating: {set_password_url}"
+
+#: notifications/tasks.py:119
+msgid "Sessiyani tugatish kodi"
+msgstr "Sessiyani tugatish kodi"
+
+#: notifications/tasks.py:120
+#, python-brace-format
+msgid ""
+"Sessiyani tugatish uchun tasdiqlash kodingiz: <strong style=\"font-size: "
+"24px; letter-spacing: 4px;\">{code}</strong><br><br>Bu kod 10 daqiqa "
+"davomida amal qiladi."
+msgstr ""
+
+#: notifications/tasks.py:125
+#, python-brace-format
+msgid "Emanat Systems — Tasdiqlash kodi: {code}"
+msgstr "Emanat Systems — Tasdiqlash kodi: {code}"
+
+#: notifications/tasks.py:127
+#, python-brace-format
+msgid "Sessiyani tugatish kodi: {code}. Bu kod 10 daqiqa davomida amal qiladi."
+msgstr "Sessiyani tugatish kodi: {code}. Bu kod 10 daqiqa davomida amal qiladi."
+
+#: notifications/views.py:47
+msgid "Provide \"ids\" or \"all\": true."
+msgstr ""
+
+#: notifications/views.py:102
+msgid "Not configured."
+msgstr "Sozlanmagan."
+
+#: templates/emails/notification.html:23
+msgid "Bildirishnoma"
+msgstr "Bildirishnoma"
+
+#: templates/emails/notification.html:51
+#: templates/emails/password_reset.html:77 templates/emails/welcome.html:77
+msgid "Bu xat avtomatik ravishda yuborilgan."
+msgstr "Bu xat avtomatik ravishda yuborilgan."
+
+#: templates/emails/notification.html:54
+#: templates/emails/password_reset.html:81 templates/emails/welcome.html:81
+#, python-format
+msgid "&copy; %(y)s Emanat Systems. Barcha huquqlar himoyalangan."
+msgstr "&copy; %(y)s Emanat Systems. Barcha huquqlar himoyalangan."
+
+#: templates/emails/password_reset.html:23
+#: templates/emails/password_reset.html:44
+msgid "Parolni tiklash"
+msgstr "Parolni tiklash"
+
+#: templates/emails/password_reset.html:32
+msgid "Parolni tiklash so'rovi"
+msgstr "Parolni tiklash so'rovi"
+
+#: templates/emails/password_reset.html:35
+msgid ""
+"Siz parolni tiklash uchun so'rov yubordingiz. Yangi parol o'rnatish uchun "
+"quyidagi tugmani bosing."
+msgstr ""
+
+#: templates/emails/password_reset.html:55
+msgid "Diqqat"
+msgstr "Diqqat"
+
+#: templates/emails/password_reset.html:58
+msgid ""
+"Bu havola 1 soat davomida amal qiladi. Agar siz bu so'rovni yubormagan "
+"bo'lsangiz, bu xatga e'tibor bermang."
+msgstr ""
+
+#: templates/emails/password_reset.html:78
+msgid "Xavfsizlik uchun bu havolani hech kimga bermang."
+msgstr "Xavfsizlik uchun bu havolani hech kimga bermang."
+
+#: templates/emails/welcome.html:23
+msgid "Xavfsiz hujjat almashish tizimi"
+msgstr "Xavfsiz hujjat almashish tizimi"
+
+#: templates/emails/welcome.html:32
+#, python-format
+msgid "Xush kelibsiz, %(name)s!"
+msgstr "Xush kelibsiz, %(name)s!"
+
+#: templates/emails/welcome.html:35
+msgid ""
+"Sizning hisobingiz muvaffaqiyatli yaratildi. Platformadan foydalanishni "
+"boshlash uchun parolingizni o'rnating."
+msgstr ""
+
+#: templates/emails/welcome.html:44
+msgid "Parolni o'rnatish"
+msgstr "Parolni o'rnatish"
+
+#: templates/emails/welcome.html:55
+msgid "Eslatma"
+msgstr "Eslatma"
+
+#: templates/emails/welcome.html:58
+msgid ""
+"Bu havola 72 soat davomida amal qiladi. Muddati o'tgandan keyin "
+"administrator bilan bog'laning."
+msgstr ""
+
+#: templates/emails/welcome.html:78
+msgid "Agar siz ro'yxatdan o'tmagan bo'lsangiz, bu xatga e'tibor bermang."
+msgstr "Agar siz ro'yxatdan o'tmagan bo'lsangiz, bu xatga e'tibor bermang."

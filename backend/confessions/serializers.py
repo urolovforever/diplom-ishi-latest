@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from accounts.models import Role
 from accounts.serializers import UserSerializer
@@ -83,20 +84,20 @@ class OrganizationWriteSerializer(serializers.ModelSerializer):
             # User o'zini o'zi rahbar qilib qo'yishni oldini olish
             if new_leader and new_leader.id == user.id:
                 raise serializers.ValidationError(
-                    {"leader": "O'zingizni rahbar qilib tayinlay olmaysiz."}
+                    {"leader": _("O'zingizni rahbar qilib tayinlay olmaysiz.")}
                 )
 
             # konfessiya_rahbari → faqat o'z konfessiyasiga tegishli DT larga
             if role_name == Role.KONFESSIYA_RAHBARI:
                 if user.confession and org.confession_id != user.confession_id:
                     raise serializers.ValidationError(
-                        {"leader": "Siz faqat o'z konfessiyangizdagi DT larga rahbar tayinlaysiz."}
+                        {"leader": _("Siz faqat o'z konfessiyangizdagi DT larga rahbar tayinlaysiz.")}
                     )
                 return data
 
             # Boshqa rollar rahbar tayinlay olmaydi
             raise serializers.ValidationError(
-                {"leader": "Sizda rahbar tayinlash huquqi yo'q."}
+                {"leader": _("Sizda rahbar tayinlash huquqi yo'q.")}
             )
 
         return data

@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { Routes, Route } from 'react-router-dom';
+import { setLanguage } from './i18n/setLanguage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
@@ -20,6 +23,14 @@ import RoleBasedRoute from './components/auth/RoleBasedRoute';
 import KeySetup from './components/auth/KeySetup';
 
 function App() {
+  const userLanguage = useSelector((state) => state.auth.user?.language);
+
+  useEffect(() => {
+    if (userLanguage) {
+      setLanguage(userLanguage, { syncToBackend: false });
+    }
+  }, [userLanguage]);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />

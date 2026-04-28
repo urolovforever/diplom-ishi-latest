@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, filters, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -104,7 +105,7 @@ class AIModelStatusView(APIView):
             is_active=True, model_type='isolation_forest'
         ).first()
         if not config:
-            return Response({'detail': 'No active AI model configured.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('No active AI model configured.')}, status=status.HTTP_404_NOT_FOUND)
         return Response(AIModelConfigSerializer(config).data)
 
 
@@ -114,7 +115,7 @@ class ManualScanView(APIView):
     def post(self, request):
         from .tasks import scan_recent_activity
         scan_recent_activity.delay()
-        return Response({'detail': 'Scan initiated.'}, status=status.HTTP_202_ACCEPTED)
+        return Response({'detail': _('Scan initiated.')}, status=status.HTTP_202_ACCEPTED)
 
 
 class ModelEvaluationView(APIView):
@@ -137,7 +138,7 @@ class ModelEvaluationView(APIView):
 
         if len(feature_matrix) < 10:
             return Response({
-                'detail': 'Not enough data for evaluation.',
+                'detail': _('Not enough data for evaluation.'),
                 'samples': len(feature_matrix),
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -159,7 +160,7 @@ class ReviewAnomalyView(APIView):
         try:
             report = AnomalyReport.objects.get(pk=pk)
         except AnomalyReport.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         is_false_positive = request.data.get('is_false_positive', False)
         report.is_false_positive = is_false_positive

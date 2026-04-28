@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../i18n';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -20,6 +21,7 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    config.headers['Accept-Language'] = i18n.language || 'uz';
     return config;
   },
   (error) => Promise.reject(error)

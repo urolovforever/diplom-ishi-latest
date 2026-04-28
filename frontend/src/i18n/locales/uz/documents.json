@@ -1,0 +1,88 @@
+{
+  "setup": {
+    "title": "E2E shifrlashni sozlash",
+    "skip_button": "Hozircha o'tkazib yuborish"
+  },
+  "page": {
+    "title": "Hujjatlar",
+    "description": "Hujjatlarni yuborish va qabul qilish"
+  },
+  "buttons": {
+    "upload": "Yuklash",
+    "cancel": "Bekor qilish",
+    "decrypt": "Ochish"
+  },
+  "tabs": {
+    "sent": "Yuborilgan",
+    "received": "Qabul qilingan"
+  },
+  "search": {
+    "placeholder": "Nomi bo'yicha qidiring..."
+  },
+  "filters": {
+    "all_organizations": "Barcha tashkilotlar",
+    "all_users": "Barcha foydalanuvchilar",
+    "clear": "Tozalash",
+    "no_results": "Natija topilmadi"
+  },
+  "badges": {
+    "new": "Yangi",
+    "confession_type": "Konfessiya"
+  },
+  "info": {
+    "total_count": "Jami {{count}} ta hujjat",
+    "e2e_encrypted": "Hujjat E2E shifrlangan holda yuklanadi"
+  },
+  "empty": {
+    "search_results": "Qidiruv natijasi topilmadi",
+    "sent": "Yuborilgan hujjatlar topilmadi",
+    "received": "Qabul qilingan hujjatlar topilmadi"
+  },
+  "table": {
+    "name": "Nomi",
+    "organization": "Tashkilot",
+    "user": "Foydalanuvchi",
+    "date": "Sana",
+    "actions": "Amallar"
+  },
+  "actions": {
+    "download": "Yuklab olish",
+    "delete": "O'chirish"
+  },
+  "dialogs": {
+    "confirm_delete": "Bu hujjatni o'chirishni xohlaysizmi?"
+  },
+  "errors": {
+    "missing_iv": "Bu hujjatning shifrlash kaliti (IV) topilmadi. Faylni ochib bo'lmaydi.",
+    "upload_failed": "Yuklashda xatolik: {{error}}",
+    "decrypt_failed": "Shifrni ochishda xatolik. Parolingizni tekshiring."
+  },
+  "modals": {
+    "decrypt_title": "E2E shifrlash paroli",
+    "decrypt_message": "Hujjatni ochish uchun E2E shifrlash parolingizni kiriting (KeySetup'da qo'ygan parol):",
+    "upload_title": "Hujjat yuklash",
+    "upload_button": "Yuklash",
+    "upload_loading": "Yuklanmoqda..."
+  },
+  "form": {
+    "password_label": "Parol",
+    "password_placeholder": "Parolni kiriting...",
+    "description_label": "Tavsif",
+    "description_placeholder": "Qisqacha tavsif...",
+    "send_to": "Kimga yuborish",
+    "select_confession": "Konfessiya tanlang...",
+    "recipient_search_empty": "Avval konfessiya tanlang yoki nom yozing...",
+    "recipient_search_filled": "Tashkilot nomini yozing..."
+  },
+  "upload": {
+    "drag_message": "Faylni shu yerga tashlang yoki",
+    "select_file": "faylni tanlang"
+  },
+  "sections": {
+    "confessions": "Konfessiyalar",
+    "organizations": "Diniy tashkilotlar"
+  },
+  "warnings": {
+    "e2e_not_setup": "E2E shifrlash sozlanmagan. Yuklash tugmasini bosganingizda sozlash sahifasi ochiladi."
+  }
+}

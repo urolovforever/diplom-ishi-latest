@@ -1,0 +1,19 @@
+{
+  "page": {
+    "title": "Profil",
+    "description": "Shaxsiy ma'lumotlarni boshqarish"
+  },
+  "sections": {
+    "personal_info": "Shaxsiy ma'lumotlar"
+  },
+  "buttons": {
+    "save": "Saqlash"
+  },
+  "errors": {
+    "load_failed": "Profilni yuklashda xatolik",
+    "update_failed": "Profilni yangilashda xatolik"
+  },
+  "toasts": {
+    "updated": "Profil yangilandi"
+  }
+}

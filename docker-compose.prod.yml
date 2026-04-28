@@ -138,6 +138,8 @@ services:
       - backend_static:/app/staticfiles:ro
       - certbot_www:/var/www/certbot:ro
       - certbot_conf:/etc/letsencrypt:ro
+      - xotinqizlar_django_static:/app/xotinqizlar_static:ro
+      - xotinqizlar_django_media:/app/xotinqizlar_media:ro
     depends_on:
       - backend
       - frontend
@@ -159,3 +161,9 @@ volumes:
   ml_models:
   certbot_www:
   certbot_conf:
+  xotinqizlar_django_static:
+    external: true
+    name: xotinqizlar_django_static
+  xotinqizlar_django_media:
+    external: true
+    name: xotinqizlar_django_media

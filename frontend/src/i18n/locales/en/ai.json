@@ -1,0 +1,63 @@
+{
+  "page": {
+    "title": "AI security panel",
+    "description": "Real-time threat detection powered by artificial intelligence"
+  },
+  "buttons": {
+    "scan": "Scan",
+    "scanning": "Scanning...",
+    "resolve": "Resolve",
+    "false_positive": "False positive"
+  },
+  "cards": {
+    "total_anomalies": "Total anomalies",
+    "unreviewed": "Unreviewed",
+    "resolved": "Resolved",
+    "critical": "Critical"
+  },
+  "errors": {
+    "dashboard_load_failed": "Error loading dashboard data.",
+    "scan_failed": "Error starting scan.",
+    "review_failed": "Error reviewing anomaly."
+  },
+  "sections": {
+    "model_status": "Model status",
+    "anomaly_score": "Anomaly score",
+    "ai_explanation": "AI explanation"
+  },
+  "form": {
+    "name": "Name",
+    "last_trained": "Last trained",
+    "never_trained": "Never",
+    "training_samples": "Samples",
+    "threshold": "Threshold"
+  },
+  "table": {
+    "title": "Recent anomalies",
+    "user": "User",
+    "severity": "Severity",
+    "score": "Score",
+    "detected": "Detected",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "actions": {
+    "resolve": "Resolve",
+    "false_positive": "False positive",
+    "view_details": "Details"
+  },
+  "badges": {
+    "resolved": "Resolved",
+    "pending": "Pending"
+  },
+  "empty": {
+    "no_anomalies": "No anomalies detected",
+    "no_explanation": "AI explanation data not available"
+  },
+  "modal": {
+    "title": "Anomaly details"
+  },
+  "info": {
+    "already_resolved": "This anomaly has already been resolved"
+  }
+}

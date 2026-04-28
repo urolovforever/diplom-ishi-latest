@@ -1,30 +1,25 @@
+import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const COLORS = ['#64748B', '#2E86C1', '#F59E0B', '#10B981', '#EF4444'];
-const LABELS = {
-  draft: 'Qoralama',
-  submitted: 'Yuborilgan',
-  under_review: "Ko'rib chiqilmoqda",
-  approved: 'Tasdiqlangan',
-  rejected: 'Rad etilgan',
-};
 
 function ConfessionsPieChart({ stats }) {
+  const { t } = useTranslation('dashboard');
   if (!stats) return null;
 
   const data = [
-    { name: LABELS.draft, value: stats.confessions_draft || 0 },
-    { name: LABELS.submitted, value: stats.confessions_submitted || 0 },
-    { name: LABELS.under_review, value: stats.confessions_under_review || 0 },
-    { name: LABELS.approved, value: stats.confessions_approved || 0 },
-    { name: LABELS.rejected, value: stats.confessions_rejected || 0 },
+    { name: t('confessions_pie.draft'), value: stats.confessions_draft || 0 },
+    { name: t('confessions_pie.submitted'), value: stats.confessions_submitted || 0 },
+    { name: t('confessions_pie.under_review'), value: stats.confessions_under_review || 0 },
+    { name: t('confessions_pie.approved'), value: stats.confessions_approved || 0 },
+    { name: t('confessions_pie.rejected'), value: stats.confessions_rejected || 0 },
   ].filter((d) => d.value > 0);
 
   if (data.length === 0) return null;
 
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-text-primary mb-4">Konfessiyalar holati</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{t('confessions_pie.title')}</h3>
       <ResponsiveContainer width="100%" height={280}>
         <PieChart>
           <Pie

@@ -1,0 +1,12 @@
+{
+  "not_found": {
+    "title": "Sahifa topilmadi",
+    "description": "Siz qidirayotgan sahifa mavjud emas yoki ko'chirilgan",
+    "home_link": "Bosh sahifaga qaytish"
+  },
+  "boundary": {
+    "title": "Kutilmagan xatolik yuz berdi",
+    "description": "Sahifani yangilab ko'ring.",
+    "reload_button": "Sahifani yangilash"
+  }
+}

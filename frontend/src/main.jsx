@@ -6,6 +6,7 @@ import App from './App';
 import { store } from './store/store';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import ToastContainer from './components/ui/ToastContainer';
+import './i18n';
 import './styles/globals.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -1,21 +1,24 @@
+import { useTranslation } from 'react-i18next';
 import { FileText, Lock, Shield } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 
-const levelConfig = {
-  public: { label: 'Ommaviy', className: 'badge-info' },
-  internal: { label: 'Ichki', className: 'badge-warning' },
-  confidential: { label: 'Maxfiy', className: 'badge-danger' },
-  secret: { label: 'Sir', className: 'badge-danger' },
+const levelClassNames = {
+  public: 'badge-info',
+  internal: 'badge-warning',
+  confidential: 'badge-danger',
+  secret: 'badge-danger',
 };
 
 function RecentDocumentsTable({ documents = [] }) {
+  const { t } = useTranslation('dashboard');
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-text-primary mb-4">So'nggi hujjatlar</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{t('documents_table.title')}</h3>
       {documents.length > 0 ? (
         <div className="space-y-3">
           {documents.slice(0, 5).map((doc) => {
-            const level = levelConfig[doc.security_level] || levelConfig.internal;
+            const levelKey = doc.security_level && levelClassNames[doc.security_level] ? doc.security_level : 'internal';
+            const className = levelClassNames[levelKey];
             return (
               <div key={doc.id} className="flex items-center gap-3">
                 <div className="p-2 bg-blue-50 rounded-lg">
@@ -30,14 +33,14 @@ function RecentDocumentsTable({ documents = [] }) {
                 {doc.is_e2e_encrypted && (
                   <Lock size={14} className="text-success flex-shrink-0" />
                 )}
-                <span className={level.className}>{level.label}</span>
+                <span className={className}>{t(`documents_table.levels.${levelKey}`)}</span>
               </div>
             );
           })}
         </div>
       ) : (
         <div className="flex items-center justify-center py-8 text-text-secondary text-sm">
-          Hujjatlar mavjud emas
+          {t('documents_table.empty')}
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load i18n %}
 <html lang="uz">
 <head>
   <meta charset="utf-8">
@@ -19,7 +20,7 @@
                 Emanat Systems
               </h1>
               <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 8px 0 0;">
-                Xavfsiz hujjat almashish tizimi
+                {% trans "Xavfsiz hujjat almashish tizimi" %}
               </p>
             </td>
           </tr>
@@ -28,10 +29,10 @@
           <tr>
             <td style="padding: 40px;">
               <h2 style="color: #1a202c; font-size: 20px; font-weight: 600; margin: 0 0 8px;">
-                Xush kelibsiz, {{ first_name }}!
+                {% blocktrans with name=first_name %}Xush kelibsiz, {{ name }}!{% endblocktrans %}
               </h2>
               <p style="color: #6b7280; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
-                Sizning hisobingiz muvaffaqiyatli yaratildi. Platformadan foydalanishni boshlash uchun parolingizni o'rnating.
+                {% trans "Sizning hisobingiz muvaffaqiyatli yaratildi. Platformadan foydalanishni boshlash uchun parolingizni o'rnating." %}
               </p>
 
               <!-- Button -->
@@ -40,7 +41,7 @@
                   <td align="center" style="padding: 8px 0 32px;">
                     <a href="{{ set_password_url }}"
                        style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 40px; border-radius: 10px; box-shadow: 0 4px 14px rgba(37,99,235,0.4);">
-                      Parolni o'rnatish
+                      {% trans "Parolni o'rnatish" %}
                     </a>
                   </td>
                 </tr>
@@ -51,10 +52,10 @@
                 <tr>
                   <td style="padding: 16px 20px;">
                     <p style="color: #1e40af; font-size: 13px; font-weight: 600; margin: 0 0 4px;">
-                      Eslatma
+                      {% trans "Eslatma" %}
                     </p>
                     <p style="color: #3b82f6; font-size: 13px; line-height: 1.5; margin: 0;">
-                      Bu havola 72 soat davomida amal qiladi. Muddati o'tgandan keyin administrator bilan bog'laning.
+                      {% trans "Bu havola 72 soat davomida amal qiladi. Muddati o'tgandan keyin administrator bilan bog'laning." %}
                     </p>
                   </td>
                 </tr>
@@ -73,11 +74,11 @@
           <tr>
             <td style="padding: 24px 40px 32px; text-align: center;">
               <p style="color: #9ca3af; font-size: 12px; line-height: 1.6; margin: 0;">
-                Bu xat avtomatik ravishda yuborilgan.<br>
-                Agar siz ro'yxatdan o'tmagan bo'lsangiz, bu xatga e'tibor bermang.
+                {% trans "Bu xat avtomatik ravishda yuborilgan." %}<br>
+                {% trans "Agar siz ro'yxatdan o'tmagan bo'lsangiz, bu xatga e'tibor bermang." %}
               </p>
               <p style="color: #d1d5db; font-size: 11px; margin: 12px 0 0;">
-                &copy; {{ year }} Emanat Systems. Barcha huquqlar himoyalangan.
+                {% blocktrans with y=year %}&copy; {{ y }} Emanat Systems. Barcha huquqlar himoyalangan.{% endblocktrans %}
               </p>
             </td>
           </tr>

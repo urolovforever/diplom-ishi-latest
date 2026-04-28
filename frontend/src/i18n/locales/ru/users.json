@@ -1,0 +1,85 @@
+{
+  "page": {
+    "title": "Управление пользователями",
+    "user_count": "Всего {{count}} пользователей"
+  },
+  "buttons": {
+    "create": "Создать",
+    "cancel": "Отмена"
+  },
+  "search": {
+    "placeholder": "Поиск..."
+  },
+  "badges": {
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "no_role": "Роль не назначена"
+  },
+  "actions": {
+    "deactivate": "Деактивировать",
+    "activate": "Активировать"
+  },
+  "table": {
+    "user": "Пользователь",
+    "email": "Email",
+    "role": "Роль",
+    "organization": "Организация",
+    "status": "Статус",
+    "actions": "Действия"
+  },
+  "modals": {
+    "create_title": "Создание пользователя",
+    "leader_assignment_note": "Этот пользователь будет назначен руководителем выбранной {{entity}}"
+  },
+  "form": {
+    "first_name": "Имя",
+    "last_name": "Фамилия",
+    "role_placeholder": "Выберите роль...",
+    "confession_placeholder": "Выберите конфессию...",
+    "organization_placeholder": "Выберите организацию...",
+    "confession_label": "Конфессия",
+    "organization_label": "Организация",
+    "entity_confession": "конфессии",
+    "entity_organization": "организации"
+  },
+  "errors": {
+    "required_field": "Обязательное поле",
+    "role_required": "Выберите роль",
+    "confession_required": "Выберите конфессию",
+    "organization_required": "Выберите организацию",
+    "load_failed": "Ошибка загрузки пользователей",
+    "update_failed": "Ошибка обновления пользователя",
+    "create_failed": "Ошибка создания",
+    "load_user_failed": "Не удалось загрузить пользователя",
+    "update_user_failed": "Не удалось обновить пользователя"
+  },
+  "toasts": {
+    "user_created": "Пользователь создан. Email отправлен.",
+    "user_activated": "Пользователь активирован",
+    "user_deactivated": "Пользователь деактивирован",
+    "user_updated": "Пользователь обновлён"
+  },
+  "detail": {
+    "back": "Назад",
+    "title": "Информация о пользователе",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "edit": "Редактировать",
+    "first_name": "Имя",
+    "last_name": "Фамилия",
+    "email": "Email",
+    "role": "Роль",
+    "status": "Статус",
+    "twofa_label": "2FA включена",
+    "created": "Создан",
+    "updated": "Последнее обновление",
+    "actions": "Действия",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "enabled": "Включено",
+    "disabled": "Отключено",
+    "no_role": "Роль не назначена",
+    "deactivate_button": "Деактивировать пользователя",
+    "activate_button": "Активировать пользователя"
+  }
+}

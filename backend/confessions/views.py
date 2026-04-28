@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -65,7 +66,7 @@ class OrganizationListCreateView(AuditMixin, generics.ListCreateAPIView):
         # Only super_admin and konfessiya_rahbari can create organizations
         if role_name not in [Role.SUPER_ADMIN, Role.KONFESSIYA_RAHBARI]:
             from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Siz tashkilot yarata olmaysiz.")
+            raise PermissionDenied(_("Siz tashkilot yarata olmaysiz."))
 
         # Konfessiya rahbari faqat o'z konfessiyasi uchun tashkilot yarata oladi
         if role_name == Role.KONFESSIYA_RAHBARI and user.confession_id:
@@ -74,7 +75,7 @@ class OrganizationListCreateView(AuditMixin, generics.ListCreateAPIView):
                 confession_id = confession_id.pk
             if confession_id and str(confession_id) != str(user.confession_id):
                 from rest_framework.exceptions import PermissionDenied
-                raise PermissionDenied("Siz faqat o'z konfessiyangiz uchun tashkilot yarata olasiz.")
+                raise PermissionDenied(_("Siz faqat o'z konfessiyangiz uchun tashkilot yarata olasiz."))
 
         instance = serializer.save()
         self._create_audit_log('create', instance)

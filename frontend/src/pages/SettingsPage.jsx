@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import authAPI from '../api/authAPI';
 import { addToast } from '../store/uiSlice';
 import { Lock, Settings, Mail, CheckCircle, Monitor, Smartphone, Tablet, Globe } from 'lucide-react';
 
 function SettingsPage() {
+  const { t } = useTranslation('settings');
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ function SettingsPage() {
       const res = await authAPI.getSessions();
       setSessions(res.data);
     } catch {
-      dispatch(addToast({ type: 'error', message: "Sessiyalarni yuklashda xatolik" }));
+      dispatch(addToast({ type: 'error', message: t('errors.sessions_load_failed') }));
     } finally {
       setSessionsLoading(false);
     }
@@ -33,9 +35,9 @@ function SettingsPage() {
     try {
       await authAPI.requestPasswordReset(user.email);
       setSent(true);
-      dispatch(addToast({ type: 'success', message: "Parolni o'zgartirish havolasi emailga yuborildi" }));
+      dispatch(addToast({ type: 'success', message: t('toasts.link_sent') }));
     } catch {
-      dispatch(addToast({ type: 'error', message: "Xatolik yuz berdi. Qayta urinib ko'ring." }));
+      dispatch(addToast({ type: 'error', message: t('errors.request_failed') }));
     } finally {
       setLoading(false);
     }
@@ -55,10 +57,10 @@ function SettingsPage() {
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
 
-    if (diffMin < 1) return "Hozir";
-    if (diffMin < 60) return `${diffMin} daqiqa oldin`;
-    if (diffHr < 24) return `${diffHr} soat oldin`;
-    if (diffDay < 7) return `${diffDay} kun oldin`;
+    if (diffMin < 1) return t('time.just_now');
+    if (diffMin < 60) return t('time.minutes_ago', { count: diffMin });
+    if (diffHr < 24) return t('time.hours_ago', { count: diffHr });
+    if (diffDay < 7) return t('time.days_ago', { count: diffDay });
     return date.toLocaleDateString('uz-UZ');
   };
 
@@ -67,37 +69,36 @@ function SettingsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
           <Settings size={24} className="text-primary-light" />
-          Sozlamalar
+          {t('page.title')}
         </h1>
-        <p className="text-sm text-text-secondary mt-1">Hisobingiz sozlamalarini boshqarish</p>
+        <p className="text-sm text-text-secondary mt-1">{t('page.description')}</p>
       </div>
 
       {/* Password Change */}
       <div className="card p-6 mb-6">
         <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
           <Lock size={16} className="text-primary-light" />
-          Parolni o'zgartirish
+          {t('sections.password_change')}
         </h3>
 
         {sent ? (
           <div className="text-center py-4">
             <CheckCircle size={40} className="mx-auto mb-3 text-green-500" />
-            <p className="text-sm text-text-primary font-medium mb-1">Havola yuborildi!</p>
+            <p className="text-sm text-text-primary font-medium mb-1">{t('success.link_sent')}</p>
             <p className="text-xs text-text-secondary mb-4">
-              <span className="font-medium">{user?.email}</span> manziliga parolni o'zgartirish havolasi yuborildi.
-              Emailingizni tekshiring.
+              {t('success.check_email')}
             </p>
             <button
               onClick={() => setSent(false)}
               className="text-sm text-primary-light hover:text-primary font-medium transition-colors"
             >
-              Qayta yuborish
+              {t('buttons.resend_link')}
             </button>
           </div>
         ) : (
           <div>
             <p className="text-sm text-text-secondary mb-4">
-              Parolni o'zgartirish uchun emailingizga maxsus havola yuboriladi.
+              {t('info.password_reset_message')}
             </p>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
               <Mail size={18} className="text-text-secondary flex-shrink-0" />
@@ -109,7 +110,7 @@ function SettingsPage() {
               className="btn-primary flex items-center gap-2"
             >
               <Mail size={16} />
-              {loading ? "Yuborilmoqda..." : "Havolani emailga yuborish"}
+              {loading ? t('buttons.sending') : t('buttons.send_link')}
             </button>
           </div>
         )}
@@ -120,14 +121,14 @@ function SettingsPage() {
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
             <Globe size={16} className="text-primary-light" />
-            Sessiyalar
+            {t('sections.sessions_title')}
           </h3>
           <span className="text-xs text-text-secondary bg-gray-100 px-2 py-0.5 rounded-full">
-            Max 1 ta aktiv
+            {t('badges.max_sessions')}
           </span>
         </div>
         <p className="text-xs text-text-secondary mb-4">
-          Bir vaqtda faqat 1 ta qurilmada aktiv bo'lishi mumkin. Boshqa qurilmadan kirganingizda avvalgi sessiyani tugatishingiz kerak bo'ladi.
+          {t('info.session_limit')}
         </p>
 
         {sessionsLoading ? (
@@ -143,7 +144,7 @@ function SettingsPage() {
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <p className="text-sm text-text-secondary text-center py-4">Sessiyalar topilmadi</p>
+          <p className="text-sm text-text-secondary text-center py-4">{t('empty.no_sessions')}</p>
         ) : (
           <div className="space-y-2">
             {sessions.map((session) => (
@@ -165,7 +166,7 @@ function SettingsPage() {
                     </p>
                     {session.is_current && (
                       <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-1.5 py-0.5 rounded flex-shrink-0">
-                        Aktiv
+                        {t('badges.active')}
                       </span>
                     )}
                   </div>

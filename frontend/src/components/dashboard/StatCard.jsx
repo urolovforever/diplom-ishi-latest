@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useCountUp } from '../../hooks/useCountUp';
 
 const iconColors = {
@@ -9,6 +10,7 @@ const iconColors = {
 };
 
 function StatCard({ title, value, trend, icon: Icon, color = 'blue', pulsating }) {
+  const { t } = useTranslation('common');
   const animatedValue = useCountUp(typeof value === 'number' ? value : 0);
   const displayValue = typeof value === 'number' ? animatedValue : (value ?? '-');
 
@@ -30,7 +32,7 @@ function StatCard({ title, value, trend, icon: Icon, color = 'blue', pulsating }
           <span className={`text-xs font-medium ${trend >= 0 ? 'text-success' : 'text-danger'}`}>
             {trend >= 0 ? '+' : ''}{trend}%
           </span>
-          <span className="text-xs text-text-secondary">o'tgan davrga nisbatan</span>
+          <span className="text-xs text-text-secondary">{t('stat.compared_to_previous')}</span>
         </div>
       )}
     </div>

@@ -1,0 +1,35 @@
+{
+  "page": {
+    "title": "Журнал аудита",
+    "description": "История действий в системе"
+  },
+  "buttons": {
+    "export_csv": "Экспорт CSV"
+  },
+  "filters": {
+    "all_actions": "Все действия"
+  },
+  "actions": {
+    "create": "Создание",
+    "read": "Чтение",
+    "update": "Обновление",
+    "delete": "Удаление"
+  },
+  "search": {
+    "placeholder": "Поиск по имени модели..."
+  },
+  "table": {
+    "date": "Дата",
+    "user": "Пользователь",
+    "action": "Действие",
+    "model": "Модель",
+    "object_id": "ID объекта",
+    "ip_address": "IP-адрес"
+  },
+  "empty": {
+    "no_logs": "Записи аудита не найдены"
+  },
+  "errors": {
+    "load_failed": "Ошибка при загрузке журнала аудита."
+  }
+}

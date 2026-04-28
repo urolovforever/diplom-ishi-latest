@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
 class ActivityLog(models.Model):
@@ -38,10 +39,10 @@ class ActivityLog(models.Model):
 
 class AnomalyReport(models.Model):
     SEVERITY_CHOICES = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-        ('critical', 'Critical'),
+        ('low', _('Low')),
+        ('medium', _('Medium')),
+        ('high', _('High')),
+        ('critical', _('Critical')),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import aiAPI from '../api/aiAPI';
 import StatCard from '../components/dashboard/StatCard';
 import AnomalyChart from '../components/ai/AnomalyChart';
@@ -9,6 +10,7 @@ import Skeleton from '../components/ui/Skeleton';
 import { BrainCircuit, AlertTriangle, CheckCircle, ShieldAlert, Radar } from 'lucide-react';
 
 function AIDashboardPage() {
+  const { t } = useTranslation('ai');
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
@@ -21,7 +23,7 @@ function AIDashboardPage() {
       const response = await aiAPI.getDashboardStats();
       setStats(response.data);
     } catch (err) {
-      setError("Dashboard ma'lumotlarini yuklashda xatolik.");
+      setError(t('errors.dashboard_load_failed'));
     } finally {
       setLoading(false);
     }
@@ -37,7 +39,7 @@ function AIDashboardPage() {
       await aiAPI.triggerScan();
       setTimeout(fetchStats, 3000);
     } catch {
-      setError('Skanerlashni boshlashda xatolik.');
+      setError(t('errors.scan_failed'));
     } finally {
       setScanning(false);
     }
@@ -51,7 +53,7 @@ function AIDashboardPage() {
       });
       fetchStats();
     } catch {
-      setError("Anomaliyani ko'rib chiqishda xatolik.");
+      setError(t('errors.review_failed'));
     }
   };
 
@@ -91,14 +93,14 @@ function AIDashboardPage() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">AI Xavfsizlik Paneli</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{t('page.title')}</h1>
           <p className="text-sm text-text-secondary mt-1">
-            Sun'iy intellekt yordamida real vaqtda tahdidlarni aniqlash
+            {t('page.description')}
           </p>
         </div>
         <button onClick={handleScan} disabled={scanning} className="btn-primary flex items-center gap-2">
           <Radar size={18} className={scanning ? 'animate-spin' : ''} />
-          {scanning ? 'Skanerlanmoqda...' : 'Skanerlash'}
+          {scanning ? t('buttons.scanning') : t('buttons.scan')}
         </button>
       </div>
 
@@ -113,26 +115,26 @@ function AIDashboardPage() {
           {/* Stat cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
-              title="Jami anomaliyalar"
+              title={t('cards.total_anomalies')}
               value={stats.total_anomalies}
               icon={BrainCircuit}
               color="blue"
               pulsating
             />
             <StatCard
-              title="Ko'rib chiqilmagan"
+              title={t('cards.unreviewed')}
               value={stats.unreviewed_count}
               icon={AlertTriangle}
               color="yellow"
             />
             <StatCard
-              title="Hal qilingan"
+              title={t('cards.resolved')}
               value={stats.resolved_count}
               icon={CheckCircle}
               color="green"
             />
             <StatCard
-              title="Kritik"
+              title={t('cards.critical')}
               value={stats.critical_count}
               icon={ShieldAlert}
               color="red"
@@ -160,26 +162,26 @@ function AIDashboardPage() {
           {/* Model status */}
           {stats.model_status && (
             <div className="card p-5">
-              <h3 className="text-sm font-semibold text-text-primary mb-3">Model holati</h3>
+              <h3 className="text-sm font-semibold text-text-primary mb-3">{t('sections.model_status')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-text-secondary">Nomi</p>
+                  <p className="text-text-secondary">{t('form.name')}</p>
                   <p className="font-medium">{stats.model_status.name}</p>
                 </div>
                 <div>
-                  <p className="text-text-secondary">Oxirgi o'qitilgan</p>
+                  <p className="text-text-secondary">{t('form.last_trained')}</p>
                   <p className="font-medium">
                     {stats.model_status.last_trained_at
                       ? new Date(stats.model_status.last_trained_at).toLocaleString()
-                      : "Hech qachon"}
+                      : t('form.never_trained')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-text-secondary">Namunalar</p>
+                  <p className="text-text-secondary">{t('form.training_samples')}</p>
                   <p className="font-medium">{stats.model_status.training_samples_count}</p>
                 </div>
                 <div>
-                  <p className="text-text-secondary">Chegara</p>
+                  <p className="text-text-secondary">{t('form.threshold')}</p>
                   <p className="font-medium">{stats.model_status.threshold}</p>
                 </div>
               </div>

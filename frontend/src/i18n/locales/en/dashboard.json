@@ -1,0 +1,65 @@
+{
+  "page": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}!",
+    "default_user": "User"
+  },
+  "cards": {
+    "documents": "Documents",
+    "unread_notifications": "Unread notifications",
+    "organizations": "Organizations",
+    "total_users": "Total users",
+    "ai_anomalies": "AI anomalies",
+    "unresolved": "Unresolved",
+    "critical_anomalies": "Critical anomalies",
+    "organization_count": "{{count}} organizations",
+    "trend_compared": "vs. previous period"
+  },
+  "sections": {
+    "confessions": "Konfessiya",
+    "document_categories": "Document categories",
+    "by_role": "By role"
+  },
+  "categories": {
+    "registration": "Registration",
+    "reports": "Reports",
+    "normative": "Normative",
+    "confidential": "Confidential"
+  },
+  "roles": {
+    "super_admin": "Super Admin",
+    "konfessiya_rahbari": "Confession Head",
+    "konfessiya_xodimi": "Confession Staff",
+    "dt_rahbar": "Religious Org. Head",
+    "dt_xodimi": "Religious Org. Staff"
+  },
+  "activity_chart": {
+    "title": "Activity dynamics",
+    "normal": "Normal",
+    "anomaly": "Anomaly",
+    "total": "Total",
+    "no_data": "No data available"
+  },
+  "confessions_pie": {
+    "title": "Konfessiya status",
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "under_review": "Under review",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "alerts": {
+    "title": "Recent alerts",
+    "empty": "No alerts"
+  },
+  "documents_table": {
+    "title": "Recent documents",
+    "empty": "No documents",
+    "levels": {
+      "public": "Public",
+      "internal": "Internal",
+      "confidential": "Confidential",
+      "secret": "Secret"
+    }
+  }
+}

@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-function ActivityChart({ data = [], title = "Faollik dinamikasi" }) {
+function ActivityChart({ data = [], title }) {
+  const { t } = useTranslation('dashboard');
+  const chartTitle = title || t('activity_chart.title');
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-text-primary mb-4">{title}</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{chartTitle}</h3>
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={data}>
@@ -21,7 +24,7 @@ function ActivityChart({ data = [], title = "Faollik dinamikasi" }) {
             <Line
               type="monotone"
               dataKey="normal"
-              name="Normal"
+              name={t('activity_chart.normal')}
               stroke="#2E86C1"
               strokeWidth={2}
               dot={false}
@@ -29,7 +32,7 @@ function ActivityChart({ data = [], title = "Faollik dinamikasi" }) {
             <Line
               type="monotone"
               dataKey="anomaly"
-              name="Anomaliya"
+              name={t('activity_chart.anomaly')}
               stroke="#EF4444"
               strokeWidth={2}
               dot={false}
@@ -40,7 +43,7 @@ function ActivityChart({ data = [], title = "Faollik dinamikasi" }) {
               <Line
                 type="monotone"
                 dataKey="count"
-                name="Jami"
+                name={t('activity_chart.total')}
                 stroke="#2E86C1"
                 strokeWidth={2}
                 dot={false}
@@ -50,7 +53,7 @@ function ActivityChart({ data = [], title = "Faollik dinamikasi" }) {
         </ResponsiveContainer>
       ) : (
         <div className="flex items-center justify-center h-[280px] text-text-secondary text-sm">
-          Ma'lumotlar mavjud emas
+          {t('activity_chart.no_data')}
         </div>
       )}
     </div>

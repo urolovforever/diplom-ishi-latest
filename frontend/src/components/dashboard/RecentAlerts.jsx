@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../utils/helpers';
 import { AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
@@ -9,9 +10,10 @@ const severityConfig = {
 };
 
 function RecentAlerts({ alerts = [] }) {
+  const { t } = useTranslation('common');
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-text-primary mb-4">So'nggi ogohlantirishlar</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{t('alerts.title')}</h3>
       {alerts.length > 0 ? (
         <div className="space-y-3">
           {alerts.map((alert, idx) => {
@@ -43,7 +45,7 @@ function RecentAlerts({ alerts = [] }) {
         </div>
       ) : (
         <div className="flex items-center justify-center py-8 text-text-secondary text-sm">
-          Ogohlantirishlar yo'q
+          {t('alerts.empty')}
         </div>
       )}
     </div>

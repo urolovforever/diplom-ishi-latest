@@ -1,0 +1,63 @@
+{
+  "page": {
+    "title": "AI Xavfsizlik Paneli",
+    "description": "Sun'iy intellekt yordamida real vaqtda tahdidlarni aniqlash"
+  },
+  "buttons": {
+    "scan": "Skanerlash",
+    "scanning": "Skanerlanmoqda...",
+    "resolve": "Hal qilish",
+    "false_positive": "Yolg'on ijobiy"
+  },
+  "cards": {
+    "total_anomalies": "Jami anomaliyalar",
+    "unreviewed": "Ko'rib chiqilmagan",
+    "resolved": "Hal qilingan",
+    "critical": "Kritik"
+  },
+  "errors": {
+    "dashboard_load_failed": "Dashboard ma'lumotlarini yuklashda xatolik.",
+    "scan_failed": "Skanerlashni boshlashda xatolik.",
+    "review_failed": "Anomaliyani ko'rib chiqishda xatolik."
+  },
+  "sections": {
+    "model_status": "Model holati",
+    "anomaly_score": "Anomaliya bali",
+    "ai_explanation": "AI tushuntirishi"
+  },
+  "form": {
+    "name": "Nomi",
+    "last_trained": "Oxirgi o'qitilgan",
+    "never_trained": "Hech qachon",
+    "training_samples": "Namunalar",
+    "threshold": "Chegara"
+  },
+  "table": {
+    "title": "So'nggi anomaliyalar",
+    "user": "Foydalanuvchi",
+    "severity": "Darajasi",
+    "score": "Ball",
+    "detected": "Aniqlangan",
+    "status": "Holat",
+    "actions": "Amallar"
+  },
+  "actions": {
+    "resolve": "Hal qilish",
+    "false_positive": "Yolg'on ijobiy",
+    "view_details": "Batafsil"
+  },
+  "badges": {
+    "resolved": "Hal qilingan",
+    "pending": "Kutilmoqda"
+  },
+  "empty": {
+    "no_anomalies": "Anomaliyalar aniqlanmadi",
+    "no_explanation": "AI tushuntirish ma'lumotlari mavjud emas"
+  },
+  "modal": {
+    "title": "Anomaliya tafsilotlari"
+  },
+  "info": {
+    "already_resolved": "Bu anomaliya allaqachon hal qilingan"
+  }
+}

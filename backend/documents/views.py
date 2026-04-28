@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.db.models import Q, Count
 from django.http import FileResponse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
@@ -232,18 +233,18 @@ class DocumentShareView(APIView):
         try:
             document = Document.objects.get(pk=pk)
         except Document.DoesNotExist:
-            return Response({'detail': 'Hujjat topilmadi.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Hujjat topilmadi.')}, status=status.HTTP_404_NOT_FOUND)
 
         user = request.user
         # Only owner or admin can share
         if document.uploaded_by != user and (
             not user.role or user.role.name != Role.SUPER_ADMIN
         ):
-            return Response({'detail': 'Ruxsat berilmagan.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': _('Ruxsat berilmagan.')}, status=status.HTTP_403_FORBIDDEN)
 
         org_ids = request.data.get('organization_ids', [])
         if not org_ids:
-            return Response({'detail': 'organization_ids talab qilinadi.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': _('organization_ids talab qilinadi.')}, status=status.HTTP_400_BAD_REQUEST)
 
         created = []
         for org_id in org_ids:
@@ -266,7 +267,7 @@ class DocumentShareView(APIView):
                 continue
 
         return Response({
-            'detail': f'Hujjat {len(created)} ta tashkilotga ulashildi.',
+            'detail': _('Hujjat {count} ta tashkilotga ulashildi.').format(count=len(created)),
             'shared_with': created,
         }, status=status.HTTP_200_OK)
 
@@ -300,7 +301,7 @@ class DocumentDownloadView(APIView):
         try:
             doc = Document.objects.get(pk=pk)
         except Document.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         # Check if confirmation is needed
         if requires_download_confirmation(doc, request.user):
@@ -331,9 +332,9 @@ class DocumentDownloadView(APIView):
                 response['Content-Disposition'] = f'attachment; filename="{doc.title}"'
                 return response
             except Exception:
-                return Response({'detail': 'File not available.'}, status=status.HTTP_404_NOT_FOUND)
+                return Response({'detail': _('File not available.')}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response({'detail': 'No file attached.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'detail': _('No file attached.')}, status=status.HTTP_404_NOT_FOUND)
 
 
 class DocumentVersionListCreateView(generics.ListCreateAPIView):
@@ -367,7 +368,7 @@ class DocumentVersionDiffView(APIView):
 
         if not v1_num or not v2_num:
             return Response(
-                {'detail': 'Provide v1 and v2 query params with version numbers.'},
+                {'detail': _('Provide v1 and v2 query params with version numbers.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -375,7 +376,7 @@ class DocumentVersionDiffView(APIView):
             v1 = DocumentVersion.objects.get(document_id=doc_pk, version_number=int(v1_num))
             v2 = DocumentVersion.objects.get(document_id=doc_pk, version_number=int(v2_num))
         except DocumentVersion.DoesNotExist:
-            return Response({'detail': 'Version not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Version not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             v1.file.seek(0)
@@ -384,7 +385,7 @@ class DocumentVersionDiffView(APIView):
             v2_content = v2.file.read().decode('utf-8', errors='replace').splitlines()
         except Exception:
             return Response(
-                {'detail': 'Cannot compare binary files. Diff only works with text files.'},
+                {'detail': _('Cannot compare binary files. Diff only works with text files.')},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -410,21 +411,21 @@ class DocumentVersionRollbackView(APIView):
         try:
             document = Document.objects.get(pk=doc_pk)
         except Document.DoesNotExist:
-            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Document not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         # Only owner or admins can rollback
         user = request.user
         if document.uploaded_by != user and (
             not user.role or user.role.name != Role.SUPER_ADMIN
         ):
-            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': _('Permission denied.')}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             target_version = DocumentVersion.objects.get(
                 document=document, version_number=version_number,
             )
         except DocumentVersion.DoesNotExist:
-            return Response({'detail': 'Version not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Version not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         # Create a new version from the target version's file
         latest = document.versions.first()
@@ -451,7 +452,7 @@ class DocumentVersionRollbackView(APIView):
         )
 
         return Response({
-            'detail': f'Document rolled back to version {version_number}.',
+            'detail': _('Document rolled back to version {version_number}.').format(version_number=version_number),
             'new_version_number': next_num,
         }, status=status.HTTP_200_OK)
 
@@ -501,5 +502,5 @@ class HoneypotAccessView(generics.GenericAPIView):
             pk, request.user, get_client_ip(request)
         )
         if not honeypot:
-            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({'detail': 'Access denied.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': _('Not found.')}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'detail': _('Access denied.')}, status=status.HTTP_403_FORBIDDEN)

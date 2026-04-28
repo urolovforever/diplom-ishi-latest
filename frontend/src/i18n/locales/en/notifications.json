@@ -1,0 +1,23 @@
+{
+  "page": {
+    "title": "Notifications"
+  },
+  "buttons": {
+    "mark_all_read": "Mark all as read"
+  },
+  "filters": {
+    "all": "All",
+    "unread": "Unread",
+    "read": "Read"
+  },
+  "empty": {
+    "no_notifications": "No notifications"
+  },
+  "info": {
+    "total_count": "Total {{count}} notifications"
+  },
+  "actions": {
+    "mark_read": "Mark as read",
+    "delete": "Delete"
+  }
+}

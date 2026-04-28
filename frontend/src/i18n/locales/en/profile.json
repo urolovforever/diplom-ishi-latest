@@ -1,0 +1,19 @@
+{
+  "page": {
+    "title": "Profile",
+    "description": "Manage your personal information"
+  },
+  "sections": {
+    "personal_info": "Personal information"
+  },
+  "buttons": {
+    "save": "Save"
+  },
+  "errors": {
+    "load_failed": "Error loading profile",
+    "update_failed": "Error updating profile"
+  },
+  "toasts": {
+    "updated": "Profile updated"
+  }
+}

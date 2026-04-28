@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { logout } from '../../store/authSlice';
 import { toggleSidebar, toggleSidebarCollapsed } from '../../store/uiSlice';
 import { Menu, Bell, User, Settings, LogOut, PanelLeftClose, PanelLeft } from 'lucide-react';
 import Breadcrumb from '../ui/Breadcrumb';
+import LanguageSwitcher from './LanguageSwitcher';
 import { getInitials } from '../../utils/helpers';
 
 function Header() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { t } = useTranslation('nav');
   const { user } = useSelector((state) => state.auth);
   const { sidebarCollapsed } = useSelector((state) => state.ui);
   const { unreadCount } = useSelector((state) => state.notifications);
@@ -54,6 +57,7 @@ function Header() {
       </div>
 
       <div className="flex items-center gap-2">
+        <LanguageSwitcher />
         {/* Notification bell */}
         <button
           onClick={() => navigate('/notifications')}
@@ -88,14 +92,14 @@ function Header() {
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-primary hover:bg-gray-50 transition-colors"
               >
                 <User size={16} className="text-text-secondary" />
-                Profil
+                {t('profile')}
               </button>
               <button
                 onClick={() => { navigate('/settings'); setDropdownOpen(false); }}
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-primary hover:bg-gray-50 transition-colors"
               >
                 <Settings size={16} className="text-text-secondary" />
-                Sozlamalar
+                {t('settings')}
               </button>
               <hr className="my-1 border-gray-100" />
               <button
@@ -103,7 +107,7 @@ function Header() {
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-red-50 transition-colors"
               >
                 <LogOut size={16} />
-                Chiqish
+                {t('logout')}
               </button>
             </div>
           )}

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { fetchDocuments, uploadDocument, deleteDocument, markDocumentsRead } from '../store/documentsSlice';
 import confessionsAPI from '../api/confessionsAPI';
 import { useCrypto } from '../hooks/useCrypto';
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 function DocumentsPage() {
+  const { t } = useTranslation('documents');
   const dispatch = useDispatch();
   const { list, loading } = useSelector((state) => state.documents);
   const { isE2EReady, encryptDocument, decryptDocument, getRecipientPublicKeys } = useCrypto();
@@ -214,7 +216,7 @@ function DocumentsPage() {
       setShowUpload(false);
       dispatch(fetchDocuments());
     } catch (err) {
-      alert("Yuklashda xatolik: " + (err.message || "Noma'lum xatolik"));
+      alert(t('errors.upload_failed', { error: err.message || "Noma'lum xatolik" }));
     } finally {
       setUploading(false);
     }
@@ -233,7 +235,7 @@ function DocumentsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bu hujjatni o'chirishni xohlaysizmi?")) {
+    if (window.confirm(t('dialogs.confirm_delete'))) {
       dispatch(deleteDocument(id));
     }
   };
@@ -248,7 +250,7 @@ function DocumentsPage() {
 
     if (doc.is_e2e_encrypted && doc.encrypted_keys?.length > 0) {
       if (!doc.file_iv) {
-        alert("Bu hujjatning shifrlash kaliti (IV) topilmadi. Faylni ochib bo'lmaydi.");
+        alert(t('errors.missing_iv'));
         return;
       }
       setDecryptPassword('');
@@ -282,7 +284,7 @@ function DocumentsPage() {
       setDecryptModal({ open: false, doc: null });
       setDecryptPassword('');
     } catch {
-      alert("Shifrni ochishda xatolik. Parolingizni tekshiring.");
+      alert(t('errors.decrypt_failed'));
     }
   };
 
@@ -330,13 +332,13 @@ function DocumentsPage() {
   if (showKeySetup) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6 text-text-primary">E2E shifrlashni sozlash</h1>
+        <h1 className="text-2xl font-bold mb-6 text-text-primary">{t('setup.title')}</h1>
         <KeySetup onComplete={() => setShowKeySetup(false)} />
         <button
           onClick={() => setShowKeySetup(false)}
           className="mt-4 text-text-secondary hover:text-text-primary text-sm"
         >
-          Hozircha o'tkazib yuborish
+          {t('setup.skip_button')}
         </button>
       </div>
     );
@@ -346,9 +348,9 @@ function DocumentsPage() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Hujjatlar</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{t('page.title')}</h1>
           <p className="text-sm text-text-secondary mt-1">
-            Hujjatlarni yuborish va qabul qilish
+            {t('page.description')}
           </p>
         </div>
         <button
@@ -356,7 +358,7 @@ function DocumentsPage() {
           className="btn-primary flex items-center gap-2"
         >
           <Upload size={16} />
-          Yuklash
+          {t('buttons.upload')}
         </button>
       </div>
 
@@ -371,7 +373,7 @@ function DocumentsPage() {
           }`}
         >
           <Send size={16} />
-          Yuborilgan
+          {t('tabs.sent')}
           {sentDocs.length > 0 && (
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${
               activeTab === 'sent' ? 'bg-primary-light/10 text-primary-light' : 'bg-gray-200 text-gray-600'
@@ -389,7 +391,7 @@ function DocumentsPage() {
           }`}
         >
           <Inbox size={16} />
-          Qabul qilingan
+          {t('tabs.received')}
           {unreadReceivedCount > 0 && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-danger text-white font-bold">
               {unreadReceivedCount}
@@ -411,7 +413,7 @@ function DocumentsPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
           <input
             type="text"
-            placeholder="Nomi bo'yicha qidiring..."
+            placeholder={t('search.placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field pl-9"
@@ -431,7 +433,7 @@ function DocumentsPage() {
             onChange={(e) => setOrgFilter(e.target.value)}
             className="input-field py-2 text-sm flex-1"
           >
-            <option value="">Barcha tashkilotlar</option>
+            <option value="">{t('filters.all_organizations')}</option>
             {(activeTab === 'sent' ? sentOrgOptions : receivedOrgOptions).map(([id, name]) => (
               <option key={id} value={id}>{name}</option>
             ))}
@@ -441,7 +443,7 @@ function DocumentsPage() {
             onChange={(e) => setUserFilter(e.target.value)}
             className="input-field py-2 text-sm flex-1"
           >
-            <option value="">Barcha foydalanuvchilar</option>
+            <option value="">{t('filters.all_users')}</option>
             {userOptions.map(([id, name]) => (
               <option key={id} value={id}>{name}</option>
             ))}
@@ -458,7 +460,7 @@ function DocumentsPage() {
               className="btn-secondary flex items-center gap-1 text-sm whitespace-nowrap"
             >
               <X size={14} />
-              Tozalash
+              {t('filters.clear')}
             </button>
           )}
         </div>
@@ -485,7 +487,7 @@ function DocumentsPage() {
                       {doc.title}
                       {doc.is_new && (
                         <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary-light text-white uppercase">
-                          Yangi
+                          {t('badges.new')}
                         </span>
                       )}
                     </span>
@@ -498,7 +500,7 @@ function DocumentsPage() {
                   <button
                     onClick={() => handleDownload(doc)}
                     className="p-1.5 text-success hover:bg-emerald-50 rounded-lg transition-colors"
-                    title="Yuklab olish"
+                    title={t('actions.download')}
                   >
                     <Download size={16} />
                   </button>
@@ -506,7 +508,7 @@ function DocumentsPage() {
                     <button
                       onClick={() => handleDelete(doc.id)}
                       className="p-1.5 text-danger hover:bg-red-50 rounded-lg transition-colors"
-                      title="O'chirish"
+                      title={t('actions.delete')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -523,16 +525,16 @@ function DocumentsPage() {
           {currentDocs.length === 0 && (
             <div className="card p-8 text-center text-text-secondary text-sm">
               {searchQuery || orgFilter || userFilter || dateFilter
-                ? "Qidiruv natijasi topilmadi"
+                ? t('empty.search_results')
                 : activeTab === 'sent'
-                  ? "Yuborilgan hujjatlar topilmadi"
-                  : "Qabul qilingan hujjatlar topilmadi"
+                  ? t('empty.sent')
+                  : t('empty.received')
               }
             </div>
           )}
           {currentDocs.length > 0 && (
             <div className="text-sm text-text-secondary text-center py-2">
-              Jami {currentDocs.length} ta hujjat
+              {t('info.total_count', { count: currentDocs.length })}
             </div>
           )}
         </div>
@@ -543,15 +545,15 @@ function DocumentsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-surface">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Nomi</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.name')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">
-                    Tashkilot
+                    {t('table.organization')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">
-                    Foydalanuvchi
+                    {t('table.user')}
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Sana</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Amallar</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.date')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -567,7 +569,7 @@ function DocumentsPage() {
                             {doc.title}
                             {doc.is_new && (
                               <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary-light text-white uppercase">
-                                Yangi
+                                {t('badges.new')}
                               </span>
                             )}
                           </span>
@@ -591,7 +593,7 @@ function DocumentsPage() {
                         <button
                           onClick={() => handleDownload(doc)}
                           className="p-1.5 text-success hover:bg-emerald-50 rounded-lg transition-colors"
-                          title="Yuklab olish"
+                          title={t('actions.download')}
                         >
                           <Download size={16} />
                         </button>
@@ -599,7 +601,7 @@ function DocumentsPage() {
                           <button
                             onClick={() => handleDelete(doc.id)}
                             className="p-1.5 text-danger hover:bg-red-50 rounded-lg transition-colors"
-                            title="O'chirish"
+                            title={t('actions.delete')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -612,10 +614,10 @@ function DocumentsPage() {
                   <tr>
                     <td colSpan={5} className="px-4 py-12 text-center text-text-secondary">
                       {searchQuery || orgFilter || userFilter || dateFilter
-                        ? "Qidiruv natijasi topilmadi"
+                        ? t('empty.search_results')
                         : activeTab === 'sent'
-                          ? "Yuborilgan hujjatlar topilmadi"
-                          : "Qabul qilingan hujjatlar topilmadi"
+                          ? t('empty.sent')
+                          : t('empty.received')
                       }
                     </td>
                   </tr>
@@ -625,7 +627,7 @@ function DocumentsPage() {
           </div>
           {currentDocs.length > 0 && (
             <div className="px-4 py-3 bg-surface text-sm text-text-secondary border-t border-gray-100">
-              Jami {currentDocs.length} ta hujjat
+              {t('info.total_count', { count: currentDocs.length })}
             </div>
           )}
         </div>
@@ -633,40 +635,40 @@ function DocumentsPage() {
       )}
 
       {/* Decrypt Password Modal */}
-      <Modal isOpen={decryptModal.open} onClose={() => { setDecryptModal({ open: false, doc: null }); setDecryptPassword(''); }} title="E2E shifrlash paroli">
+      <Modal isOpen={decryptModal.open} onClose={() => { setDecryptModal({ open: false, doc: null }); setDecryptPassword(''); }} title={t('modals.decrypt_title')}>
         <form onSubmit={handleDecryptSubmit} className="space-y-4">
           <p className="text-sm text-text-secondary">
-            Hujjatni ochish uchun E2E shifrlash parolingizni kiriting (KeySetup'da qo'ygan parol):
+            {t('modals.decrypt_message')}
           </p>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">Parol</label>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">{t('form.password_label')}</label>
             <input
               type="password"
               value={decryptPassword}
               onChange={(e) => setDecryptPassword(e.target.value)}
               className="input-field"
-              placeholder="Parolni kiriting..."
+              placeholder={t('form.password_placeholder')}
               autoFocus
               required
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => { setDecryptModal({ open: false, doc: null }); setDecryptPassword(''); }} className="btn-secondary">
-              Bekor qilish
+              {t('buttons.cancel')}
             </button>
             <button type="submit" disabled={!decryptPassword} className="btn-primary flex items-center gap-2">
               <Lock size={14} />
-              Ochish
+              {t('buttons.decrypt')}
             </button>
           </div>
         </form>
       </Modal>
 
       {/* Upload Modal */}
-      <Modal isOpen={showUpload} onClose={() => setShowUpload(false)} title="Hujjat yuklash">
+      <Modal isOpen={showUpload} onClose={() => setShowUpload(false)} title={t('modals.upload_title')}>
         <form onSubmit={handleUpload} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">Nomi</label>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">{t('table.name')}</label>
             <input
               type="text"
               value={title}
@@ -677,13 +679,13 @@ function DocumentsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">Tavsif</label>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">{t('form.description_label')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className="input-field"
-              placeholder="Qisqacha tavsif..."
+              placeholder={t('form.description_placeholder')}
             />
           </div>
 
@@ -708,9 +710,9 @@ function DocumentsPage() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-text-secondary mb-1">Faylni shu yerga tashlang yoki</p>
+                <p className="text-sm text-text-secondary mb-1">{t('upload.drag_message')}</p>
                 <label className="text-sm text-primary-light hover:text-primary cursor-pointer font-medium">
-                  faylni tanlang
+                  {t('upload.select_file')}
                   <input
                     type="file"
                     onChange={(e) => setFile(e.target.files[0])}
@@ -726,7 +728,7 @@ function DocumentsPage() {
             <label className="block text-sm font-medium text-text-primary mb-1.5">
               <span className="flex items-center gap-1">
                 <Building2 size={14} />
-                Kimga yuborish
+                {t('form.send_to')}
               </span>
             </label>
 
@@ -736,7 +738,7 @@ function DocumentsPage() {
               onChange={(e) => setConfFilter(e.target.value)}
               className="input-field py-1.5 text-sm w-full mb-2"
             >
-              <option value="">Konfessiya tanlang...</option>
+              <option value="">{t('form.select_confession')}</option>
               {confessions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -747,7 +749,7 @@ function DocumentsPage() {
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
               <input
                 type="search"
-                placeholder={confFilter ? "Tashkilot nomini yozing..." : "Avval konfessiya tanlang yoki nom yozing..."}
+                placeholder={confFilter ? t('form.recipient_search_filled') : t('form.recipient_search_empty')}
                 value={recipientSearch}
                 onChange={(e) => setRecipientSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
@@ -778,7 +780,7 @@ function DocumentsPage() {
                   if (!hasResults) {
                     return (
                       <div className="px-3 py-4 text-center text-sm text-text-secondary">
-                        Natija topilmadi
+                        {t('filters.no_results')}
                       </div>
                     );
                   }
@@ -788,7 +790,7 @@ function DocumentsPage() {
                       {filteredConfs.length > 0 && (
                         <>
                           <div className="px-3 py-1.5 bg-blue-50 text-xs font-semibold text-primary-light sticky top-0 border-b">
-                            Konfessiyalar
+                            {t('sections.confessions')}
                           </div>
                           {filteredConfs.map((c) => (
                             <label
@@ -804,7 +806,7 @@ function DocumentsPage() {
                                 className="rounded border-gray-300 text-primary-light focus:ring-primary-light"
                               />
                               <span className="text-sm font-medium text-text-primary">{c.name}</span>
-                              <Badge variant="primary">Konfessiya</Badge>
+                              <Badge variant="primary">{t('badges.confession_type')}</Badge>
                             </label>
                           ))}
                         </>
@@ -812,7 +814,7 @@ function DocumentsPage() {
                       {filteredOrgs.length > 0 && (
                         <>
                           <div className="px-3 py-1.5 bg-surface text-xs font-semibold text-text-secondary sticky top-0 border-b">
-                            Diniy tashkilotlar
+                            {t('sections.organizations')}
                           </div>
                           {filteredOrgs.map((o) => (
                             <label
@@ -868,21 +870,21 @@ function DocumentsPage() {
           <div className="p-3 bg-surface rounded-xl">
             <p className="text-sm text-text-primary flex items-center gap-2">
               <Lock size={14} className="text-success" />
-              Hujjat E2E shifrlangan holda yuklanadi
+              {t('info.e2e_encrypted')}
             </p>
             {!isE2EReady && (
               <p className="mt-2 text-sm text-warning">
-                E2E shifrlash sozlanmagan. Yuklash tugmasini bosganingizda sozlash sahifasi ochiladi.
+                {t('warnings.e2e_not_setup')}
               </p>
             )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowUpload(false)} className="btn-secondary">
-              Bekor qilish
+              {t('buttons.cancel')}
             </button>
             <button type="submit" disabled={uploading || !file} className="btn-primary">
-              {uploading ? 'Yuklanmoqda...' : 'Yuklash'}
+              {uploading ? t('modals.upload_loading') : t('modals.upload_button')}
             </button>
           </div>
         </form>

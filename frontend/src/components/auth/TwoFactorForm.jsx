@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import authAPI from '../../api/authAPI';
 
 function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
+  const { t } = useTranslation('auth');
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [qrCode, setQrCode] = useState(null);
   const [secret, setSecret] = useState(null);
@@ -95,14 +97,14 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
         <>
           <div className="text-center mb-4">
             {loadingQR ? (
-              <p className="text-sm text-text-secondary">Yuklanmoqda...</p>
+              <p className="text-sm text-text-secondary">{t('twofa.loading')}</p>
             ) : !showQR ? (
               <button
                 type="button"
                 onClick={handleShowQR}
                 className="text-sm text-primary-light hover:text-primary font-medium transition-colors"
               >
-                Google Authenticator uchun QR kodni ko'rish
+                {t('twofa.show_qr')}
               </button>
             ) : (
               <button
@@ -110,7 +112,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
                 onClick={() => setShowQR(false)}
                 className="text-sm text-primary-light hover:text-primary font-medium transition-colors"
               >
-                QR kodni yashirish
+                {t('twofa.hide_qr')}
               </button>
             )}
           </div>
@@ -118,7 +120,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
           {showQR && qrCode && (
             <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
               <p className="text-xs text-text-secondary text-center mb-3">
-                Google Authenticator ilovasida skanerlang
+                {t('twofa.scan_qr')}
               </p>
               <div className="flex justify-center mb-3">
                 <img src={qrCode} alt="2FA QR Code" className="rounded-lg" />
@@ -126,7 +128,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
               {secret && (
                 <div className="mt-2">
                   <p className="text-xs text-text-secondary text-center mb-1">
-                    Yoki kalitni qo'lda kiriting:
+                    {t('twofa.manual_entry')}
                   </p>
                   <div className="flex items-center justify-center gap-2">
                     <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200 font-mono select-all break-all">
@@ -136,7 +138,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
                       type="button"
                       onClick={handleCopySecret}
                       className="p-1 text-text-secondary hover:text-primary-light transition-colors"
-                      title="Nusxa olish"
+                      title={t('twofa.copy_secret')}
                     >
                       {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                     </button>
@@ -166,7 +168,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
       </div>
 
       <button type="submit" disabled={loading} className="btn-primary w-full mb-3">
-        {loading ? 'Tekshirilmoqda...' : 'Tasdiqlash'}
+        {loading ? t('twofa.verify_loading') : t('twofa.verify_button')}
       </button>
 
       {onBack && (
@@ -176,7 +178,7 @@ function TwoFactorForm({ onSubmit, loading, onBack, userId, isFirstSetup }) {
           className="w-full flex items-center justify-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors py-2"
         >
           <ArrowLeft size={16} />
-          Orqaga qaytish
+          {t('twofa.back_button')}
         </button>
       )}
     </form>

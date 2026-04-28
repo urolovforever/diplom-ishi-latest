@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import i18n from '../../i18n';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -23,16 +24,16 @@ class ErrorBoundary extends Component {
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center p-8">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Kutilmagan xatolik yuz berdi
+              {i18n.t('errors:boundary.title')}
             </h1>
             <p className="text-gray-600 mb-4">
-              Sahifani yangilab ko'ring.
+              {i18n.t('errors:boundary.description')}
             </p>
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Sahifani yangilash
+              {i18n.t('errors:boundary.reload_button')}
             </button>
           </div>
         </div>

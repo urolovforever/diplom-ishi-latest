@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next';
+
 function Pagination({ count, pageSize = 20, currentPage, onPageChange }) {
+  const { t } = useTranslation('common');
   const totalPages = Math.ceil(count / pageSize);
 
   if (totalPages <= 1) return null;
@@ -23,7 +26,7 @@ function Pagination({ count, pageSize = 20, currentPage, onPageChange }) {
         disabled={currentPage <= 1}
         className="px-3 py-1 rounded border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
       >
-        Previous
+        {t('pagination.previous')}
       </button>
       {pages.map((page, idx) =>
         page === '...' ? (
@@ -49,7 +52,7 @@ function Pagination({ count, pageSize = 20, currentPage, onPageChange }) {
         disabled={currentPage >= totalPages}
         className="px-3 py-1 rounded border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
       >
-        Next
+        {t('pagination.next')}
       </button>
     </nav>
   );

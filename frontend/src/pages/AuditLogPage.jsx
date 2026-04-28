@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axiosConfig';
 import Skeleton from '../components/ui/Skeleton';
 import Pagination from '../components/ui/Pagination';
 import { Download, ScrollText, Search } from 'lucide-react';
 
 function AuditLogPage() {
+  const { t } = useTranslation('audit');
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,7 +24,7 @@ function AuditLogPage() {
       setLogs(response.data.results || []);
       setCount(response.data.count || 0);
     } catch {
-      setError("Audit jurnalini yuklashda xatolik.");
+      setError(t('errors.load_failed'));
     } finally {
       setLoading(false);
     }
@@ -33,7 +35,7 @@ function AuditLogPage() {
   }, [page, filters]);
 
   const handleExportCSV = () => {
-    const headers = ['Sana', 'Foydalanuvchi', 'Harakat', 'Model', 'Obyekt ID', 'IP Manzil'];
+    const headers = [t('table.date'), t('table.user'), t('table.action'), t('table.model'), t('table.object_id'), t('table.ip_address')];
     const rows = logs.map((log) => [
       new Date(log.created_at).toISOString(),
       log.user?.email || 'N/A',
@@ -55,22 +57,22 @@ function AuditLogPage() {
   };
 
   const actionConfig = {
-    create: { class: 'badge-success', label: 'Yaratish' },
-    delete: { class: 'badge-danger', label: "O'chirish" },
-    update: { class: 'badge-warning', label: 'Yangilash' },
-    read: { class: 'badge-info', label: "O'qish" },
+    create: { class: 'badge-success', label: t('actions.create') },
+    delete: { class: 'badge-danger', label: t('actions.delete') },
+    update: { class: 'badge-warning', label: t('actions.update') },
+    read: { class: 'badge-info', label: t('actions.read') },
   };
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Audit jurnali</h1>
-          <p className="text-sm text-text-secondary mt-1">Tizim harakatlari tarixi</p>
+          <h1 className="text-2xl font-bold text-text-primary">{t('page.title')}</h1>
+          <p className="text-sm text-text-secondary mt-1">{t('page.description')}</p>
         </div>
         <button onClick={handleExportCSV} className="btn-secondary flex items-center gap-2">
           <Download size={16} />
-          CSV eksport
+          {t('buttons.export_csv')}
         </button>
       </div>
 
@@ -85,17 +87,17 @@ function AuditLogPage() {
           onChange={(e) => { setFilters({ ...filters, action: e.target.value }); setPage(1); }}
           className="input-field max-w-[180px]"
         >
-          <option value="">Barcha harakatlar</option>
-          <option value="create">Yaratish</option>
-          <option value="read">O'qish</option>
-          <option value="update">Yangilash</option>
-          <option value="delete">O'chirish</option>
+          <option value="">{t('filters.all_actions')}</option>
+          <option value="create">{t('actions.create')}</option>
+          <option value="read">{t('actions.read')}</option>
+          <option value="update">{t('actions.update')}</option>
+          <option value="delete">{t('actions.delete')}</option>
         </select>
         <div className="relative flex-1 max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
           <input
             type="text"
-            placeholder="Model nomi bo'yicha qidirish..."
+            placeholder={t('search.placeholder')}
             value={filters.model_name}
             onChange={(e) => { setFilters({ ...filters, model_name: e.target.value }); setPage(1); }}
             className="input-field pl-9"
@@ -126,7 +128,7 @@ function AuditLogPage() {
             ))}
             {logs.length === 0 && (
               <div className="card p-8 text-center text-text-secondary text-sm">
-                Audit yozuvlari topilmadi
+                {t('empty.no_logs')}
               </div>
             )}
           </div>
@@ -137,12 +139,12 @@ function AuditLogPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-surface">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Sana</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Foydalanuvchi</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Harakat</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Model</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">Obyekt ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">IP Manzil</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.date')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.user')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.action')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.model')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.object_id')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase">{t('table.ip_address')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -161,7 +163,7 @@ function AuditLogPage() {
                   {logs.length === 0 && (
                     <tr>
                       <td colSpan="6" className="px-4 py-12 text-center text-text-secondary">
-                        Audit yozuvlari topilmadi
+                        {t('empty.no_logs')}
                       </td>
                     </tr>
                   )}

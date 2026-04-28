@@ -1,0 +1,35 @@
+{
+  "page": {
+    "title": "Audit jurnali",
+    "description": "Tizim harakatlari tarixi"
+  },
+  "buttons": {
+    "export_csv": "CSV eksport"
+  },
+  "filters": {
+    "all_actions": "Barcha harakatlar"
+  },
+  "actions": {
+    "create": "Yaratish",
+    "read": "O'qish",
+    "update": "Yangilash",
+    "delete": "O'chirish"
+  },
+  "search": {
+    "placeholder": "Model nomi bo'yicha qidirish..."
+  },
+  "table": {
+    "date": "Sana",
+    "user": "Foydalanuvchi",
+    "action": "Harakat",
+    "model": "Model",
+    "object_id": "Obyekt ID",
+    "ip_address": "IP Manzil"
+  },
+  "empty": {
+    "no_logs": "Audit yozuvlari topilmadi"
+  },
+  "errors": {
+    "load_failed": "Audit jurnalini yuklashda xatolik."
+  }
+}

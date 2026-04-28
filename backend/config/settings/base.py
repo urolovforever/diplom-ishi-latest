@@ -31,6 +31,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -95,10 +96,24 @@ PASSWORD_HASHERS = [
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'uz'
 TIME_ZONE = 'UTC'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ('uz', "O'zbek"),
+    ('ru', 'Русский'),
+    ('en', 'English'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
+LANGUAGE_COOKIE_NAME = 'scp_language'
+LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365  # 1 year
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

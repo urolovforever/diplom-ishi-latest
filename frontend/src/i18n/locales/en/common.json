@@ -1,0 +1,44 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "submit": "Submit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "refresh": "Refresh"
+  },
+  "states": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "yes": "Yes",
+    "no": "No",
+    "empty": "No data",
+    "error": "An error occurred",
+    "success": "Success"
+  },
+  "language": {
+    "label": "Language",
+    "uz": "O'zbek",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "stat": {
+    "compared_to_previous": "compared to previous"
+  },
+  "alerts": {
+    "title": "Recent alerts",
+    "empty": "No alerts"
+  }
+}
